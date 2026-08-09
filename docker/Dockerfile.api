@@ -1,0 +1,41 @@
+# SHIPPED (core repo) layout: this file lives at docker/Dockerfile.api, built
+# with the repo root as build context (see repo-root docker-compose.yml's
+# `api` service: context: ., dockerfile: docker/Dockerfile.api). Identical to
+# the monorepo dev copy (scripts/open-core/docker/Dockerfile.api) except the
+# COPY line below for api.capnp, which moves from
+# scripts/open-core/docker/api.capnp to docker/api.capnp in this layout. Keep
+# both in sync by hand when editing the build steps.
+
+# ---- build stage: bundle the worker ----
+FROM node:22-bookworm-slim AS build
+WORKDIR /app
+COPY workers/api/ ./workers/api/
+COPY supabase/ ./supabase/
+WORKDIR /app/workers/api
+# --legacy-peer-deps: workers/api's own package.json pins wrangler@^3.65.0 (devDep),
+# but @sentry/cloudflare's peerOptional wants wrangler@^4.x. In the real monorepo
+# this resolves fine via the workspace-root lockfile (npm can see the whole tree);
+# here only workers/api/ is copied into the build context (no workspace root, no
+# lockfile), so a plain `npm install` re-resolves from scratch and npm 7+ hard-fails
+# on the conflicting peerOptional range. wrangler is build-time-only (bundling), so
+# relaxing peer-dep enforcement here is safe — it doesn't change the emitted bundle.
+RUN npm install --legacy-peer-deps
+RUN npx wrangler deploy --dry-run --outdir=dist
+
+# ---- runtime stage: workerd ----
+FROM node:22-bookworm-slim
+WORKDIR /app
+# ca-certificates ŞART: node:22-bookworm-slim'de /etc/ssl/certs BOŞ gelir. Build
+# stage'i bunu maskeliyor çünkü npm/node kendi gömülü CA demetini kullanır —
+# workerd kullanmaz, sistemdekine bakar. Yoksa api.capnp'deki
+# `trustBrowserCas = true` güvenecek kök bulamaz ve her outbound HTTPS
+# `certificate is not trusted; unable to get local issuer certificate` ile
+# ölür (OpenAI çağrısı → 500, chat→canvas hiç çalışmaz).
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN npm install -g workerd@1.20260804.1
+COPY --from=build /app/workers/api/dist/ ./dist/
+COPY docker/api.capnp ./api.capnp
+RUN mkdir -p do-state
+EXPOSE 8787
+CMD ["workerd", "serve", "api.capnp"]

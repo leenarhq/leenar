@@ -1,0 +1,27 @@
+# Leenar Core — gitleaks configuration.
+# Keeps gitleaks' full default ruleset and allowlists two known false positives:
+# 1. PEM header/footer *stripping* code in the GitHub App connector
+#    (workers/api/src/connectors/github-app.ts). Those `.replace(...)` lines remove
+#    the PEM markers before base64-decoding a user-supplied key — they are not a secret.
+# 2. The fixed Docker self-host demo Supabase JWT secret + anon/service_role keys
+#    (docker/.env.example, mirrored at root .env.example — plus the monorepo dev
+#    copy at scripts/open-core/docker/.env.example). These are Leenar's own
+#    self-minted JWTs over a well-known, intentionally-public demo
+#    JWT secret (same pattern as Supabase's own self-hosting quick-start) — fixed
+#    across every install so the Docker demo stack boots with zero manual key-gen.
+#    They are not reachable from the internet (localhost-only compose stack) and
+#    SELF-HOST.md tells self-hosters to rotate them before exposing the stack
+#    beyond localhost. See SELF-HOST.md §f "Production warning".
+title = "Leenar Core gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "PEM header/footer stripping (github-app) + Docker self-host demo Supabase keys (not real secrets)"
+regexTarget = "line"
+regexes = [
+  '''\.replace\(/-----(BEGIN|END)[A-Z ]*PRIVATE KEY-----/''',
+  '''SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8i''',
+  '''SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyI''',
+]

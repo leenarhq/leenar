@@ -1,0 +1,68 @@
+FROM node:22-bookworm-slim
+WORKDIR /app
+# Copy the workspace root manifest + package.json of every workspace member
+# `npm ci` needs to see (apps/web is the one we actually install; workers/api's
+# package.json is only present so npm recognizes it as a valid workspace member
+# — its own deps are never installed here) — NOT just `apps/web/`.
+#
+# WHY (found the hard way, not a style preference): apps/web has no lockfile
+# of its own — the monorepo's package-lock.json at the repo root is the only
+# source of truth for its resolved dependency graph. A bare `npm install` run
+# inside a copied `apps/web/` alone (no lockfile in scope) re-resolves
+# @cloudflare/vite-plugin/vite/wrangler to whatever's newest-matching-semver
+# at build time. That silently changes `vite build`'s output shape: the
+# locked versions (@cloudflare/vite-plugin 1.33.1 + wrangler 4.84.1, per
+# package-lock.json) correctly detect this as a Workers project (from
+# apps/web/wrangler.jsonc) and bundle src/worker.ts — the CSP/security-header
+# wrapper around the TanStack Start SSR handler — into
+# dist/server/index.js + dist/server/wrangler.json. Drifted newer versions
+# (verified: 1.51.0/4.119.0) instead silently fall back to a generic
+# dist/server/server.js that DROPS worker.ts entirely (no CSP, no security
+# headers, no scanner blocking) and never write dist/server/wrangler.json —
+# which then makes `wrangler dev` fail outright ("Missing entry-point").
+# `npm ci` against the real lockfile eliminates this drift.
+COPY package.json package-lock.json ./
+COPY workers/api/package.json ./workers/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+RUN npm ci --workspace=apps/web --include-workspace-root
+COPY apps/web/ ./apps/web/
+WORKDIR /app/apps/web
+# Build-time env — VITE_* değerleri bundle'a gömülür (Vite's loadEnv also
+# reads matching keys straight from process.env, so these ENV vars are picked
+# up with no .env file needed — see @lovable.dev/vite-tanstack-config's
+# envDefine step).
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_API_URL
+ARG VITE_LEENAR_CLOUD=false
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
+    VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY \
+    VITE_API_URL=$VITE_API_URL \
+    VITE_LEENAR_CLOUD=$VITE_LEENAR_CLOUD
+# CI=true keeps wrangler's telemetry/update-check prompts from trying to read
+# stdin in a non-interactive container.
+ENV CI=true
+# `vite build` (via @cloudflare/vite-plugin, reading apps/web/wrangler.jsonc)
+# emits dist/client (static assets) AND dist/server/{index.js,wrangler.json}
+# — a self-contained, already-bundled Workers entry (no_bundle: true) plus a
+# ready-to-use wrangler config pointing at it. This is the exact same output
+# CI's own deploy step consumes (`cd apps/web/dist/server && wrangler deploy`).
+RUN npm run build
+EXPOSE 8080
+# Run from dist/server so wrangler auto-discovers the build's OWN generated
+# wrangler.json (main=index.js, assets=../client, no_bundle=true) instead of
+# the source-level apps/web/wrangler.jsonc (whose "main": "src/worker.ts"
+# points at un-bundled TanStack Start source — wrangler can't esbuild that
+# directly, it only builds via the Vite plugin).
+WORKDIR /app/apps/web/dist/server
+# --var overrides the prod-baked API_URL/SUPABASE_URL vars
+# (https://api.leenar.net, the hosted Supabase project) with the local demo
+# origins, so the SSR worker's CSP connect-src allows them. BOTH are required:
+# connect-src's `https://*.supabase.co` wildcard does not cover Kong on
+# http://localhost:8000, so without SUPABASE_URL every supabase-js call
+# (login included) is blocked by CSP inside the browser — the request never
+# reaches the network, so nothing shows up in any container's logs.
+# This is local-only `wrangler dev` (no --remote), so the generated config's
+# prod-only `routes`/`workers_dev: false` fields are inert — verified: no
+# Cloudflare auth/network reachout, fully headless.
+CMD ["npx", "wrangler", "dev", "--ip", "0.0.0.0", "--port", "8080", "--var", "API_URL:http://localhost:8787", "--var", "SUPABASE_URL:http://localhost:8000"]

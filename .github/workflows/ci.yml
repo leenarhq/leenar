@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  web:
+    name: Web — lint, type check, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Type check
+        working-directory: apps/web
+        run: npx tsc --noEmit
+      - name: Lint
+        working-directory: apps/web
+        run: npm run lint
+      - name: Build
+        working-directory: apps/web
+        env:
+          VITE_LEENAR_CLOUD: "false"
+        run: npm run build
+
+  api:
+    name: API Worker — type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Type check
+        working-directory: workers/api
+        run: npx tsc --noEmit
+
+  docker-compose-config:
+    name: Docker Compose — config lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate docker-compose.yml (syntax + env interpolation)
+        # docker-compose.yml lives at the repo root; docker/.env.example
+        # supplies every ${VAR} the compose file interpolates (the fixed
+        # demo Supabase keys plus blank placeholders for the
+        # docker/setup.sh-filled secrets) so `config` doesn't warn/fail on
+        # unset vars. This is a syntax/shape gate only — it does not build
+        # images or start containers (see SELF-HOST.md for the manual
+        # `docker compose up` smoke, still a manual step for now).
+        run: docker compose --env-file docker/.env.example config -q
+
+  secret-scan:
+    name: Secret scan — gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Run the gitleaks CLI directly (Apache-2.0, no license). The
+      # gitleaks-action@v2 requires a paid GITLEAKS_LICENSE for org-owned repos;
+      # the CLI does not. `gitleaks detect --source .` auto-detects the repo's
+      # .gitleaks.toml (default ruleset + the github-app PEM-strip allowlist).
+      - name: Install gitleaks
+        run: |
+          GITLEAKS_VERSION=8.30.1
+          mkdir -p "$RUNNER_TEMP/gitleaks"
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP/gitleaks" gitleaks
+      - name: Run gitleaks
+        run: '"$RUNNER_TEMP/gitleaks/gitleaks" detect --source . --no-git --redact --exit-code 1'

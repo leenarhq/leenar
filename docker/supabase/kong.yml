@@ -1,0 +1,34 @@
+_format_version: "2.1"
+# Global CORS, matching Supabase's official self-hosting kong.yml (which
+# attaches `- name: cors` to every service). Kong answers the OPTIONS
+# preflight itself (preflight_continue=false) and, with no explicit
+# config.headers, echoes back whatever the browser asked for in
+# Access-Control-Request-Headers.
+#
+# Not optional: without it the preflight falls through to GoTrue, whose own
+# CORS middleware does NOT allow the `apikey` request header. supabase-js
+# sends `apikey` on every /auth/v1 call, so the preflight comes back 204 with
+# no Access-Control-Allow-Origin and the browser blocks the request — login
+# surfaces as "network fetch error" while curl (no preflight) works fine.
+# PostgREST allows `apikey` on its own, so /rest/v1 masks the problem.
+plugins:
+  - name: cors
+services:
+  - name: auth-v1
+    url: http://auth:9999/
+    routes:
+      - name: auth-v1
+        strip_path: true
+        paths: ["/auth/v1"]
+  - name: rest-v1
+    url: http://rest:3000/
+    routes:
+      - name: rest-v1
+        strip_path: true
+        paths: ["/rest/v1"]
+  - name: realtime-v1
+    url: http://realtime:4000/socket/
+    routes:
+      - name: realtime-v1
+        strip_path: true
+        paths: ["/realtime/v1"]

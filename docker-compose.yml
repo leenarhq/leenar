@@ -1,0 +1,234 @@
+# Leenar open-core self-host — Supabase subset (db/auth/rest/realtime/kong)
+# + Leenar's own services (api, web).
+#
+# SHIPPED (core repo) layout: this file lives at the repo ROOT; the rest of
+# the Docker assets live under a top-level docker/ (docker/Dockerfile.api,
+# docker/Dockerfile.web, docker/api.capnp, docker/setup.sh,
+# docker/.env.example, docker/supabase/{kong.yml,init-migrations.sh}).
+# `scripts/open-core/export-core.sh` assembles this from two sources:
+#   - files whose content is IDENTICAL in the monorepo dev copy
+#     (scripts/open-core/docker/) — copied verbatim to their new path.
+#   - files whose content differs because of the depth change (this one,
+#     docker/Dockerfile.api, docker/setup.sh) — authored here in content/,
+#     same pattern as index.core.tsx / wrangler.core.toml.
+# The monorepo dev copy at scripts/open-core/docker/docker-compose.yml is a
+# SIBLING of docker-compose.yml there (both directly under
+# scripts/open-core/docker/) — that's a different depth than this shipped
+# root file, hence the different relative paths below (context: . instead of
+# ../../.., docker/Dockerfile.api instead of
+# scripts/open-core/docker/Dockerfile.api, ./supabase/migrations instead of
+# ../../../supabase/migrations, etc). Keep both in sync by hand when editing
+# service definitions — only the path depths differ between them.
+#
+# Image tags verified against Supabase's official self-hosting compose
+# (https://github.com/supabase/supabase/blob/master/docker/docker-compose.yml)
+# on 2026-08-07.
+#
+# Required env (see docker/.env.example, filled into repo-root .env by
+# docker/setup.sh — see SELF-HOST.md): SUPABASE_JWT_SECRET,
+# REALTIME_SECRET_KEY_BASE.
+services:
+  db:
+    image: supabase/postgres:17.6.1.136
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Core migrations (0001..0009), remapped by export-core.sh from
+      # supabase/core-migrations/ to supabase/migrations/ at the core repo
+      # root (this compose file's own directory).
+      #
+      # Mounted at core-migrations (NOT .../initdb.d/migrations): the
+      # supabase/postgres base image ships its OWN baked-in platform
+      # migrations at /docker-entrypoint-initdb.d/migrations/*.sql (auth
+      # schema ownership transfer, realtime schema creation, storage grants,
+      # ~50 files total — see its own migrate.sh). Mounting our core
+      # migrations directly over that path SHADOWS/hides all of those
+      # (bind mount replaces the directory), breaking GoTrue (auth.uid()
+      # ownership never transferred to supabase_auth_admin) and Realtime
+      # (its `_realtime` schema never created) — confirmed by direct
+      # testing. Applying our own migrations from a separate path via
+      # init-migrations.sh (below) avoids the collision.
+      - ./supabase/migrations:/docker-entrypoint-initdb.d/core-migrations:ro
+      - ./docker/supabase/init-migrations.sh:/docker-entrypoint-initdb.d/zz-run-migrations.sh:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  auth:
+    image: supabase/gotrue:v2.189.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:postgres@db:5432/postgres
+      API_EXTERNAL_URL: http://localhost:8000 # required key; the public Kong gateway URL
+      GOTRUE_SITE_URL: http://localhost:8080
+      GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      GOTRUE_JWT_EXP: "3600"
+      # Must match the `aud` claim workers/api's auth.ts (verifyJWT) requires
+      # (payload.aud !== 'authenticated' => 401 bad_claims). Without this,
+      # GoTrue v2.189.0 mints tokens with an EMPTY aud claim — confirmed live
+      # (a fresh signup's JWT had "aud":"") — which every authenticated API
+      # call then rejects. Found during this task's e2e smoke; not present in
+      # Task 2's original compose.
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_MAILER_AUTOCONFIRM: "true" # emailless signup — no SMTP required
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+
+  rest:
+    image: postgrest/postgrest:v14.12
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:postgres@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+
+  realtime:
+    image: supabase/realtime:v2.102.3
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: supabase_admin
+      DB_PASSWORD: postgres
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      METRICS_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      SECRET_KEY_BASE: ${REALTIME_SECRET_KEY_BASE}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: "10000"
+      APP_NAME: realtime
+      SEED_SELF_HOST: "true"
+      RUN_JANITOR: "true"
+
+  kong:
+    image: kong/kong:3.9.3
+    restart: unless-stopped
+    depends_on:
+      - auth
+      - rest
+      - realtime
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      # https://github.com/supabase/cli/issues/14 — avoids DNS resolution
+      # flakiness for the auth/rest/realtime upstreams on Docker's bridge network.
+      KONG_DNS_ORDER: LAST,A,CNAME
+    volumes:
+      - ./docker/supabase/kong.yml:/home/kong/kong.yml:ro
+    ports:
+      - "8000:8000"
+    # `kong health` is Kong's own CLI healthcheck (checks the running node's
+    # nginx worker/PID state in-process) — the kong/kong image ships neither
+    # curl nor wget, so this is the only reliable in-container check available.
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Leenar core API worker, running under workerd (see docker/Dockerfile.api
+  # + docker/api.capnp). Talks to Supabase through Kong via internal Docker
+  # DNS (SUPABASE_URL=http://kong:8000) — NOT localhost, which is only
+  # reachable from the host/browser, not from inside this container.
+  api:
+    build:
+      context: .                          # core repo root (bundle için workers/api + supabase gerekli)
+      dockerfile: docker/Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      kong:
+        condition: service_healthy
+    environment:
+      SUPABASE_URL: http://kong:8000
+      FRONTEND_URL: http://localhost:8080
+      API_URL: http://localhost:8787
+      CORS_ALLOWED_ORIGINS: http://localhost:8080
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      STATE_SIGNING_SECRET: ${STATE_SIGNING_SECRET}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - do-state:/app/do-state     # DO SQLite kalıcılığı
+    ports:
+      - "8787:8787"
+    # api's runtime image (node:22-bookworm-slim + workerd) has neither curl
+    # nor wget — it DOES have node, so probe /health with Node's own http
+    # client instead of shelling out to a tool that isn't there.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:8787/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Leenar core web (docker/Dockerfile.web): `vite build` + `wrangler dev`
+  # serving the @cloudflare/vite-plugin output (SSR entry + Workers Static
+  # Assets, no_bundle). VITE_* args are build-time — they get baked into the
+  # bundle, so they use localhost (the BROWSER's perspective), not the
+  # internal kong/api Docker DNS names the api service uses.
+  web:
+    build:
+      context: .                          # core repo root
+      dockerfile: docker/Dockerfile.web
+      args:
+        VITE_SUPABASE_URL: http://localhost:8000
+        VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+        VITE_API_URL: http://localhost:8787
+        VITE_LEENAR_CLOUD: "false"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    # Same reasoning as api's healthcheck: this image (node:22-bookworm-slim
+    # running `wrangler dev`) has node but no curl/wget. NOTE: `/` in the core
+    # build 307-redirects to `/console` (the marketing landing is cloud-only —
+    # see scripts/open-core/content/index.core.tsx), so this checks for "the
+    # server answered at all" (any non-5xx status), not a literal 200.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:8080/',r=>{process.exit(r.statusCode<500?0:1)}).on('error',()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+volumes:
+  db-data:
+  do-state:

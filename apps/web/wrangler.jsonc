@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "leenar-web",
+  "compatibility_date": "2025-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/worker.ts",
+  "routes": [{ "pattern": "leenar.net/*", "zone_name": "leenar.net" }],
+  "workers_dev": false,
+  // API origin the SPA calls — the edge worker's CSP connect-src reads this.
+  // (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY stay dashboard secrets.)
+  "vars": { "API_URL": "https://api.leenar.net" },
+}

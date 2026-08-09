@@ -1,0 +1,29 @@
+node_modules/
+.DS_Store
+dist/
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+.agents/
+!.env.example
+*.local
+.wrangler/
+*.tsbuildinfo
+test-results.xml
+workers/api/coverage/
+.tanstack/
+secrets.md
+supabase/.temp/
+path.md
+
+# Local tooling & generated reports
+.claude/
+.seo-agent/
+seo_*.md
+seo_*.json
+
+# Generated validation-harness dumps (regenerable via .validate/validate.sh);
+# keep shim.sql and validate.sh tracked.
+supabase/core-migrations/.validate/*.sql
+!supabase/core-migrations/.validate/shim.sql

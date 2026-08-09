@@ -1,0 +1,38 @@
+# Root .dockerignore — applies to any `docker build` run from the monorepo
+# root as build context (e.g. scripts/open-core/docker/Dockerfile.api built
+# directly from repo root instead of a staged/exported core tree).
+#
+# Without this, `COPY workers/api/ ./workers/api/` (or any future Dockerfile
+# doing the same) would pull real local secrets into the build-stage image
+# layer — retrievable later via `docker history` / BuildKit cache / a
+# `--target` save of that stage even though the final runtime stage never
+# copies them forward. Mirrors this repo's own .gitignore secret patterns.
+
+# Local secrets — never let any image build stage see these.
+#
+# NOTE: unlike .gitignore, Docker's .dockerignore does NOT match a bare
+# filename pattern (e.g. `.dev.vars`) at any depth — it only matches at the
+# context root (per Docker's documented filepath.Match-based semantics).
+# Every pattern below is listed both bare (root-level files like the repo's
+# own .env.key/.env.resend) and `**/`-prefixed (nested files like
+# workers/api/.dev.vars, apps/web/.env.local) — verified by direct build
+# reproduction, not assumed.
+.dev.vars
+**/.dev.vars
+.dev.vars.*
+**/.dev.vars.*
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Build artifacts / dependency trees — regenerated inside the build stage,
+# never needed (and often stale/host-specific) from the host filesystem.
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.wrangler/
+**/.wrangler/

@@ -10,8 +10,7 @@
     "build": "npm run build --workspace=apps/web",
     "lint": "npm run lint  --workspace=apps/web",
     "worker:dev": "npm run dev   --workspace=workers/api",
-    "worker:deploy": "npm run deploy --workspace=workers/api",
-    "sync-env-flow": "node scripts/sync-env-flow.mjs"
+    "worker:deploy": "npm run deploy --workspace=workers/api"
   },
   "devDependencies": {
     "vitest": "^4.1.10",

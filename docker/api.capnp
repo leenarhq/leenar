@@ -22,7 +22,7 @@ const config :Workerd.Config = (
     #     kalır → `certificate is not trusted; unable to get local issuer
     #     certificate`. trustBrowserCas = true, sistemdeki CA demetini kullanmasını
     #     söyler (Dockerfile.api runtime stage'inde ca-certificates kuruyor —
-    #     node:22-bookworm-slim'de /etc/ssl/certs BOŞ gelir; ikisi bir arada
+    #     node:24-bookworm-slim'de /etc/ssl/certs BOŞ gelir; ikisi bir arada
     #     olmadan çalışmaz).
     # Etkilediği her şey: OPENAI_API_KEY ile chat→canvas, GitHub/Vercel/Supabase
     # connector'ları — yani dışarı çıkan tüm provisioning yolu.
@@ -34,9 +34,10 @@ const config :Workerd.Config = (
 );
 
 const mainWorker :Workerd.Worker = (
-  # Keep in sync with scripts/open-core/wrangler.core.toml's compatibility_date
-  # (staged as workers/api/wrangler.toml) — this capnp, not the staged wrangler.toml,
-  # is what actually drives runtime compat here.
+  # Keep in sync with the API worker's wrangler.toml compatibility_date
+  # (workers/api/wrangler.toml) — this capnp, not wrangler.toml, is what
+  # actually drives runtime compat under workerd here. Enforced upstream by
+  # scripts/open-core/test/capnp-compat-date.test.mjs.
   compatibilityDate = "2024-09-23",
   compatibilityFlags = ["nodejs_compat"],
   modules = [

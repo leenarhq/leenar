@@ -209,7 +209,9 @@ function Sidebar() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
-    if (!session) return;
+    // /api/notifications is cloud-only; without this the self-host console
+    // would 404 every 30 seconds for a badge that can never be non-zero.
+    if (!isCloud || !session) return;
     const fetchCount = () => {
       getNotificationCount(session)
         .then((d) => setNotifCount(d.total))

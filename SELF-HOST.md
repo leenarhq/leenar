@@ -28,18 +28,40 @@ First boot builds the `api` and `web` images (a couple of minutes) and pulls
 the Supabase images. Wait for `docker compose ps` to show every service as
 `healthy`, or watch the logs settle (`docker compose logs -f`).
 
-## c. Sign up
+## c. Sign in
 
-Open <http://localhost:8080>. Sign up with any email + password — this stack
-has email confirmation disabled, so the account is active immediately (no
-inbox required).
+`setup.sh` generates a first account and prints it:
+
+```
+✓ Admin hesabı: admin@leenar.local / 9f2c…
+```
+
+A one-shot `bootstrap` service creates that account on first boot, so open
+<http://localhost:8080> and sign in with those credentials — no browser signup
+step. They live in `.env` as `LEENAR_ADMIN_EMAIL` / `LEENAR_ADMIN_PASSWORD`, so
+look them up there if you lose the terminal, or edit them *before* the first
+`docker compose up` to choose your own.
+
+Clearing either variable turns the bootstrap off; then create an account in the
+browser at <http://localhost:8080/signup> with any email + password. Email
+confirmation is disabled either way, so the account is active immediately with
+no inbox required.
 
 This build hides the Leenar Cloud invite gate, plus the sign-in controls that
 cannot work here: Google/GitHub OAuth (no provider apps are configured, so
 GoTrue rejects them) and password reset / magic link (the bundled auth
 container runs a noop mail client — it accepts the request and never sends
-anything). If you lose the password, create another account or reset it
-directly in Postgres.
+anything).
+
+Editing `LEENAR_ADMIN_PASSWORD` after the first boot does **not** reset the
+account. The bootstrap is create-only on purpose — re-applying the .env value
+on every `docker compose up` would silently undo a password you changed in the
+app. To reset one, go through Postgres:
+
+```bash
+docker compose exec db psql -U postgres -c \
+  "update auth.users set encrypted_password = crypt('newpassword', gen_salt('bf')) where email = 'admin@leenar.local';"
+```
 
 ## d. Chat → canvas
 
@@ -88,6 +110,11 @@ relying on it for anything beyond trying Leenar out:
   signup works with no SMTP setup. Anyone who can reach port 8080 can create
   an account with any email address, confirmed, without ever owning that
   inbox. Fine for a single-user local demo; not fine on a shared network.
+- **The first account's password sits in `.env` in plaintext.** `setup.sh`
+  generates a random 96-bit one, but it lands on disk in the same file as your
+  encryption key and provider tokens. Treat `.env` as a secret file, and change
+  the password from inside the app if this stack lives anywhere but your own
+  machine.
 - **No TLS, no domain, no backup strategy, no upgrade path.** This compose
   file is meant for `localhost`, run-and-throw-away or run-and-keep-locally
   usage — not a production install.
@@ -111,8 +138,10 @@ in the order a fresh user would hit it:
       Leenar Cloud–only route, not part of this self-host build — so use
       `-L` to follow the redirect, or curl `/console` directly.
 - [ ] `curl http://localhost:8787/health` → `200` (the API worker is up).
-- [ ] Sign up in the browser at `http://localhost:8080` — lands in the console
-      with no email-confirmation step.
+- [ ] `docker compose logs bootstrap` — shows `created admin@leenar.local`
+      (or `already exists` on a re-run).
+- [ ] Sign in at `http://localhost:8080` with the credentials `setup.sh`
+      printed — lands in the console with no email-confirmation step.
 - [ ] **(requires a real `OPENAI_API_KEY`)** In chat, ask for a simple service
       — a node should appear on the canvas.
 - [ ] **(requires a real Vercel + GitHub PAT, and creates real cloud

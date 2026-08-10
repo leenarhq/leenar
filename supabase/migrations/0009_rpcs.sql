@@ -8,7 +8,7 @@
 --
 -- Final-state bodies:
 --   claim_canvas_lock  — 033 → 039 (projects rename) → 056 (owner scope)
---   release_canvas_lock — 033 → 039 (projects rename)
+--   release_canvas_lock — 033 → 039 (projects rename) → 076 (owner scope)
 --   step_complete      — 073
 -- ============================================================
 
@@ -66,28 +66,37 @@ revoke execute on function public.claim_canvas_lock(uuid, uuid, text) from publi
 grant  execute on function public.claim_canvas_lock(uuid, uuid, text) to service_role;
 
 -- ── release_canvas_lock ─────────────────────────────────────
--- Clears the lock. No-op if already unlocked.
+-- Clears the lock. No-op if already unlocked. Owner-scoped (076) when the
+-- caller supplies p_user_id; nullable because some Durable Object exit paths
+-- recover a lock with no user in hand, and a lock that cannot be released is
+-- worse than one released unscoped. Returns whether a row was cleared.
+-- LANGUAGE sql with a named dollar tag so the body survives a hand-paste into
+-- the Supabase SQL editor (see migration 076 for the full reasoning).
 CREATE OR REPLACE FUNCTION public.release_canvas_lock(
-  p_project_id uuid
-) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER
+  p_project_id uuid,
+  p_user_id    uuid DEFAULT NULL
+) RETURNS boolean
+LANGUAGE sql SECURITY DEFINER
 SET search_path = public
-AS $$
-BEGIN
-  UPDATE public.projects
-  SET
-    canvas_locked_at    = null,
-    canvas_locked_by    = null,
-    canvas_lock_reason  = null
-  WHERE id = p_project_id;
-END;
-$$;
+AS $release_canvas_lock$
+  WITH cleared AS (
+    UPDATE public.projects
+       SET canvas_locked_at   = null,
+           canvas_locked_by   = null,
+           canvas_lock_reason = null
+     WHERE id = p_project_id
+       AND (p_user_id IS NULL OR user_id = p_user_id)
+    RETURNING 1
+  )
+  SELECT EXISTS (SELECT 1 FROM cleared)
+$release_canvas_lock$;
 
 -- Defense-in-depth: server-side/service_role only (see claim_canvas_lock note).
--- release has no in-body ownership check, so the grant revoke is what prevents a
--- self-hosted authenticated client from releasing another user's lock via PostgREST.
-revoke execute on function public.release_canvas_lock(uuid) from public, anon, authenticated;
-grant  execute on function public.release_canvas_lock(uuid) to service_role;
+-- The in-body owner check above only binds when the caller passes p_user_id, so
+-- this revoke is still what prevents a self-hosted authenticated client from
+-- calling it directly with p_user_id omitted.
+revoke execute on function public.release_canvas_lock(uuid, uuid) from public, anon, authenticated;
+grant  execute on function public.release_canvas_lock(uuid, uuid) to service_role;
 
 -- ── step_complete ───────────────────────────────────────────
 -- Collapses PATCH session + POST event + POST log into one call to

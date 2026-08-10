@@ -1,6 +1,6 @@
-# Root .dockerignore — applies to any `docker build` run from the monorepo
-# root as build context (e.g. scripts/open-core/docker/Dockerfile.api built
-# directly from repo root instead of a staged/exported core tree).
+# Root .dockerignore — applies to any `docker build` that uses the repo root
+# as its build context, which is how the self-host stack builds its api/web
+# images.
 #
 # Without this, `COPY workers/api/ ./workers/api/` (or any future Dockerfile
 # doing the same) would pull real local secrets into the build-stage image

@@ -1,21 +1,18 @@
-# SHIPPED (core repo) layout: this file lives at docker/Dockerfile.api, built
-# with the repo root as build context (see repo-root docker-compose.yml's
-# `api` service: context: ., dockerfile: docker/Dockerfile.api). Identical to
-# the monorepo dev copy (scripts/open-core/docker/Dockerfile.api) except the
-# COPY line below for api.capnp, which moves from
-# scripts/open-core/docker/api.capnp to docker/api.capnp in this layout. Keep
-# both in sync by hand when editing the build steps.
+# This file lives at docker/Dockerfile.api and is built with the repo root as
+# build context — see the root docker-compose.yml `api` service
+# (context: ., dockerfile: docker/Dockerfile.api). Every COPY path below is
+# therefore relative to the repo root, not to docker/.
 
 # ---- build stage: bundle the worker ----
-FROM node:22-bookworm-slim AS build
+FROM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY workers/api/ ./workers/api/
 COPY supabase/ ./supabase/
 WORKDIR /app/workers/api
 # --legacy-peer-deps: workers/api's own package.json pins wrangler@^3.65.0 (devDep),
-# but @sentry/cloudflare's peerOptional wants wrangler@^4.x. In the real monorepo
-# this resolves fine via the workspace-root lockfile (npm can see the whole tree);
-# here only workers/api/ is copied into the build context (no workspace root, no
+# but @sentry/cloudflare's peerOptional wants wrangler@^4.x. Installed from the
+# repo root this resolves fine via the workspace lockfile (npm can see the whole
+# tree); here only workers/api/ is copied into the build context (no workspace root, no
 # lockfile), so a plain `npm install` re-resolves from scratch and npm 7+ hard-fails
 # on the conflicting peerOptional range. wrangler is build-time-only (bundling), so
 # relaxing peer-dep enforcement here is safe — it doesn't change the emitted bundle.
@@ -23,9 +20,9 @@ RUN npm install --legacy-peer-deps
 RUN npx wrangler deploy --dry-run --outdir=dist
 
 # ---- runtime stage: workerd ----
-FROM node:22-bookworm-slim
+FROM node:24-bookworm-slim
 WORKDIR /app
-# ca-certificates ŞART: node:22-bookworm-slim'de /etc/ssl/certs BOŞ gelir. Build
+# ca-certificates ŞART: node:24-bookworm-slim'de /etc/ssl/certs BOŞ gelir. Build
 # stage'i bunu maskeliyor çünkü npm/node kendi gömülü CA demetini kullanır —
 # workerd kullanmaz, sistemdekine bakar. Yoksa api.capnp'deki
 # `trustBrowserCas = true` güvenecek kök bulamaz ve her outbound HTTPS

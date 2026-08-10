@@ -39,7 +39,18 @@ const account: Item[] = [
         } as Item,
       ]
     : []),
-  { to: "/console/settings/activity", label: "Activity", icon: History },
+  // Activity reads /api/audit-log, a cloud-only router. Core still WRITES
+  // audit rows (user_audit_log ships in core-migrations 0008) — only the read
+  // endpoint is missing, so this is a hide, not a data gap.
+  ...(isCloud
+    ? [
+        {
+          to: "/console/settings/activity",
+          label: "Activity",
+          icon: History,
+        } as Item,
+      ]
+    : []),
 ];
 const developer: Item[] = [
   { to: "/console/settings/api-tokens", label: "API Tokens", icon: Key },

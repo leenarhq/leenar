@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Loader2, AlertCircle, Copy, Check, RefreshCw } from "lucide-react";
 import { useAuth } from "../context/auth";
+import { isCloud } from "../lib/cloud";
 import {
   fetchProjectLogs,
   fetchBuildLogs,
@@ -450,7 +451,10 @@ function ServiceLogsPage() {
       try {
         const [logsData, incidentsData] = await Promise.all([
           fetchProjectLogs(id, session),
-          listAllIncidents(id, session),
+          // /api/incidents is cloud-only. Both promises share one catch, so an
+          // ungated 404 here failed the whole page — logs included — instead of
+          // just dropping the Incidents tab.
+          isCloud ? listAllIncidents(id, session) : Promise.resolve([]),
         ]);
         setLogs(logsData);
         setIncidents(incidentsData);

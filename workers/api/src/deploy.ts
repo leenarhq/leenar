@@ -140,7 +140,7 @@ export async function claimDeploySlot(
             .map((r) => r.project_id as string),
         );
         for (const pid of healedProjects) {
-          await releaseLock(env, pid).catch(() => {});
+          await releaseLock(env, pid, userId).catch(() => {});
         }
       }
     }
@@ -293,7 +293,7 @@ export async function deployWorkflow(
     // The DO never took ownership of the lock, so release it here — otherwise
     // the canvas stays locked forever. On success, provisioner.do.ts owns
     // releasing the lock on completion/failure/watchdog.
-    await releaseLock(env, projectId).catch(() => {});
+    await releaseLock(env, projectId, userId).catch(() => {});
     throw err;
   }
 }

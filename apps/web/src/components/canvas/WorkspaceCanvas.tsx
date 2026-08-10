@@ -733,7 +733,13 @@ function ProjectCanvasInner({ projectId, template }: ProjectCanvasInnerProps) {
     edges,
   );
 
-  useUsageMonitoring({ workflowId: projectId, nodes, session, setNodes });
+  useUsageMonitoring({
+    workflowId: projectId,
+    nodes,
+    session,
+    setNodes,
+    enabled: isCloud,
+  });
   useDriftMonitoring({
     workflowId: projectId,
     nodes,

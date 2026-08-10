@@ -1,24 +1,11 @@
 # Leenar open-core self-host — Supabase subset (db/auth/rest/realtime/kong)
 # + Leenar's own services (api, web).
 #
-# SHIPPED (core repo) layout: this file lives at the repo ROOT; the rest of
-# the Docker assets live under a top-level docker/ (docker/Dockerfile.api,
-# docker/Dockerfile.web, docker/api.capnp, docker/setup.sh,
-# docker/.env.example, docker/supabase/{kong.yml,init-migrations.sh}).
-# `scripts/open-core/export-core.sh` assembles this from two sources:
-#   - files whose content is IDENTICAL in the monorepo dev copy
-#     (scripts/open-core/docker/) — copied verbatim to their new path.
-#   - files whose content differs because of the depth change (this one,
-#     docker/Dockerfile.api, docker/setup.sh) — authored here in content/,
-#     same pattern as index.core.tsx / wrangler.core.toml.
-# The monorepo dev copy at scripts/open-core/docker/docker-compose.yml is a
-# SIBLING of docker-compose.yml there (both directly under
-# scripts/open-core/docker/) — that's a different depth than this shipped
-# root file, hence the different relative paths below (context: . instead of
-# ../../.., docker/Dockerfile.api instead of
-# scripts/open-core/docker/Dockerfile.api, ./supabase/migrations instead of
-# ../../../supabase/migrations, etc). Keep both in sync by hand when editing
-# service definitions — only the path depths differ between them.
+# Layout: this file lives at the repo ROOT and builds with `context: .`; the
+# rest of the Docker assets live under a top-level docker/
+# (docker/Dockerfile.api, docker/Dockerfile.web, docker/api.capnp,
+# docker/setup.sh, docker/.env.example,
+# docker/supabase/{kong.yml,init-migrations.sh}).
 #
 # Image tags verified against Supabase's official self-hosting compose
 # (https://github.com/supabase/supabase/blob/master/docker/docker-compose.yml)
@@ -79,6 +66,15 @@ services:
       # call then rejects. Found during this task's e2e smoke; not present in
       # Task 2's original compose.
       GOTRUE_JWT_AUD: authenticated
+      # Same class of bug as GOTRUE_JWT_AUD above, found the same way. Without
+      # it GoTrue mints tokens with an EMPTY `role` claim (confirmed live, for
+      # both browser signup and admin-created users), and `role` is what
+      # PostgREST and Realtime use to SET ROLE before evaluating RLS. Every
+      # direct-to-Supabase call from the browser then runs as nobody:
+      # `supabase.from("chats").delete()` and the `provision:*` realtime
+      # channel that streams deploy progress are the two that matter here.
+      # Supabase's own self-hosting compose sets this; ours had missed it.
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
       GOTRUE_MAILER_AUTOCONFIRM: "true" # emailless signup — no SMTP required
       GOTRUE_DISABLE_SIGNUP: "false"
       GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
@@ -148,6 +144,32 @@ services:
       retries: 10
       start_period: 10s
 
+  # One-shot: creates the first Leenar account from LEENAR_ADMIN_EMAIL /
+  # LEENAR_ADMIN_PASSWORD so a headless install needs no browser signup. A
+  # no-op when either is empty, and create-only on re-runs — see
+  # docker/bootstrap-admin.mjs for why this is a real GoTrue user rather than
+  # a gateway password like Supabase's own DASHBOARD_USERNAME/PASSWORD.
+  #
+  # node:24-bookworm-slim is the api/web build base, so it is already local:
+  # no extra image pull, and the script uses global fetch (no curl, same
+  # reasoning as the node-based healthchecks below).
+  bootstrap:
+    image: node:24-bookworm-slim
+    # Not `unless-stopped` like every other service here: this exits by design
+    # and must not be restarted in a loop.
+    restart: "no"
+    depends_on:
+      kong:
+        condition: service_healthy
+    environment:
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      LEENAR_ADMIN_EMAIL: ${LEENAR_ADMIN_EMAIL:-}
+      LEENAR_ADMIN_PASSWORD: ${LEENAR_ADMIN_PASSWORD:-}
+    volumes:
+      - ./docker/bootstrap-admin.mjs:/bootstrap-admin.mjs:ro
+    command: ["node", "/bootstrap-admin.mjs"]
+
   # Leenar core API worker, running under workerd (see docker/Dockerfile.api
   # + docker/api.capnp). Talks to Supabase through Kong via internal Docker
   # DNS (SUPABASE_URL=http://kong:8000) — NOT localhost, which is only
@@ -175,7 +197,7 @@ services:
       - do-state:/app/do-state     # DO SQLite kalıcılığı
     ports:
       - "8787:8787"
-    # api's runtime image (node:22-bookworm-slim + workerd) has neither curl
+    # api's runtime image (node:24-bookworm-slim + workerd) has neither curl
     # nor wget — it DOES have node, so probe /health with Node's own http
     # client instead of shelling out to a tool that isn't there.
     healthcheck:
@@ -211,11 +233,11 @@ services:
         condition: service_healthy
     ports:
       - "8080:8080"
-    # Same reasoning as api's healthcheck: this image (node:22-bookworm-slim
+    # Same reasoning as api's healthcheck: this image (node:24-bookworm-slim
     # running `wrangler dev`) has node but no curl/wget. NOTE: `/` in the core
-    # build 307-redirects to `/console` (the marketing landing is cloud-only —
-    # see scripts/open-core/content/index.core.tsx), so this checks for "the
-    # server answered at all" (any non-5xx status), not a literal 200.
+    # build 307-redirects to `/console` (the marketing landing is cloud-only),
+    # so this checks for "the server answered at all" (any non-5xx status),
+    # not a literal 200.
     healthcheck:
       test:
         [

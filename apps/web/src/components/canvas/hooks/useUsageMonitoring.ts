@@ -16,6 +16,8 @@ interface UseUsageMonitoringProps {
   nodes: Node[];
   session: Session | null;
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
+  /** Off in self-host builds: /api/usage is a cloud-only router. */
+  enabled?: boolean;
 }
 
 export function useUsageMonitoring({
@@ -23,6 +25,7 @@ export function useUsageMonitoring({
   nodes,
   session,
   setNodes,
+  enabled = true,
 }: UseUsageMonitoringProps) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const nodesRef = useRef(nodes);
@@ -32,7 +35,7 @@ export function useUsageMonitoring({
   }, [nodes]);
 
   useEffect(() => {
-    if (workflowId === "new" || !session) return;
+    if (!enabled || workflowId === "new" || !session) return;
 
     const hasProvisioned = nodesRef.current.some(
       (n) => (n.data as any)?.status === "provisioned",
@@ -104,5 +107,5 @@ export function useUsageMonitoring({
       if (timerRef.current) clearInterval(timerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workflowId, session]);
+  }, [workflowId, session, enabled]);
 }

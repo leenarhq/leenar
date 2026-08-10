@@ -288,7 +288,9 @@ export class ProvisionerDO implements DurableObject {
       }
       // Release the provision lock so the user can redeploy
       if (recovery.workflowId) {
-        await releaseLock(this.env, recovery.workflowId).catch(() => {});
+        await releaseLock(this.env, recovery.workflowId, recovery.userId).catch(
+          () => {},
+        );
       }
     } catch {
       /* best-effort */
@@ -473,7 +475,9 @@ export class ProvisionerDO implements DurableObject {
       // of a step iteration; a cancel after the last step never reaches it, so
       // without this the project stays locked until the 5-minute forceUnlock.
       if (watchdog?.workflowId) {
-        await releaseLock(this.env, watchdog.workflowId).catch(() => {});
+        await releaseLock(this.env, watchdog.workflowId, watchdog.userId).catch(
+          () => {},
+        );
       }
       return Response.json({ ok: true });
     }
@@ -989,7 +993,9 @@ export class ProvisionerDO implements DurableObject {
       await this.updateProjectStatus(watchdog.workflowId, "error").catch(
         () => {},
       );
-      await releaseLock(this.env, watchdog.workflowId).catch(() => {});
+      await releaseLock(this.env, watchdog.workflowId, watchdog.userId).catch(
+        () => {},
+      );
     }
     await this.state.storage.delete("watchdog").catch(() => {});
     await this.state.storage.delete(`ctx:${stackId}`).catch(() => {});
@@ -1066,7 +1072,9 @@ export class ProvisionerDO implements DurableObject {
         // (deleteAlarm above also disables watchdog recovery), leaving the project
         // stuck locked until the 5-minute forceUnlock window.
         if (loop.projectId)
-          await releaseLock(this.env, loop.projectId).catch(() => {});
+          await releaseLock(this.env, loop.projectId, loop.userId).catch(
+            () => {},
+          );
         return "done";
       }
 
@@ -1423,7 +1431,9 @@ export class ProvisionerDO implements DurableObject {
           // lock until the 5-minute forceUnlock window (deleteAlarm above also
           // disables watchdog recovery).
           if (loop.projectId)
-            await releaseLock(this.env, loop.projectId).catch(() => {});
+            await releaseLock(this.env, loop.projectId, loop.userId).catch(
+              () => {},
+            );
           return "done";
         }
 
@@ -1532,7 +1542,9 @@ export class ProvisionerDO implements DurableObject {
         await this.clearStepLoopState(loop.sessionId);
         await this.state.storage.deleteAlarm();
         if (loop.projectId)
-          await releaseLock(this.env, loop.projectId).catch(() => {});
+          await releaseLock(this.env, loop.projectId, loop.userId).catch(
+            () => {},
+          );
         return "done";
       }
     }
@@ -1608,7 +1620,7 @@ export class ProvisionerDO implements DurableObject {
     await this.state.storage.delete(`ctx:${loop.stackId}`);
     await this.state.storage.deleteAlarm();
     if (loop.projectId)
-      await releaseLock(this.env, loop.projectId).catch(() => {});
+      await releaseLock(this.env, loop.projectId, loop.userId).catch(() => {});
 
     // ── Best-effort post-success work — NEVER blocks the success signal ──
     // Wire Supabase Auth (Vercel URL + Resend SMTP). A hang here used to
@@ -1814,7 +1826,8 @@ export class ProvisionerDO implements DurableObject {
     await this.state.storage.delete("watchdog");
     await this.state.storage.delete(`ctx:${ids.stackId}`);
     await this.state.storage.deleteAlarm();
-    if (ids.projectId) await releaseLock(this.env, ids.projectId).catch(() => {});
+    if (ids.projectId)
+      await releaseLock(this.env, ids.projectId, ids.userId).catch(() => {});
     // Sole cleanup for the failure path — unlike finalizeSuccess, runOneStep
     // never clears the row early on a failure/cancel/timeout exit.
     await this.clearStepLoopState(ids.sessionId);

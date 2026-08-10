@@ -25,6 +25,15 @@ jobs:
       - name: Lint
         working-directory: apps/web
         run: npm run lint
+      - name: Test
+        working-directory: apps/web
+        # src/lib/supabase.ts throws at module load without these, taking down
+        # every suite that imports it transitively. Dummy literals — no test
+        # here makes a network call.
+        env:
+          VITE_SUPABASE_URL: https://test.supabase.co
+          VITE_SUPABASE_ANON_KEY: test-anon-key
+        run: npm test
       - name: Build
         working-directory: apps/web
         env:
@@ -32,7 +41,7 @@ jobs:
         run: npm run build
 
   api:
-    name: API Worker — type check
+    name: API Worker — type check & test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -45,6 +54,9 @@ jobs:
       - name: Type check
         working-directory: workers/api
         run: npx tsc --noEmit
+      - name: Test
+        working-directory: workers/api
+        run: npm test
 
   docker-compose-config:
     name: Docker Compose — config lint

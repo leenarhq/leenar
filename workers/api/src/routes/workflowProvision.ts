@@ -1208,7 +1208,7 @@ workflowProvision.post("/:projectId/provision", async (c) => {
     // DO takes ownership of the lock on success and releases it when done.
     // On any error path that never reached the DO, release it here.
     if (!doStarted) {
-      await releaseLock(c.env, projectId).catch(() => {});
+      await releaseLock(c.env, projectId, userId).catch(() => {});
     }
   }
 });

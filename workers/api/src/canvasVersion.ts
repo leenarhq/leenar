@@ -226,12 +226,33 @@ export async function claimLock(
   return data;
 }
 
-export async function releaseLock(env: Env, projectId: string): Promise<void> {
+/**
+ * Clears the provision lock on a project.
+ *
+ * Pass `userId` whenever the caller knows the owner: migration 076 scopes the
+ * UPDATE by it, so a wrong projectId can no longer clear a different tenant's
+ * lock. Omitting it keeps the old unscoped behaviour, which the DO's
+ * watchdog/recovery paths need — WatchdogState.userId is optional, and a lock
+ * that cannot be released is worse than one released unscoped (the project
+ * stays stuck until the 12-minute force-unlock).
+ *
+ * p_user_id is omitted rather than sent as null when unknown, so this still
+ * resolves against a database that has not taken 076 yet.
+ */
+export async function releaseLock(
+  env: Env,
+  projectId: string,
+  userId?: string,
+): Promise<void> {
   // RPC, not tenant-filterable via a PostgREST query filter.
   await systemQuery(env, "rpc/release_canvas_lock", {
     method: "POST",
     headers: { "Content-Type": "application/json" } as HeadersInit,
-    body: JSON.stringify({ p_project_id: projectId }),
+    body: JSON.stringify(
+      userId
+        ? { p_project_id: projectId, p_user_id: userId }
+        : { p_project_id: projectId },
+    ),
   }).catch(() => {});
 }
 
@@ -306,7 +327,7 @@ export async function forceUnlock(
     }
   }
 
-  await releaseLock(env, projectId);
+  await releaseLock(env, projectId, userId);
   return { ok: true };
 }
 

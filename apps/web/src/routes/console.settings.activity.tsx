@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { SettingsShell, SettingsHeader } from "../components/settings-shell";
 import { useAuth } from "../context/auth";
 import { fetchAuditLog } from "../lib/api";
+import { isCloud } from "../lib/cloud";
 import { timeAgo } from "../lib/utils";
 
 export const Route = createFileRoute("/console/settings/activity")({
@@ -143,11 +144,14 @@ function formatAuditDetails(
 
 function ActivityPage() {
   const { session } = useAuth();
+  // /api/audit-log is a cloud-only router. The nav item is hidden in core
+  // (settings-shell), but the route still exists, so don't fire a request that
+  // can only 404 — render the empty state instead.
   const query = useQuery({
     queryKey: ["audit-log"],
     queryFn: () =>
       session ? fetchAuditLog(session, { limit: 100 }) : Promise.resolve([]),
-    enabled: !!session,
+    enabled: !!session && isCloud,
   });
   const entries = query.data ?? [];
 

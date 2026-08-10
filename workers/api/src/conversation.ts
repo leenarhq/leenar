@@ -33,7 +33,11 @@ export interface AIUsage {
   outputTokens: number;
 }
 
-export interface ClaudeResponse {
+/**
+ * Parsed result of one assistant turn. Named for Claude historically; the
+ * provider has been OpenAI (gpt-4o) for a while — the shape is provider-neutral.
+ */
+export interface AssistantTurn {
   reply: string;
   proposal?: StackProposal;
   canvasUpdate?: CanvasUpdatePayload;
@@ -373,7 +377,7 @@ export async function callAI(
   language?: string,
   incidentContext?: string,
   newContext?: string,
-): Promise<ClaudeResponse> {
+): Promise<AssistantTurn> {
   const base = mode === "new" ? NEW_WORKSPACE_PROMPT : SYSTEM_PROMPT;
   const lang = language ? LANG_NAMES[language.toLowerCase().slice(0, 2)] : null;
   const baseWithLang = lang ? `Respond in ${lang}.\n\n${base}` : base;
@@ -450,7 +454,7 @@ export function parseAIResponse(
   text: string,
   _mode: "stack" | "new",
   usage: AIUsage,
-): ClaudeResponse {
+): AssistantTurn {
   // Stack/new mode: PROPOSAL first
   const proposalMatch = text.match(/<PROPOSAL>([\s\S]*?)<\/PROPOSAL>/i);
   if (proposalMatch) {

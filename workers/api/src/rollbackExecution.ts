@@ -210,7 +210,7 @@ export async function executeRollback(
     if (!statusPatch.ok)
       warnings.push(`status PATCH failed: ${statusPatch.status}`);
   } finally {
-    await releaseLock(env, projectId);
+    await releaseLock(env, projectId, userId);
   }
 
   const hasFailure = results.some((r) => r.action === "failed");

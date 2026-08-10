@@ -262,6 +262,19 @@ chat.post("/", async (c) => {
 // GET /api/chat/usage — returns today's usage for the current user
 chat.get("/usage", async (c) => {
   const userId = c.get("userId");
+
+  // An unlimited quota has nothing to count, and core has no ai_usage table —
+  // querying it is a guaranteed PGRST205 on every poll.
+  if (provisioningHooks.quota.dailyUserMsgLimit === Number.MAX_SAFE_INTEGER) {
+    return c.json({
+      messages: 0,
+      limit: provisioningHooks.quota.dailyUserMsgLimit,
+      remaining: provisioningHooks.quota.dailyUserMsgLimit,
+      estCostMicros: 0,
+      unlimited: true,
+    });
+  }
+
   const today = new Date().toISOString().slice(0, 10);
 
   const res = await fetch(
@@ -287,5 +300,6 @@ chat.get("/usage", async (c) => {
       provisioningHooks.quota.dailyUserMsgLimit - row.messages,
     ),
     estCostMicros: row.est_cost_micros,
+    unlimited: false,
   });
 });

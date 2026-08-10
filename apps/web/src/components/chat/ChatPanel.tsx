@@ -783,7 +783,9 @@ export function ChatPanel({
               </div>
             </div>
             <div className="flex items-center gap-1">
-              {aiUsage && (
+              {/* A counter against an unbounded limit tells the user nothing —
+                  the self-host build simply has no quota badge. */}
+              {aiUsage && !aiUsage.unlimited && (
                 <span
                   className={`text-[10.5px] font-mono px-1.5 py-0.5 rounded border ${
                     aiUsage.remaining === 0

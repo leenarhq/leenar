@@ -114,7 +114,13 @@ function cloudOnlyApiFunctions(): string[] {
     const name = /^([A-Za-z0-9_]+)/.exec(chunk)?.[1];
     if (!name) continue;
     const body = chunk.split(/\nexport /)[0];
-    const paths = [...body.matchAll(/["`](\/api\/[^"`]*)["`]/g)].map((m) =>
+    // Two forms: a plain string ("/api/x", `/api/x`) and a template literal
+    // whose leading interpolation is the API origin (`${API_URL}/api/x`).
+    // Matching only the first form silently skipped every agent helper.
+    const paths = [
+      ...body.matchAll(/["`](\/api\/[^"`]*)["`]/g),
+      ...body.matchAll(/`\$\{[A-Za-z0-9_]+\}(\/api\/[^"`]*)`/g),
+    ].map((m) =>
       // `${projectId}` and friends are opaque here — collapse to a placeholder
       // so /api/projects/${id}/cost matches the projects sub-path rule.
       m[1].replace(/\$\{[^}]*\}/g, "X"),
@@ -142,6 +148,20 @@ describe("cloud-only API consumers are gated behind isCloud", () => {
     expect(fns).toContain("getWorkflowUsage");
     expect(fns).toContain("getAutopilotPolicy");
     expect(fns.length).toBeGreaterThan(10);
+  });
+
+  it("detects paths written as `${API_URL}/api/...` template literals", () => {
+    // lib/api.ts writes agent paths as `${API_URL}/api/agent`, not "/api/agent".
+    // The original scraper anchored on a quote immediately followed by /api/,
+    // so every template-literal caller was invisible to this guard and its
+    // consumers were never checked. That is exactly how the canvas chat
+    // shipped to the core repo calling a cloud-only endpoint.
+    //
+    // sendDashboardAgent is the anchor because it is the one that must STAY
+    // cloud-only. sendCanvasAgent deliberately left this set when it moved to
+    // the core-served /api/canvas-agent — asserting on it here would have to be
+    // deleted by that very fix, which is not a regression test.
+    expect(fns).toContain("sendDashboardAgent");
   });
 
   it("has no ungated consumer outside the allowlist", () => {

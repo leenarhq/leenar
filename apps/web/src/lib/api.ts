@@ -70,6 +70,8 @@ export interface AIUsageInfo {
   limit: number;
   remaining: number;
   estCostMicros: number;
+  /** True when the deployment enforces no daily message cap (self-host). */
+  unlimited?: boolean;
 }
 
 async function apiFetch(
@@ -108,13 +110,14 @@ export async function sendChat(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages, mode, projectId }),
   });
-  const data = (await res.json()) as ChatResponse;
+  // Parse defensively: a non-2xx body is not necessarily JSON (Hono's 404 is
+  // text/plain), and parsing before checking status made JSON.parse throw first
+  // — the caller saw "Unexpected token '4'" instead of the 404 that happened.
+  const data = (await res.json().catch(() => null)) as ChatResponse | null;
   // Quota exceeded is not an application error — return it as a structured response
-  if (res.status === 429 && data.quotaExceeded) return data;
-  if (!res.ok) {
-    const msg = data.error ?? `HTTP ${res.status}`;
-    throw new Error(msg);
-  }
+  if (res.status === 429 && data?.quotaExceeded) return data;
+  if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+  if (!data) throw new Error("Malformed response from the API");
   return data;
 }
 
@@ -139,9 +142,12 @@ export async function sendDashboardAgent(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages, mode: "dashboard", projectId }),
   });
-  const data = (await res.json()) as DashboardAgentResponse;
-  if (res.status === 429 && data.quotaExceeded) return data;
-  if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+  const data = (await res
+    .json()
+    .catch(() => null)) as DashboardAgentResponse | null;
+  if (res.status === 429 && data?.quotaExceeded) return data;
+  if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+  if (!data) throw new Error("Malformed response from the API");
   return data;
 }
 
@@ -173,19 +179,21 @@ export async function sendCanvasAgent(
   session: Session,
   opts: { projectId?: string; canvas: { nodes: unknown[]; edges: unknown[] } },
 ): Promise<CanvasAgentResponse> {
-  const res = await authorizedFetch(`${API_URL}/api/agent`, {
+  const res = await authorizedFetch(`${API_URL}/api/canvas-agent`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       messages,
-      mode: "canvas",
       projectId: opts.projectId,
       canvas: opts.canvas,
     }),
   });
-  const data = (await res.json()) as CanvasAgentResponse;
-  if (res.status === 429 && data.quotaExceeded) return data;
-  if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+  const data = (await res
+    .json()
+    .catch(() => null)) as CanvasAgentResponse | null;
+  if (res.status === 429 && data?.quotaExceeded) return data;
+  if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+  if (!data) throw new Error("Malformed response from the API");
   return data;
 }
 

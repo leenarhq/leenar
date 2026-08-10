@@ -7,6 +7,7 @@ import { hooks } from "./hooks";
 import { oauth } from "./oauth";
 import { stacks } from "./stacks";
 import { chat } from "./chat";
+import { canvasAgentRouter } from "./canvasAgent";
 import { connections } from "./connections";
 import { workflowProvision } from "./workflowProvision";
 import { resend } from "./resend";
@@ -27,6 +28,7 @@ export function registerCoreRoutes(app: Hono<AppEnv>): void {
   app.route("/api/oauth", oauth);
   app.route("/api/stacks", stacks);
   app.route("/api/chat", chat);
+  app.route("/api/canvas-agent", canvasAgentRouter);
   app.route("/api/connections", connections);
   app.route("/api/projects", workflowProvision);
   app.route("/api/resend", resend);

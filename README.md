@@ -47,3 +47,12 @@ interface) for the full var list.
 
 [AGPL-3.0-only](./LICENSE). Network use is distribution — self-hosted
 modifications must be shared under the same license.
+
+## How this repository works
+
+Leenar Core is developed in a private monorepo alongside Leenar Cloud, and this
+repository is synced from it automatically on every upstream change. Commits here
+are produced by that sync and name the upstream change they carry.
+
+Pull requests are merged here and back-ported upstream by a maintainer — see
+[CONTRIBUTING.md](CONTRIBUTING.md).

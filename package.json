@@ -13,6 +13,7 @@
     "worker:deploy": "npm run deploy --workspace=workers/api"
   },
   "devDependencies": {
+    "vite": "^7.3.6",
     "vitest": "^4.1.10",
     "yaml": "^2.9.0"
   },

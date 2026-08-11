@@ -9,14 +9,14 @@ WORKDIR /app
 COPY workers/api/ ./workers/api/
 COPY supabase/ ./supabase/
 WORKDIR /app/workers/api
-# --legacy-peer-deps: workers/api's own package.json pins wrangler@^3.65.0 (devDep),
-# but @sentry/cloudflare's peerOptional wants wrangler@^4.x. Installed from the
-# repo root this resolves fine via the workspace lockfile (npm can see the whole
-# tree); here only workers/api/ is copied into the build context (no workspace root, no
-# lockfile), so a plain `npm install` re-resolves from scratch and npm 7+ hard-fails
-# on the conflicting peerOptional range. wrangler is build-time-only (bundling), so
-# relaxing peer-dep enforcement here is safe — it doesn't change the emitted bundle.
-RUN npm install --legacy-peer-deps
+# Only workers/api/ is copied into this build context — no workspace root and no
+# lockfile — so npm re-resolves from scratch instead of replaying the monorepo's
+# lockfile, and that resolution has to hold up on its own. It used to need
+# --legacy-peer-deps: workers/api pinned wrangler@^3 while @sentry/cloudflare's
+# peerOptional asked for ^4, and npm 7+ hard-fails on that. Those agree now, so
+# peer enforcement stays on — a future conflict should fail this image build
+# rather than be waived unnoticed.
+RUN npm install
 RUN npx wrangler deploy --dry-run --outdir=dist
 
 # ---- runtime stage: workerd ----

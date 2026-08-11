@@ -9,60 +9,40 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ConsoleRouteImport } from './routes/console'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ConsoleIndexRouteImport } from './routes/console.index'
-import { Route as ConsoleTemplatesRouteImport } from './routes/console.templates'
-import { Route as ConsoleNewRouteImport } from './routes/console.new'
-import { Route as ConsoleLogsRouteImport } from './routes/console.logs'
-import { Route as ConsoleIntegrationsRouteImport } from './routes/console.integrations'
-import { Route as ConsoleDeploymentsRouteImport } from './routes/console.deployments'
+import { Route as ConsoleRouteImport } from './routes/console'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as ConsoleSettingsSecurityRouteImport } from './routes/console.settings.security'
-import { Route as ConsoleSettingsProfileRouteImport } from './routes/console.settings.profile'
-import { Route as ConsoleSettingsNotificationsRouteImport } from './routes/console.settings.notifications'
-import { Route as ConsoleSettingsDangerRouteImport } from './routes/console.settings.danger'
-import { Route as ConsoleSettingsChannelsRouteImport } from './routes/console.settings.channels'
-import { Route as ConsoleSettingsAppearanceRouteImport } from './routes/console.settings.appearance'
-import { Route as ConsoleSettingsApiTokensRouteImport } from './routes/console.settings.api-tokens'
-import { Route as ConsoleSettingsActivityRouteImport } from './routes/console.settings.activity'
+import { Route as ConsoleIndexRouteImport } from './routes/console.index'
+import { Route as ConsoleDeploymentsRouteImport } from './routes/console.deployments'
+import { Route as ConsoleIntegrationsRouteImport } from './routes/console.integrations'
+import { Route as ConsoleLogsRouteImport } from './routes/console.logs'
+import { Route as ConsoleNewRouteImport } from './routes/console.new'
+import { Route as ConsoleTemplatesRouteImport } from './routes/console.templates'
 import { Route as ConsoleProjectsIdRouteImport } from './routes/console.projects.$id'
+import { Route as ConsoleSettingsActivityRouteImport } from './routes/console.settings.activity'
+import { Route as ConsoleSettingsApiTokensRouteImport } from './routes/console.settings.api-tokens'
+import { Route as ConsoleSettingsAppearanceRouteImport } from './routes/console.settings.appearance'
+import { Route as ConsoleSettingsChannelsRouteImport } from './routes/console.settings.channels'
+import { Route as ConsoleSettingsDangerRouteImport } from './routes/console.settings.danger'
+import { Route as ConsoleSettingsNotificationsRouteImport } from './routes/console.settings.notifications'
+import { Route as ConsoleSettingsProfileRouteImport } from './routes/console.settings.profile'
+import { Route as ConsoleSettingsSecurityRouteImport } from './routes/console.settings.security'
 import { Route as ConsoleProjectsIdIndexRouteImport } from './routes/console.projects.$id.index'
-import { Route as ConsoleProjectsIdServiceLogsRouteImport } from './routes/console.projects.$id.service-logs'
-import { Route as ConsoleProjectsIdOverviewRouteImport } from './routes/console.projects.$id.overview'
-import { Route as ConsoleProjectsIdLogsRouteImport } from './routes/console.projects.$id.logs'
-import { Route as ConsoleProjectsIdDeploymentsRouteImport } from './routes/console.projects.$id.deployments'
-import { Route as ConsoleProjectsIdDatabaseRouteImport } from './routes/console.projects.$id.database'
 import { Route as ConsoleProjectsIdCanvasRouteImport } from './routes/console.projects.$id.canvas'
+import { Route as ConsoleProjectsIdDatabaseRouteImport } from './routes/console.projects.$id.database'
+import { Route as ConsoleProjectsIdDeploymentsRouteImport } from './routes/console.projects.$id.deployments'
+import { Route as ConsoleProjectsIdLogsRouteImport } from './routes/console.projects.$id.logs'
+import { Route as ConsoleProjectsIdOverviewRouteImport } from './routes/console.projects.$id.overview'
+import { Route as ConsoleProjectsIdServiceLogsRouteImport } from './routes/console.projects.$id.service-logs'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConsoleRoute = ConsoleRouteImport.update({
@@ -70,9 +50,34 @@ const ConsoleRoute = ConsoleRouteImport.update({
   path: '/console',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConsoleIndexRoute = ConsoleIndexRouteImport.update({
@@ -80,19 +85,9 @@ const ConsoleIndexRoute = ConsoleIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ConsoleRoute,
 } as any)
-const ConsoleTemplatesRoute = ConsoleTemplatesRouteImport.update({
-  id: '/templates',
-  path: '/templates',
-  getParentRoute: () => ConsoleRoute,
-} as any)
-const ConsoleNewRoute = ConsoleNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => ConsoleRoute,
-} as any)
-const ConsoleLogsRoute = ConsoleLogsRouteImport.update({
-  id: '/logs',
-  path: '/logs',
+const ConsoleDeploymentsRoute = ConsoleDeploymentsRouteImport.update({
+  id: '/deployments',
+  path: '/deployments',
   getParentRoute: () => ConsoleRoute,
 } as any)
 const ConsoleIntegrationsRoute = ConsoleIntegrationsRouteImport.update({
@@ -100,24 +95,51 @@ const ConsoleIntegrationsRoute = ConsoleIntegrationsRouteImport.update({
   path: '/integrations',
   getParentRoute: () => ConsoleRoute,
 } as any)
-const ConsoleDeploymentsRoute = ConsoleDeploymentsRouteImport.update({
-  id: '/deployments',
-  path: '/deployments',
+const ConsoleLogsRoute = ConsoleLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
   getParentRoute: () => ConsoleRoute,
 } as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConsoleSettingsSecurityRoute = ConsoleSettingsSecurityRouteImport.update({
-  id: '/settings/security',
-  path: '/settings/security',
+const ConsoleNewRoute = ConsoleNewRouteImport.update({
+  id: '/new',
+  path: '/new',
   getParentRoute: () => ConsoleRoute,
 } as any)
-const ConsoleSettingsProfileRoute = ConsoleSettingsProfileRouteImport.update({
-  id: '/settings/profile',
-  path: '/settings/profile',
+const ConsoleTemplatesRoute = ConsoleTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => ConsoleRoute,
+} as any)
+const ConsoleProjectsIdRoute = ConsoleProjectsIdRouteImport.update({
+  id: '/projects/$id',
+  path: '/projects/$id',
+  getParentRoute: () => ConsoleRoute,
+} as any)
+const ConsoleSettingsActivityRoute = ConsoleSettingsActivityRouteImport.update({
+  id: '/settings/activity',
+  path: '/settings/activity',
+  getParentRoute: () => ConsoleRoute,
+} as any)
+const ConsoleSettingsApiTokensRoute =
+  ConsoleSettingsApiTokensRouteImport.update({
+    id: '/settings/api-tokens',
+    path: '/settings/api-tokens',
+    getParentRoute: () => ConsoleRoute,
+  } as any)
+const ConsoleSettingsAppearanceRoute =
+  ConsoleSettingsAppearanceRouteImport.update({
+    id: '/settings/appearance',
+    path: '/settings/appearance',
+    getParentRoute: () => ConsoleRoute,
+  } as any)
+const ConsoleSettingsChannelsRoute = ConsoleSettingsChannelsRouteImport.update({
+  id: '/settings/channels',
+  path: '/settings/channels',
+  getParentRoute: () => ConsoleRoute,
+} as any)
+const ConsoleSettingsDangerRoute = ConsoleSettingsDangerRouteImport.update({
+  id: '/settings/danger',
+  path: '/settings/danger',
   getParentRoute: () => ConsoleRoute,
 } as any)
 const ConsoleSettingsNotificationsRoute =
@@ -126,36 +148,14 @@ const ConsoleSettingsNotificationsRoute =
     path: '/settings/notifications',
     getParentRoute: () => ConsoleRoute,
   } as any)
-const ConsoleSettingsDangerRoute = ConsoleSettingsDangerRouteImport.update({
-  id: '/settings/danger',
-  path: '/settings/danger',
+const ConsoleSettingsProfileRoute = ConsoleSettingsProfileRouteImport.update({
+  id: '/settings/profile',
+  path: '/settings/profile',
   getParentRoute: () => ConsoleRoute,
 } as any)
-const ConsoleSettingsChannelsRoute = ConsoleSettingsChannelsRouteImport.update({
-  id: '/settings/channels',
-  path: '/settings/channels',
-  getParentRoute: () => ConsoleRoute,
-} as any)
-const ConsoleSettingsAppearanceRoute =
-  ConsoleSettingsAppearanceRouteImport.update({
-    id: '/settings/appearance',
-    path: '/settings/appearance',
-    getParentRoute: () => ConsoleRoute,
-  } as any)
-const ConsoleSettingsApiTokensRoute =
-  ConsoleSettingsApiTokensRouteImport.update({
-    id: '/settings/api-tokens',
-    path: '/settings/api-tokens',
-    getParentRoute: () => ConsoleRoute,
-  } as any)
-const ConsoleSettingsActivityRoute = ConsoleSettingsActivityRouteImport.update({
-  id: '/settings/activity',
-  path: '/settings/activity',
-  getParentRoute: () => ConsoleRoute,
-} as any)
-const ConsoleProjectsIdRoute = ConsoleProjectsIdRouteImport.update({
-  id: '/projects/$id',
-  path: '/projects/$id',
+const ConsoleSettingsSecurityRoute = ConsoleSettingsSecurityRouteImport.update({
+  id: '/settings/security',
+  path: '/settings/security',
   getParentRoute: () => ConsoleRoute,
 } as any)
 const ConsoleProjectsIdIndexRoute = ConsoleProjectsIdIndexRouteImport.update({
@@ -163,16 +163,21 @@ const ConsoleProjectsIdIndexRoute = ConsoleProjectsIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ConsoleProjectsIdRoute,
 } as any)
-const ConsoleProjectsIdServiceLogsRoute =
-  ConsoleProjectsIdServiceLogsRouteImport.update({
-    id: '/service-logs',
-    path: '/service-logs',
+const ConsoleProjectsIdCanvasRoute = ConsoleProjectsIdCanvasRouteImport.update({
+  id: '/canvas',
+  path: '/canvas',
+  getParentRoute: () => ConsoleProjectsIdRoute,
+} as any)
+const ConsoleProjectsIdDatabaseRoute =
+  ConsoleProjectsIdDatabaseRouteImport.update({
+    id: '/database',
+    path: '/database',
     getParentRoute: () => ConsoleProjectsIdRoute,
   } as any)
-const ConsoleProjectsIdOverviewRoute =
-  ConsoleProjectsIdOverviewRouteImport.update({
-    id: '/overview',
-    path: '/overview',
+const ConsoleProjectsIdDeploymentsRoute =
+  ConsoleProjectsIdDeploymentsRouteImport.update({
+    id: '/deployments',
+    path: '/deployments',
     getParentRoute: () => ConsoleProjectsIdRoute,
   } as any)
 const ConsoleProjectsIdLogsRoute = ConsoleProjectsIdLogsRouteImport.update({
@@ -180,23 +185,18 @@ const ConsoleProjectsIdLogsRoute = ConsoleProjectsIdLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => ConsoleProjectsIdRoute,
 } as any)
-const ConsoleProjectsIdDeploymentsRoute =
-  ConsoleProjectsIdDeploymentsRouteImport.update({
-    id: '/deployments',
-    path: '/deployments',
+const ConsoleProjectsIdOverviewRoute =
+  ConsoleProjectsIdOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
     getParentRoute: () => ConsoleProjectsIdRoute,
   } as any)
-const ConsoleProjectsIdDatabaseRoute =
-  ConsoleProjectsIdDatabaseRouteImport.update({
-    id: '/database',
-    path: '/database',
+const ConsoleProjectsIdServiceLogsRoute =
+  ConsoleProjectsIdServiceLogsRouteImport.update({
+    id: '/service-logs',
+    path: '/service-logs',
     getParentRoute: () => ConsoleProjectsIdRoute,
   } as any)
-const ConsoleProjectsIdCanvasRoute = ConsoleProjectsIdCanvasRouteImport.update({
-  id: '/canvas',
-  path: '/canvas',
-  getParentRoute: () => ConsoleProjectsIdRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -403,39 +403,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/console': {
@@ -445,11 +417,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsoleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/console/': {
@@ -459,25 +466,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsoleIndexRouteImport
       parentRoute: typeof ConsoleRoute
     }
-    '/console/templates': {
-      id: '/console/templates'
-      path: '/templates'
-      fullPath: '/console/templates'
-      preLoaderRoute: typeof ConsoleTemplatesRouteImport
-      parentRoute: typeof ConsoleRoute
-    }
-    '/console/new': {
-      id: '/console/new'
-      path: '/new'
-      fullPath: '/console/new'
-      preLoaderRoute: typeof ConsoleNewRouteImport
-      parentRoute: typeof ConsoleRoute
-    }
-    '/console/logs': {
-      id: '/console/logs'
-      path: '/logs'
-      fullPath: '/console/logs'
-      preLoaderRoute: typeof ConsoleLogsRouteImport
+    '/console/deployments': {
+      id: '/console/deployments'
+      path: '/deployments'
+      fullPath: '/console/deployments'
+      preLoaderRoute: typeof ConsoleDeploymentsRouteImport
       parentRoute: typeof ConsoleRoute
     }
     '/console/integrations': {
@@ -487,74 +480,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsoleIntegrationsRouteImport
       parentRoute: typeof ConsoleRoute
     }
-    '/console/deployments': {
-      id: '/console/deployments'
-      path: '/deployments'
-      fullPath: '/console/deployments'
-      preLoaderRoute: typeof ConsoleDeploymentsRouteImport
+    '/console/logs': {
+      id: '/console/logs'
+      path: '/logs'
+      fullPath: '/console/logs'
+      preLoaderRoute: typeof ConsoleLogsRouteImport
       parentRoute: typeof ConsoleRoute
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/console/settings/security': {
-      id: '/console/settings/security'
-      path: '/settings/security'
-      fullPath: '/console/settings/security'
-      preLoaderRoute: typeof ConsoleSettingsSecurityRouteImport
+    '/console/new': {
+      id: '/console/new'
+      path: '/new'
+      fullPath: '/console/new'
+      preLoaderRoute: typeof ConsoleNewRouteImport
       parentRoute: typeof ConsoleRoute
     }
-    '/console/settings/profile': {
-      id: '/console/settings/profile'
-      path: '/settings/profile'
-      fullPath: '/console/settings/profile'
-      preLoaderRoute: typeof ConsoleSettingsProfileRouteImport
-      parentRoute: typeof ConsoleRoute
-    }
-    '/console/settings/notifications': {
-      id: '/console/settings/notifications'
-      path: '/settings/notifications'
-      fullPath: '/console/settings/notifications'
-      preLoaderRoute: typeof ConsoleSettingsNotificationsRouteImport
-      parentRoute: typeof ConsoleRoute
-    }
-    '/console/settings/danger': {
-      id: '/console/settings/danger'
-      path: '/settings/danger'
-      fullPath: '/console/settings/danger'
-      preLoaderRoute: typeof ConsoleSettingsDangerRouteImport
-      parentRoute: typeof ConsoleRoute
-    }
-    '/console/settings/channels': {
-      id: '/console/settings/channels'
-      path: '/settings/channels'
-      fullPath: '/console/settings/channels'
-      preLoaderRoute: typeof ConsoleSettingsChannelsRouteImport
-      parentRoute: typeof ConsoleRoute
-    }
-    '/console/settings/appearance': {
-      id: '/console/settings/appearance'
-      path: '/settings/appearance'
-      fullPath: '/console/settings/appearance'
-      preLoaderRoute: typeof ConsoleSettingsAppearanceRouteImport
-      parentRoute: typeof ConsoleRoute
-    }
-    '/console/settings/api-tokens': {
-      id: '/console/settings/api-tokens'
-      path: '/settings/api-tokens'
-      fullPath: '/console/settings/api-tokens'
-      preLoaderRoute: typeof ConsoleSettingsApiTokensRouteImport
-      parentRoute: typeof ConsoleRoute
-    }
-    '/console/settings/activity': {
-      id: '/console/settings/activity'
-      path: '/settings/activity'
-      fullPath: '/console/settings/activity'
-      preLoaderRoute: typeof ConsoleSettingsActivityRouteImport
+    '/console/templates': {
+      id: '/console/templates'
+      path: '/templates'
+      fullPath: '/console/templates'
+      preLoaderRoute: typeof ConsoleTemplatesRouteImport
       parentRoute: typeof ConsoleRoute
     }
     '/console/projects/$id': {
@@ -564,6 +508,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsoleProjectsIdRouteImport
       parentRoute: typeof ConsoleRoute
     }
+    '/console/settings/activity': {
+      id: '/console/settings/activity'
+      path: '/settings/activity'
+      fullPath: '/console/settings/activity'
+      preLoaderRoute: typeof ConsoleSettingsActivityRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
+    '/console/settings/api-tokens': {
+      id: '/console/settings/api-tokens'
+      path: '/settings/api-tokens'
+      fullPath: '/console/settings/api-tokens'
+      preLoaderRoute: typeof ConsoleSettingsApiTokensRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
+    '/console/settings/appearance': {
+      id: '/console/settings/appearance'
+      path: '/settings/appearance'
+      fullPath: '/console/settings/appearance'
+      preLoaderRoute: typeof ConsoleSettingsAppearanceRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
+    '/console/settings/channels': {
+      id: '/console/settings/channels'
+      path: '/settings/channels'
+      fullPath: '/console/settings/channels'
+      preLoaderRoute: typeof ConsoleSettingsChannelsRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
+    '/console/settings/danger': {
+      id: '/console/settings/danger'
+      path: '/settings/danger'
+      fullPath: '/console/settings/danger'
+      preLoaderRoute: typeof ConsoleSettingsDangerRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
+    '/console/settings/notifications': {
+      id: '/console/settings/notifications'
+      path: '/settings/notifications'
+      fullPath: '/console/settings/notifications'
+      preLoaderRoute: typeof ConsoleSettingsNotificationsRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
+    '/console/settings/profile': {
+      id: '/console/settings/profile'
+      path: '/settings/profile'
+      fullPath: '/console/settings/profile'
+      preLoaderRoute: typeof ConsoleSettingsProfileRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
+    '/console/settings/security': {
+      id: '/console/settings/security'
+      path: '/settings/security'
+      fullPath: '/console/settings/security'
+      preLoaderRoute: typeof ConsoleSettingsSecurityRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
     '/console/projects/$id/': {
       id: '/console/projects/$id/'
       path: '/'
@@ -571,32 +571,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsoleProjectsIdIndexRouteImport
       parentRoute: typeof ConsoleProjectsIdRoute
     }
-    '/console/projects/$id/service-logs': {
-      id: '/console/projects/$id/service-logs'
-      path: '/service-logs'
-      fullPath: '/console/projects/$id/service-logs'
-      preLoaderRoute: typeof ConsoleProjectsIdServiceLogsRouteImport
-      parentRoute: typeof ConsoleProjectsIdRoute
-    }
-    '/console/projects/$id/overview': {
-      id: '/console/projects/$id/overview'
-      path: '/overview'
-      fullPath: '/console/projects/$id/overview'
-      preLoaderRoute: typeof ConsoleProjectsIdOverviewRouteImport
-      parentRoute: typeof ConsoleProjectsIdRoute
-    }
-    '/console/projects/$id/logs': {
-      id: '/console/projects/$id/logs'
-      path: '/logs'
-      fullPath: '/console/projects/$id/logs'
-      preLoaderRoute: typeof ConsoleProjectsIdLogsRouteImport
-      parentRoute: typeof ConsoleProjectsIdRoute
-    }
-    '/console/projects/$id/deployments': {
-      id: '/console/projects/$id/deployments'
-      path: '/deployments'
-      fullPath: '/console/projects/$id/deployments'
-      preLoaderRoute: typeof ConsoleProjectsIdDeploymentsRouteImport
+    '/console/projects/$id/canvas': {
+      id: '/console/projects/$id/canvas'
+      path: '/canvas'
+      fullPath: '/console/projects/$id/canvas'
+      preLoaderRoute: typeof ConsoleProjectsIdCanvasRouteImport
       parentRoute: typeof ConsoleProjectsIdRoute
     }
     '/console/projects/$id/database': {
@@ -606,11 +585,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsoleProjectsIdDatabaseRouteImport
       parentRoute: typeof ConsoleProjectsIdRoute
     }
-    '/console/projects/$id/canvas': {
-      id: '/console/projects/$id/canvas'
-      path: '/canvas'
-      fullPath: '/console/projects/$id/canvas'
-      preLoaderRoute: typeof ConsoleProjectsIdCanvasRouteImport
+    '/console/projects/$id/deployments': {
+      id: '/console/projects/$id/deployments'
+      path: '/deployments'
+      fullPath: '/console/projects/$id/deployments'
+      preLoaderRoute: typeof ConsoleProjectsIdDeploymentsRouteImport
+      parentRoute: typeof ConsoleProjectsIdRoute
+    }
+    '/console/projects/$id/logs': {
+      id: '/console/projects/$id/logs'
+      path: '/logs'
+      fullPath: '/console/projects/$id/logs'
+      preLoaderRoute: typeof ConsoleProjectsIdLogsRouteImport
+      parentRoute: typeof ConsoleProjectsIdRoute
+    }
+    '/console/projects/$id/overview': {
+      id: '/console/projects/$id/overview'
+      path: '/overview'
+      fullPath: '/console/projects/$id/overview'
+      preLoaderRoute: typeof ConsoleProjectsIdOverviewRouteImport
+      parentRoute: typeof ConsoleProjectsIdRoute
+    }
+    '/console/projects/$id/service-logs': {
+      id: '/console/projects/$id/service-logs'
+      path: '/service-logs'
+      fullPath: '/console/projects/$id/service-logs'
+      preLoaderRoute: typeof ConsoleProjectsIdServiceLogsRouteImport
       parentRoute: typeof ConsoleProjectsIdRoute
     }
   }

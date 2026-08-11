@@ -42,7 +42,7 @@ const mainWorker :Workerd.Worker = (
   compatibilityFlags = ["nodejs_compat"],
   modules = [
     # NOTE: bundle name verified against actual `wrangler deploy --dry-run
-    # --outdir=dist` output — wrangler 3.x emits `index.js` (not `worker.js`),
+    # --outdir=dist` output — wrangler 4.x emits `index.js` (not `worker.js`),
     # no additional chunks/.wasm. Keep this in sync with Dockerfile.api's
     # build stage if the wrangler version or entry point ever changes.
     (name = "index.js", esModule = embed "dist/index.js"),

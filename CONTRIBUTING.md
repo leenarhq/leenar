@@ -1,6 +1,6 @@
 # Contributing to Leenar Core
 
-Thanks for your interest.
+Thanks for your interest in Leenar Core.
 
 ## How this repository works
 

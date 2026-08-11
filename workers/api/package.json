@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@sentry/cloudflare": "^10.55.0",
-    "hono": "^4.4.0",
+    "hono": "^4.12.34",
     "tweetnacl": "^1.0.3",
     "tweetnacl-sealedbox-js": "^1.2.0",
     "zod": "^3.22.3"

@@ -34,21 +34,29 @@ applies only to those patent claims licensable by You that are necessarily
 infringed by Your Contribution alone or by combination of Your Contribution with
 the Work to which such Contribution was submitted.
 
-**4. Representations.** You represent that You are legally entitled to grant the
+**4. Leenar's Commitment.** In return for the licences in Sections 2 and 3,
+Leenar undertakes to publish Your Contribution in Leenar Core under
+AGPL-3.0-only. That publication cannot be taken back: every release of Leenar
+Core containing Your Contribution stays available under AGPL-3.0-only to
+everyone who received it, and nothing in this agreement gives Leenar the right
+to withdraw it. Leenar may licence later versions of Leenar Core under different
+terms; that does not affect releases already made.
+
+**5. Representations.** You represent that You are legally entitled to grant the
 above licences. If Your employer has rights to intellectual property that You
 create, You represent that You have received permission to make the
 Contributions on behalf of that employer, or that Your employer has waived such
 rights.
 
-**5. Original Work.** You represent that each of Your Contributions is Your
+**6. Original Work.** You represent that each of Your Contributions is Your
 original creation. You represent that Your Contribution submissions include
 complete details of any third-party licence or other restriction of which You
 are personally aware and which are associated with any part of Your
 Contributions.
 
-**6. No Warranty.** You are not expected to provide support for Your
+**7. No Warranty.** You are not expected to provide support for Your
 Contributions, except to the extent You desire to provide support. Your
 Contributions are provided "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
-**7. Notification.** You agree to notify Leenar of any facts or circumstances of
+**8. Notification.** You agree to notify Leenar of any facts or circumstances of
 which You become aware that would make these representations inaccurate.

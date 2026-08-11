@@ -20,6 +20,11 @@ AGPL-3.0-only and is built from the same source tree as the commercial Leenar
 Cloud, so we need a relicensing grant before a contribution can be merged. The
 text is in [CLA.md](CLA.md).
 
+It goes both ways. Section 4 commits us to publishing what you contribute here
+under AGPL-3.0-only, and to never withdrawing it: once a release contains your
+work, that release stays AGPL for everyone who has it. You are not signing away
+access to your own contribution.
+
 **Check the scope.** This repo is the interactive core: chat, canvas,
 provisioning, self-hosting. Always-on autonomy — autopilot, incident response,
 drift reconciliation, cost tracking, alerting — lives in Leenar Cloud and is out

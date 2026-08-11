@@ -6,17 +6,18 @@ set -e
 # of this script's own directory.
 cd "$(dirname "$0")"
 ROOT="$(cd .. && pwd)"
-if [ -f "$ROOT/.env" ]; then echo ".env zaten var, atlanıyor."; exit 0; fi
+if [ -f "$ROOT/.env" ]; then echo ".env already exists, leaving it alone."; exit 0; fi
 cp .env.example "$ROOT/.env"
-# Rastgele secret'ları doldur (macOS/Linux sed uyumlu):
+# Fill in the random secrets (portable between macOS and Linux):
 for key in ENCRYPTION_KEY INTERNAL_SECRET STATE_SIGNING_SECRET REALTIME_SECRET_KEY_BASE; do
   val=$(openssl rand -hex 32)
-  # boş "KEY=" satırını doldur
+  # replace the empty "KEY=" line
   perl -pi -e "s/^${key}=\$/${key}=${val}/" "$ROOT/.env"
 done
-# İlk hesabın şifresi. hex, base64 değil: perl s/// ile yazıldığı için base64'ün
-# "/" karakteri ayıracı bozardı. 24 hex karakter = 96 bit.
+# The first account's password. Hex rather than base64: it is written through
+# perl s///, and base64's "/" character would break the delimiter. 24 hex
+# characters = 96 bits.
 ADMIN_PASSWORD=$(openssl rand -hex 12)
 perl -pi -e "s/^LEENAR_ADMIN_PASSWORD=\$/LEENAR_ADMIN_PASSWORD=${ADMIN_PASSWORD}/" "$ROOT/.env"
-echo "✓ Admin hesabı: $(grep '^LEENAR_ADMIN_EMAIL=' .env.example | cut -d= -f2-) / ${ADMIN_PASSWORD}"
-echo "✓ .env oluşturuldu (repo root). OPENAI_API_KEY'i .env içine ekle, sonra: docker compose up"
+echo "✓ Admin account: $(grep '^LEENAR_ADMIN_EMAIL=' .env.example | cut -d= -f2-) / ${ADMIN_PASSWORD}"
+echo "✓ .env created (repo root). Add your OPENAI_API_KEY to it, then run: docker compose up"

@@ -3022,7 +3022,7 @@ export class ProvisionerDO implements DurableObject {
 
     // Resolve the app's public URL for Supabase Auth (site_url + redirect
     // allow-list). Prefer the connected Vercel frontend; fall back to a
-    // Cloudflare Worker that serves the app ("başka bir şey"). Only when NO
+    // Cloudflare Worker that serves the app. Only when NO
     // frontend is wired does this stay undefined — then configureSupabaseAuth
     // leaves Supabase's default (http://localhost:3000) untouched.
     const siteUrl =

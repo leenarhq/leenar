@@ -90,12 +90,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         {
           title:
-            "Leenar — Chat ile cloud stack kur, dakikalar içinde deploy et",
+            "Leenar — Build your cloud stack by chatting, deploy in minutes",
         },
         {
           name: "description",
           content:
-            "Leenar, sohbet yoluyla GitHub, Vercel, Supabase ve Resend'i otomatik olarak provisionlar. YAML yok, console arası geçiş yok.",
+            "Leenar provisions GitHub, Vercel, Supabase and Resend for you through chat. No YAML, no jumping between consoles.",
         },
         { name: "author", content: "Leenar" },
         {
@@ -104,7 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         },
         {
           property: "og:description",
-          content: "Stackini tanımla, geri kalanını biz halledelim.",
+          content: "Describe your stack. We handle the rest.",
         },
         { property: "og:type", content: "website" },
         { property: "og:image", content: "/og-image.png" },

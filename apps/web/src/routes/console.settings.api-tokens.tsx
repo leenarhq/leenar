@@ -53,7 +53,7 @@ function ApiTokensPage() {
       <div className="flex-1 p-8">
         <SettingsHeader
           title="API tokens"
-          subtitle="Leenar API'ya bu hesap adına erişim sağlamak için token oluşturun."
+          subtitle="Create tokens that grant access to the Leenar API on behalf of this account."
         />
 
         <div className="mt-6 flex items-center gap-2">

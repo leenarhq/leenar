@@ -194,7 +194,7 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     volumes:
-      - do-state:/app/do-state     # DO SQLite kalıcılığı
+      - do-state:/app/do-state     # DO SQLite persistence
     ports:
       - "8787:8787"
     # api's runtime image (node:24-bookworm-slim + workerd) has neither curl

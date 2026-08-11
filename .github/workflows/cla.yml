@@ -29,7 +29,14 @@ jobs:
     steps:
       - name: CLA assistant
         if: (github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') || github.event_name == 'pull_request_target'
-        uses: contributor-assistant/github-action@v2.6.1
+        # Pinned to a commit, not the v2.6.1 tag. This job runs on
+        # `pull_request_target`, so it executes with write access to this repo's
+        # pull requests and with CLA_SIGNATURES_TOKEN in its environment — on a
+        # public repo, anyone can open the pull request that triggers it. A tag
+        # is a movable pointer; if it were repointed, whatever it pointed at
+        # would inherit both. The commit SHA cannot be repointed. Bump this
+        # deliberately, after reading the diff.
+        uses: contributor-assistant/github-action@ca4a40a7d1004f18d9960b404b97e5f30a505a08 # v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_SIGNATURES_TOKEN }}

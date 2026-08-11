@@ -33,7 +33,7 @@ the Supabase images. Wait for `docker compose ps` to show every service as
 `setup.sh` generates a first account and prints it:
 
 ```
-✓ Admin hesabı: admin@leenar.local / 9f2c…
+✓ Admin account: admin@leenar.local / 9f2c…
 ```
 
 A one-shot `bootstrap` service creates that account on first boot, so open

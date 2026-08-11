@@ -3,29 +3,29 @@ using Workerd = import "/workerd/workerd.capnp";
 const config :Workerd.Config = (
   services = [
     (name = "main", worker = .mainWorker),
-    # PROVISIONER DO storage'ı bu diske yazılır (volume ile kalıcı).
+    # The PROVISIONER DO's storage is written to this disk (kept by a volume).
     (name = "do-disk", disk = (path = "do-state", writable = true)),
-    # workerd'in varsayılan globalOutbound'u ("internet") sadece public IP'lere
-    # izin verir (SSRF koruması) — Docker Compose'daki `kong` servisi private
-    # bridge-network IP'sinde yaşadığı için worker'ın fetch()'i bu default ile
-    # `connect() blocked by restrictPeers()` hatasıyla engellenir (doğrulandı:
-    # Task 3 smoke testinde reprodüklendi). "public" izniyse OPENAI_API_KEY ile
-    # yapılan gerçek internet çağrıları (api.openai.com) için gerekli — ikisi
-    # birden lazım.
+    # workerd's default globalOutbound ("internet") allows public IPs only, as
+    # an SSRF guard. The `kong` service in Docker Compose lives on a private
+    # bridge-network IP, so under that default the worker's fetch() is refused
+    # with `connect() blocked by restrictPeers()` (reproduced in the smoke
+    # test). "public" is what the real internet calls need — api.openai.com,
+    # reached with OPENAI_API_KEY. Both permissions are required.
     #
-    # tlsOptions ŞART ve iki parçası da ŞART (A/B/C deneyiyle doğrulandı):
-    #   - tlsOptions hiç yoksa workerd bu network servisini TLS'siz kurar ve HER
-    #     https:// fetch'i `expected tlsNetwork != nullptr; this HttpClient
-    #     doesn't support HTTPS` ile patlar. workerd'in dahili "internet"
-    #     servisinin aksine özel network servisleri TLS'i kendiliğinden almıyor.
-    #   - `tlsOptions = ()` tek başına yetmez: TLS açılır ama trust store boş
-    #     kalır → `certificate is not trusted; unable to get local issuer
-    #     certificate`. trustBrowserCas = true, sistemdeki CA demetini kullanmasını
-    #     söyler (Dockerfile.api runtime stage'inde ca-certificates kuruyor —
-    #     node:24-bookworm-slim'de /etc/ssl/certs BOŞ gelir; ikisi bir arada
-    #     olmadan çalışmaz).
-    # Etkilediği her şey: OPENAI_API_KEY ile chat→canvas, GitHub/Vercel/Supabase
-    # connector'ları — yani dışarı çıkan tüm provisioning yolu.
+    # tlsOptions is REQUIRED, and so is each of its two parts:
+    #   - With no tlsOptions at all, workerd builds this network service
+    #     without TLS and EVERY https:// fetch fails with `expected tlsNetwork
+    #     != nullptr; this HttpClient doesn't support HTTPS`. Unlike workerd's
+    #     built-in "internet" service, custom network services do not get TLS
+    #     on their own.
+    #   - `tlsOptions = ()` alone is not enough either: TLS comes up but the
+    #     trust store is empty → `certificate is not trusted; unable to get
+    #     local issuer certificate`. trustBrowserCas = true tells it to use the
+    #     system CA set — which is why Dockerfile.api's runtime stage installs
+    #     ca-certificates (node:24-bookworm-slim ships an EMPTY /etc/ssl/certs).
+    #     Neither half works without the other.
+    # What this affects: chat→canvas via OPENAI_API_KEY and the
+    # GitHub/Vercel/Supabase connectors — the entire outbound provisioning path.
     (name = "outbound", network = (allow = ["public", "private"], tlsOptions = (trustBrowserCas = true))),
   ],
   sockets = [
@@ -55,13 +55,13 @@ const mainWorker :Workerd.Worker = (
   bindings = [
     (name = "PROVISIONER", durableObjectNamespace = "ProvisionerDO"),
 
-    # Config vars (Task 3'te compose bunları set eder; smoke için placeholder).
+    # Config vars — set by docker-compose.yml.
     (name = "SUPABASE_URL",  fromEnvironment = "SUPABASE_URL"),
     (name = "FRONTEND_URL",  fromEnvironment = "FRONTEND_URL"),
     (name = "API_URL",       fromEnvironment = "API_URL"),
     (name = "CORS_ALLOWED_ORIGINS", fromEnvironment = "CORS_ALLOWED_ORIGINS"),
 
-    # Secrets — container env'inden.
+    # Secrets — taken from the container environment.
     (name = "ENCRYPTION_KEY",           fromEnvironment = "ENCRYPTION_KEY"),
     (name = "INTERNAL_SECRET",          fromEnvironment = "INTERNAL_SECRET"),
     (name = "STATE_SIGNING_SECRET",     fromEnvironment = "STATE_SIGNING_SECRET"),

@@ -98,7 +98,7 @@ export function createApp(cloudMiddleware: MiddlewareHandler[] = []): Hono<AppEn
     c.res.headers.set("Cache-Control", "no-store");
   });
 
-  // Auth middleware — tüm /api/* route'larına uygulanır
+  // Auth middleware — applied to every /api/* route
   app.use("/api/*", async (c, next) => {
     // OAuth callbacks come from GitHub/Vercel — no JWT
     if (/^\/api\/oauth\/[^/]+\/callback$/.test(c.req.path)) return next();

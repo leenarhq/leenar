@@ -22,12 +22,12 @@ RUN npx wrangler deploy --dry-run --outdir=dist
 # ---- runtime stage: workerd ----
 FROM node:24-bookworm-slim
 WORKDIR /app
-# ca-certificates ŞART: node:24-bookworm-slim'de /etc/ssl/certs BOŞ gelir. Build
-# stage'i bunu maskeliyor çünkü npm/node kendi gömülü CA demetini kullanır —
-# workerd kullanmaz, sistemdekine bakar. Yoksa api.capnp'deki
-# `trustBrowserCas = true` güvenecek kök bulamaz ve her outbound HTTPS
-# `certificate is not trusted; unable to get local issuer certificate` ile
-# ölür (OpenAI çağrısı → 500, chat→canvas hiç çalışmaz).
+# ca-certificates is REQUIRED: node:24-bookworm-slim ships an EMPTY
+# /etc/ssl/certs. The build stage masks this, because npm/node use their own
+# bundled CA set — workerd does not, it reads the system one. Without this,
+# `trustBrowserCas = true` in api.capnp finds no root to trust and every
+# outbound HTTPS call dies with `certificate is not trusted; unable to get
+# local issuer certificate` (the OpenAI call 500s, chat→canvas never works).
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 RUN npm install -g workerd@1.20260804.1

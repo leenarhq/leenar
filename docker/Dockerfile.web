@@ -27,7 +27,7 @@ COPY apps/web/package.json ./apps/web/package.json
 RUN npm ci --workspace=apps/web --include-workspace-root
 COPY apps/web/ ./apps/web/
 WORKDIR /app/apps/web
-# Build-time env — VITE_* değerleri bundle'a gömülür (Vite's loadEnv also
+# Build-time env — VITE_* values are baked into the bundle (Vite's loadEnv also
 # reads matching keys straight from process.env, so these ENV vars are picked
 # up with no .env file needed — see @lovable.dev/vite-tanstack-config's
 # envDefine step).

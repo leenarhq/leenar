@@ -665,7 +665,7 @@ export async function branchEnvironmentData(
 
   // ── Precondition 1: branch only from the default (trunk) environment ──────
   // Native branching maps a branch off a fully-provisioned trunk; branch-of-branch
-  // is explicitly out of scope (spec §2) — the branch would have no real parent
+  // is explicitly out of scope — the branch would have no real parent
   // resources to reference.
   if (!parent.is_default)
     return {
@@ -754,7 +754,7 @@ export async function branchEnvironmentData(
         slug,
         is_default: false,
         parent_id: envId,
-        // branch_key = the stable git-ref key for this branch (spec §2). Distinct
+        // branch_key = the stable git-ref key for this branch. Distinct
         // from slug (renameable); fixed once resources are created against it.
         branch_key: slug,
         canvas: parentCanvas,

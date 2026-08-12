@@ -102,8 +102,8 @@ export class ProvisionerDO implements DurableObject {
   // per run in `provision()` and read by `executeStep` to branch each provider
   // natively (git branch / Vercel preview) or into an isolated resource
   // (Supabase clone / suffixed CF names). `trunkState` holds the default env's
-  // live node state — the source refs a branch derives from (spec §6.3: read
-  // trunk live, never a stale snapshot). Reset at the top of every run.
+  // live node state — the source refs a branch derives from, read from trunk
+  // live rather than a stale snapshot. Reset at the top of every run.
   private branchCtx: {
     branchKey: string;
     trunkState: Record<string, import("./envHelpers").EnvNodeState>;

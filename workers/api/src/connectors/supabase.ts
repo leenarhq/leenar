@@ -337,7 +337,7 @@ export interface CloneSupabaseOutput extends SupabaseOutput {
 /**
  * Create an ISOLATED Supabase clone for a branch environment.
  *
- * Native Supabase Branching is deliberately NOT used (spec §2): it is
+ * Native Supabase Branching is deliberately NOT used: it is
  * migration-file driven, whereas Leenar applies schema imperatively, so a
  * native branch DB would come up empty. Instead we provision a brand-new
  * project and clone the source's LIVE schema via introspection

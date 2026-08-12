@@ -35,7 +35,7 @@ interface VercelEnvInfo {
   type?: string;
 }
 
-// §3.4: per-provision memoization — keyed by projectId, TTL 60s
+// Per-provision memoization — keyed by projectId, TTL 60s
 const _envCache = new Map<string, { map: Map<string, VercelEnvInfo>; ts: number }>();
 
 /** Fetch existing env vars (key → {id, type}) for a Vercel project. Results cached 60 s per project. */

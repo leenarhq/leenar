@@ -14,7 +14,7 @@
  *  Capability (can we branch natively?) is resolved separately at deploy time
  *  in `capabilities.ts` — this module only maps (provider, capability) → mode.
  *  Keeping it pure makes the strategy matrix trivially testable and keeps the
- *  design decisions (spec §2) in one auditable place.
+ *  design decisions in one auditable place.
  */
 
 export type BranchMode = "native" | "isolated";
@@ -39,7 +39,7 @@ export interface BranchDecision {
   namingSuffix: string;
 }
 
-/** Map (provider, capability) → branch mode. Locked decisions (spec §2):
+/** Map (provider, capability) → branch mode. Locked decisions:
  *  - GitHub    → ALWAYS native (git branch off the default branch).
  *  - Vercel    → native if git-linked, else isolated (separate project).
  *  - Supabase  → ALWAYS isolated (schema-clone). Native Supabase Branching is

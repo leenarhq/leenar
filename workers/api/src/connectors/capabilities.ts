@@ -3,8 +3,8 @@
  *  Whether a provider can branch NATIVELY (vs falling back to an isolated
  *  resource) is a live property of the user's account — a Vercel↔GitHub link
  *  can be added or revoked at any time. So we resolve it AT DEPLOY TIME, never
- *  freezing it at branch-create time (spec §6.3 — avoids a stale decision that
- *  no longer matches reality). This module does the I/O; `branchStrategy.ts`
+ *  freezing it at branch-create time — a decision frozen then no longer
+ *  matches reality later. This module does the I/O; `branchStrategy.ts`
  *  maps the resolved capability to a concrete mode + naming suffix.
  */
 import {

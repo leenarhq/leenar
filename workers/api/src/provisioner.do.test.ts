@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// ── Task 7 (P1.3): cloudflare-workers dispatch+poll — connector mocks ───────
+// ── cloudflare-workers dispatch+poll — connector mocks ──────────────────────
 // executeStep's cloudflare-workers branch calls straight into the connectors
 // layer (github-app.ts, github-actions-secrets.ts, cloudflare.ts) — mock those
 // modules directly rather than fetch, since this step's logic (repo parsing,
@@ -50,7 +50,7 @@ vi.mock('./connectors/supabase', async () => {
   return {
     ...actual,
     deprovisionSupabase: vi.fn().mockResolvedValue(undefined),
-    // Task 3.3: redeploy reconciles the canvas snapshot from live schema via
+    // Redeploy reconciles the canvas snapshot from live schema via
     // refreshNodeSnapshot instead of pushing seed columns with
     // applySupabaseAlterColumns (now removed). Spy on it here so tests can
     // assert it's invoked non-fatally, without needing to stub the
@@ -110,7 +110,7 @@ function makeDO() {
   return new ProvisionerDO(mockState, mockEnv) as any
 }
 
-describe('ProvisionerDO status persistence (P0.1 retry + defensive wrap)', () => {
+describe('ProvisionerDO status persistence (retry + defensive wrap)', () => {
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
@@ -277,7 +277,7 @@ describe('ProvisionerDO status persistence (P0.1 retry + defensive wrap)', () =>
   })
 })
 
-// --- Task 5 (P1.0): Cloudflare Worker preflight — must fail fast, before any provisioning ---
+// --- Cloudflare Worker preflight — must fail fast, before any provisioning ---
 describe('ProvisionerDO.runWithSession — Cloudflare Worker GitHub-repo preflight', () => {
   let fetchMock: ReturnType<typeof vi.fn>
 
@@ -449,7 +449,7 @@ describe('ProvisionerDO.runWithSession — Cloudflare Worker GitHub-repo preflig
   })
 })
 
-// --- Task 7 (P1.3): cloudflare-workers step — dispatch + poll ---
+// --- cloudflare-workers step — dispatch + poll ---
 describe('ProvisionerDO.executeStep — cloudflare-workers dispatch + poll', () => {
   beforeEach(() => {
     vi.stubGlobal('scheduler', { wait: vi.fn(async () => {}) })
@@ -761,7 +761,7 @@ describe('ProvisionerDO.executeStep — cloudflare-workers dispatch + poll', () 
   })
 })
 
-// --- Task 11 (P2.2): R2 credentials-pending warning is gated on real edge
+// --- R2 credentials-pending warning is gated on real edge
 // topology — only fires for a genuine R2 -> Vercel edge, and names the real
 // target node instead of a hardcoded "Vercel" string. ---
 describe('ProvisionerDO.executeStep — cloudflare-r2 R2CredentialsPending warning gating', () => {
@@ -957,7 +957,7 @@ describe('ProvisionerDO.executeStep — cloudflare-r2 R2CredentialsPending warni
   })
 })
 
-// --- Task 10 (P2.1): SB_KEY_MAP multi-Supabase override reaches both
+// --- SB_KEY_MAP multi-Supabase override reaches both
 // NEXT_PUBLIC_* and VITE_* naming conventions, not just Next.js's ---
 describe('ProvisionerDO.executeStep — SB_KEY_MAP multi-Supabase override (framework-aware names)', () => {
   function makeInjectStep(overrides: Partial<Record<string, unknown>> = {}) {
@@ -1009,7 +1009,7 @@ describe('ProvisionerDO.executeStep — SB_KEY_MAP multi-Supabase override (fram
   })
 })
 
-// --- Task 8 (P1.4): github_run_id/github_run_url threaded into providerRefs +
+// --- github_run_id/github_run_url threaded into providerRefs +
 // StepCompleted, and must survive updateStepOutput's SENSITIVE_KEYS denylist ---
 describe('ProvisionerDO.runWithSession — cloudflare-workers github_run_id/github_run_url propagation', () => {
   let fetchMock: ReturnType<typeof vi.fn>
@@ -1150,11 +1150,11 @@ describe('ProvisionerDO.runWithSession — cloudflare-workers github_run_id/gith
   })
 })
 
-// --- Task 8 (P1.4): updateStep's output SENSITIVE_KEYS denylist must not strip
+// --- updateStep's output SENSITIVE_KEYS denylist must not strip
 // github_run_id/github_run_url — otherwise the MCP round-trip (provisioning_sessions.steps)
 // would silently lose this data even though providerRefs/StepCompleted carry it.
 // (updateStepOutput was folded into updateStep's optional `output` param to cut
-// a subrequest per step — see commit 320656a1.) ---
+// a subrequest per step.) ---
 describe('ProvisionerDO.updateStep output — github_run_id/github_run_url survive the SENSITIVE_KEYS denylist', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -1736,12 +1736,12 @@ describe('ProvisionerDO.getUserToken — expired credentials', () => {
   })
 })
 
-// --- Task 3.3 (Phase 3 live-authoritative flip): redeploy no longer pushes the
+// --- Live-authoritative flip: redeploy no longer pushes the
 // canvas seed's columns into the live DB via applySupabaseAlterColumns (removed
 // entirely — see connectors/supabase.ts). Instead the configure step only
 // creates brand-new tables (CREATE TABLE IF NOT EXISTS) and then reconciles the
 // canvas snapshot from the live schema via refreshNodeSnapshot, non-fatally. ---
-describe('ProvisionerDO.executeStep — supabase configure (redeploy) — live-authoritative (Task 3.3)', () => {
+describe('ProvisionerDO.executeStep — supabase configure (redeploy) — live-authoritative', () => {
   let fetchMock: ReturnType<typeof vi.fn>
   let queryBodies: string[]
 
@@ -1774,7 +1774,7 @@ describe('ProvisionerDO.executeStep — supabase configure (redeploy) — live-a
         supabaseProjectRef: 'abcdefghijklmnop',
         // A seed column ("bio") absent from the live DB — under the old
         // canvas-as-authority behavior this would trigger an ALTER TABLE ADD
-        // COLUMN; under Task 3.3 it must NOT reach live at all.
+        // COLUMN; under live-authoritative rules it must NOT reach live at all.
         tables: [
           {
             name: 'profiles',
@@ -1825,11 +1825,11 @@ describe('ProvisionerDO.executeStep — supabase configure (redeploy) — live-a
   })
 
   it('is non-fatal when the seed carries an editor-unsupported live type (inet)', async () => {
-    // Whole-branch review (Phase 3) finding: once a live-introspected schema is
-    // written back into node.data.tables (via the Database page's load-time
-    // reconciliation), the redeploy seed can contain types the editor DDL
-    // builder rejects (e.g. a raw-SQL `inet` column) — the very live types
-    // Phase 3 exists to preserve. buildDDL throws on those. The configure step
+    // Once a live-introspected schema is written back into node.data.tables
+    // (via the Database page's load-time reconciliation), the redeploy seed
+    // can contain types the editor DDL builder rejects (e.g. a raw-SQL `inet`
+    // column) — the very live types live-authoritative mode exists to
+    // preserve. buildDDL throws on those. The configure step
     // must swallow that (live DB untouched, no DDL sent) rather than fail the
     // deploy.
     const do_ = makeDO()
@@ -1858,10 +1858,10 @@ describe('ProvisionerDO.executeStep — supabase configure (redeploy) — live-a
   })
 })
 
-// --- Task 3.3: fresh Supabase provision no longer produces applied_columns_json
+// --- Fresh Supabase provision no longer produces applied_columns_json
 // (the "mark all authored columns as applied" bookkeeping is retired), while
 // first-provision schema application itself is unchanged. ---
-describe('ProvisionerDO.executeStep — supabase provision (fresh) — no applied_columns_json (Task 3.3)', () => {
+describe('ProvisionerDO.executeStep — supabase provision (fresh) — no applied_columns_json', () => {
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {

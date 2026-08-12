@@ -1,7 +1,7 @@
 /**
- * Task 13 (E2·T13) — automated cross-tenant isolation test.
+ * Automated cross-tenant isolation test.
  *
- * Stand-in for the plan's manual two-account probe: proves a caller
+ * Stand-in for a manual two-account probe: proves a caller
  * authenticated as user A cannot read user B's data through the tenancy
  * layer, across multiple resource types and both the data-function and
  * route (HTTP) levels.

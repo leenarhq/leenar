@@ -3,7 +3,7 @@
 -- ============================================================
 -- project_deployments (originally workflow_deployments; renamed in
 -- 038, legacy constraint/index names retained).
--- Sources: 002, 020, 038, 040, 041, 045.
+-- Upstream sources: 002, 020, 038, 040, 041, 045.
 -- ============================================================
 
 CREATE TABLE public.project_deployments (

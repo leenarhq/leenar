@@ -9,9 +9,9 @@
 -- step_complete RPC, insights collectors) reads/writes the 006
 -- columns stack_id/session_id/level/service/message/metadata. This
 -- table is validated by column-match against 006, not by the replay
--- diff (see plan Task 1 corrections).
+-- diff.
 --
--- Sources: 003 (sessions), 035 (events), 006 (deployment_logs).
+-- Upstream sources: 003 (sessions), 035 (events), 006 (deployment_logs).
 -- ============================================================
 
 -- ── provisioning_sessions ───────────────────────────────────

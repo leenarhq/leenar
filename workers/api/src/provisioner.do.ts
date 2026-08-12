@@ -365,7 +365,7 @@ export class ProvisionerDO implements DurableObject {
           // this timeout-triggered write (or vice versa) with stale data. This
           // top-level catch is therefore the single guaranteed terminal writer
           // for the timeout path, and — now that updateSession/updateStatus
-          // retry internally (P0.1) — the most reliable place overall to land
+          // retry internally — the most reliable place overall to land
           // a final status even if an earlier write attempt failed.
           .catch(async (err) => {
             createLogger({ session: sessionId, stack: stackId }).error(
@@ -780,12 +780,9 @@ export class ProvisionerDO implements DurableObject {
       // failure — those branches inside runOneStep already wrote their own
       // terminal state and cleared stepLoop state, so bail here) OR the
       // last step just succeeded (nextStepIndex reached the end — the
-      // existing finalize section immediately below this block, unchanged
-      // from before this refactor, still needs to run). Distinguish by
-      // whether steps remain — mirrors the same fix Task 2's implementer
-      // already had to make to its own (now-removed) while-loop scaffold
-      // for the identical reason; see that task's report for the two
-      // existing tests this exact bug broke there.
+      // finalize section immediately below this block still needs to run).
+      // Distinguish by whether steps remain: conflating the two returns early
+      // from a successful final step and the stack never finalizes.
       if (result === 'done' && loop.nextStepIndex < loop.stack.steps.length) {
         return;
       }
@@ -2448,7 +2445,8 @@ export class ProvisionerDO implements DurableObject {
 
     if (step.service === "cloudflare-workers") {
       // 1. Resolve the repo — step.params.existing_repo is guaranteed present
-      // by the preflight (Task 5); normalize it the same way the Vercel step does.
+      // by the Cloudflare Worker preflight; normalize it the same way the Vercel
+      // step does.
       const rawRepo = (step.params as any)?.existing_repo as string | undefined;
       const parsedRepo = rawRepo
         ? rawRepo

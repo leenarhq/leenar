@@ -584,7 +584,7 @@ export function parsePgTextArray(v: unknown): string[] {
 
 /**
  * Reads the live Postgres catalog for a provisioned Supabase project's
- * `public` schema (Phase 1 scope only — no other schemas).
+ * `public` schema. Scoped to `public` only — no other schemas.
  *
  * Issues one `runQuery` per catalog view in a FIXED order (columns, primary
  * keys, uniques, foreign keys, indexes, RLS, policies) via `Promise.all`.
@@ -694,8 +694,8 @@ export async function introspectSchema(
 }
 
 /**
- * Reads which of the CLOSED extension whitelist (Task 8's
- * schema/extensions.ts) are installed on a provisioned Supabase project, via
+ * Reads which of the CLOSED extension whitelist (schema/extensions.ts) are
+ * installed on a provisioned Supabase project, via
  * `pg_extension`. Separate from `introspectSchema` — extensions are fetched
  * on-demand by their own tab, on a different cadence than the Tables/SQL
  * schema view.
@@ -757,15 +757,15 @@ function assertSafeCatalogFragment(label: string, val: string): void {
  * column. This builder preserves every live column/type/default/index
  * verbatim so a branch clone faithfully mirrors the source's actual schema.
  *
- * Known limitations (documented here, not implemented — see task brief D3):
+ * Known limitations (documented here, not implemented):
  *  - Foreign keys are NOT replayed: `LiveColumn.isForeignKey` is a bare bool
  *    with no referenced table/column, so FK constraints can't be faithfully
- *    rebuilt from introspection alone (needs a richer introspection query —
- *    Phase 4).
+ *    rebuilt from introspection alone — that needs a richer introspection
+ *    query than this one issues.
  *  - RLS *policies* are NOT replayed, only the table-level RLS-enabled flag.
  *    Cloning `ENABLE ROW LEVEL SECURITY` without policies yields deny-all on
  *    the clone, which matches the source's table-level state (policies
- *    themselves are Phase 4 introspection scope).
+ *    themselves are outside what introspectSchema reads).
  *  - Sequence-backed defaults (`nextval(...)`) are skipped: the sequence
  *    they reference won't exist in the fresh clone, so replaying them would
  *    break the CREATE TABLE. Everything else (gen_random_uuid(), now(),
@@ -835,12 +835,12 @@ export async function executeSql(
 }
 
 /**
- * Applies a single typed schema mutation (Task 2.1's `SchemaMutation`)
+ * Applies a single typed `SchemaMutation`
  * against a live Supabase project. Builds the DDL via `buildMutationDDL`
  * (which throws on invalid identifiers / reserved columns / bad types —
  * that throw is left to propagate uncaught) and always executes in
  * "write" mode. No edge/destructive gating here — that lives at the
- * route/MCP layer, consistent with Phase 1's `mode`-is-the-gate model.
+ * route/MCP layer, consistent with the `mode`-is-the-gate model.
  */
 export async function applySchemaMutation(
   token: string,
@@ -874,7 +874,7 @@ export async function resolveSupabaseNode(
 /**
  * Refreshes a provisioned Supabase node's canvas snapshot (`node.data.tables`)
  * from the live database schema. The live DB is the source of truth post-
- * provision (Phase 3); this keeps the canvas's display-only snapshot current
+ * provision; this keeps the canvas's display-only snapshot current
  * after every live schema mutation.
  *
  * Token acquisition mirrors routes/database.ts's GET /:projectId/:nodeId/schema
@@ -883,7 +883,7 @@ export async function resolveSupabaseNode(
  * (NOT the Durable-Object-only `this.getUserToken`).
  *
  * Excludes RESERVED_COLS (id/created_at) from the mapped snapshot: buildDDL
- * throws on reserved column names, and the Task 3.3 redeploy path feeds this
+ * throws on reserved column names, and the redeploy path feeds this
  * snapshot back through applySupabaseSchema -> buildDDL, so including them
  * would break redeploy.
  */

@@ -932,7 +932,7 @@ describe("buildProvisionPlan (integration)", () => {
     expect(sbIdx).toBeLessThan(vIdx);
   });
 
-  // Task 3.3 (Phase 3 live-authoritative flip): the configure step no longer
+  // Live-authoritative flip: the configure step no longer
   // reads/forwards node.data.appliedColumns — the provisioner's configure step
   // reconciles the canvas from live schema via refreshNodeSnapshot instead of
   // consuming a canvas-authored "already applied" map.

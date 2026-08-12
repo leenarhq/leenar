@@ -1954,7 +1954,7 @@ export async function unlinkChannel(
   await apiFetch(`/api/channels/${id}`, session, { method: "DELETE" });
 }
 
-// ── Database (Task 7 shell — Tables/SQL Editor land in Tasks 8/9) ──────────
+// ── Database (schema, tables, SQL editor, extensions) ──────────────────────
 
 export async function getDatabaseSchema(
   session: Session,
@@ -2117,7 +2117,7 @@ export async function setDatabaseTables(
   return res.json();
 }
 
-// Extensions tab (Task 9 UI). Provisioned nodes only — see
+// Extensions tab. Provisioned nodes only — see
 // workers/api/src/routes/database.ts's GET/POST .../extensions for the
 // backend implementation. introspectExtensions always returns exactly the
 // closed whitelist (schema/extensions.ts), annotated with live install state.

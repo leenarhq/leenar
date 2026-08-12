@@ -340,7 +340,7 @@ describe("parseWorkerErrorsResponse", () => {
   });
 });
 
-// ── abort-signal threading (P0.3) ───────────────────────────────────────────
+// ── abort-signal threading ─────────────────────────────────────────────────
 //
 // These tests use an abort-aware fetch mock that never resolves on its own
 // (simulating a stuck/in-flight CF API call) and only rejects once the signal

@@ -1,6 +1,6 @@
 // The Supabase Management API (`POST /v1/projects/{ref}/database/query`)
 // takes a RAW SQL string — there are NO bind parameters. That means every
-// value spliced into a query built for row CRUD (Task 5+) must go through
+// value spliced into a query built for row CRUD must go through
 // exactly one audited encoder: this one. Identifiers go through `qi`
 // (schema/supabaseSchema.ts) instead; this file is the value-literal half.
 //

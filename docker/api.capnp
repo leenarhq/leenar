@@ -36,8 +36,8 @@ const config :Workerd.Config = (
 const mainWorker :Workerd.Worker = (
   # Keep in sync with the API worker's wrangler.toml compatibility_date
   # (workers/api/wrangler.toml) — this capnp, not wrangler.toml, is what
-  # actually drives runtime compat under workerd here. Enforced upstream by
-  # scripts/open-core/test/capnp-compat-date.test.mjs.
+  # actually drives runtime compat under workerd here. An upstream export-time
+  # test keeps the two values equal.
   compatibilityDate = "2024-09-23",
   compatibilityFlags = ["nodejs_compat"],
   modules = [

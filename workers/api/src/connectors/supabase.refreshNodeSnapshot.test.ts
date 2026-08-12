@@ -1,5 +1,5 @@
 /**
- * Unit tests for refreshNodeSnapshot — the Phase 3 introspect->canvas
+ * Unit tests for refreshNodeSnapshot — the introspect->canvas
  * snapshot refresh primitive.
  *
  * refreshNodeSnapshot calls resolveSupabaseNode and introspectSchema as

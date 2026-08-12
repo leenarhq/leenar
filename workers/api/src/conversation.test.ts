@@ -126,7 +126,7 @@ describe("normalizeProposal — edge direction normalization", () => {
   });
 });
 
-// --- Task 2: 6 targeted normalizeProposal integration tests ---
+// --- 6 targeted normalizeProposal integration tests ---
 
 function makeProposal(
   services: StackProposal["services"],

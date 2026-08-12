@@ -115,7 +115,7 @@ export type SchemaMutation =
   | { kind: "dropPolicy"; table: string; name: string };
 
 // Mirrors workers/api/src/schema/extensions.ts's ExtensionInfo — the closed
-// whitelist of enable/disable-able Postgres extensions (Task 8/9). Backend
+// whitelist of enable/disable-able Postgres extensions. Backend
 // only ever returns entries for the whitelist, annotated with live install
 // state — never arbitrary installed extensions.
 export type ExtensionInfo = {

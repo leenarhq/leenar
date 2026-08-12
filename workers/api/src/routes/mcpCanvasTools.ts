@@ -10,8 +10,7 @@
 //
 // Nothing in this file may reach an autonomy capability: no deploy, no drift
 // reconcile, no incident mutation, no cost, no API-key management.
-// scripts/open-core/test/core-agent-surface.test.mjs enforces that on the
-// exported tree.
+// An upstream export-time check enforces that on the published tree.
 //
 // Import direction is one-way: routes/mcp.ts imports from here, never the
 // reverse. A back-import would break the core edition, where routes/mcp.ts IS

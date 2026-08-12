@@ -7,7 +7,7 @@
 -- execution, so referencing tables created in later files is
 -- safe here.
 --
--- Sources: 002 (set_updated_at), 033 (bump_canvas_version),
+-- Upstream sources: 002 (set_updated_at), 033 (bump_canvas_version),
 -- 025 (check_api_key_limit), 053 (check_environment_limit),
 -- 030 + 057 (create_default_environment — final 057 body).
 -- ============================================================

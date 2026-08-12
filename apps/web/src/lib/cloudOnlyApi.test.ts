@@ -12,10 +12,10 @@
 // justified allowlist. Grep-based on purpose: the alternative is component
 // tests, and this app has no component-test infra (all suites are pure logic).
 //
-// Companion check: scripts/open-core/test/cloud-route-list.test.mjs asserts
-// CLOUD_ONLY below still matches the worker's registerCloudRoutes.ts. It lives
-// there rather than here because the worker source does not exist in the
-// exported core repo, where this file DOES run.
+// Companion check: an upstream export-time test asserts CLOUD_ONLY below still
+// matches the worker's registerCloudRoutes.ts. It lives upstream rather than
+// here because the worker source does not exist in the exported core repo,
+// where this file DOES run.
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";

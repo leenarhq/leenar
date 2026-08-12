@@ -144,7 +144,7 @@ const LIVE_SCHEMA_ROWS = (): unknown[][] => [
   [],
 ];
 
-describe("cloneSupabase — live-schema clone (Phase 3)", () => {
+describe("cloneSupabase — live-schema clone", () => {
   it("REGRESSION: applies DDL built from the LIVE schema (introspection), not from authored params.tables — nickname + inet survive even though missing from the authored seed", async () => {
     const { fetchMock, queryCalls } = stubCloneFetch({
       cloneRef: "clone-ref",

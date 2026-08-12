@@ -388,11 +388,11 @@ describe("commitCanvasTables", () => {
     expect(sbMock).toHaveBeenCalledTimes(2);
   });
 
-  // Piece 2 (Phase 3, decision D1): optional 6th `opts` param stamps
+  // Optional 6th `opts` param stamps
   // schemaSnapshotAt / clears appliedColumns inside the SAME version-gated
   // snapshot write. Purely additive — see the "without opts" regression
   // guard test below for byte-identical behavior when opts is omitted.
-  describe("opts (Phase 3 snapshot stamping)", () => {
+  describe("opts (snapshot stamping)", () => {
     it("opts.setSnapshotAt stamps node.data.schemaSnapshotAt in the committed patch", async () => {
       const env = makeEnv();
       const sbMock = sb as any;

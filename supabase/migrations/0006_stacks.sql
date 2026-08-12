@@ -4,7 +4,7 @@
 -- stacks + stack_services. The stacks -> projects FK keeps its
 -- legacy name stacks_workflow_id_fkey (007 added it as workflow_id;
 -- 038 renamed the column to project_id but not the constraint).
--- Sources: 003, 007, 030, 038.
+-- Upstream sources: 003, 007, 030, 038.
 -- ============================================================
 
 -- ── stacks ──────────────────────────────────────────────────

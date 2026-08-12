@@ -13,7 +13,7 @@
 -- are written by the cloud abuse/reconcile layers but live on these
 -- core-written tables — kept as columns, no cloud tables imported.
 --
--- Sources: 003 (user_connections), 072 (db_query_snippets),
+-- Upstream sources: 003 (user_connections), 072 (db_query_snippets),
 -- 025 + 060 (api_keys), 008 (used_oauth_states),
 -- 014 + 019 (user_webhooks), 021 + 068 (security_events),
 -- 016 + 017 + 034 + 038 + 045 + 070 (stack_drifts),

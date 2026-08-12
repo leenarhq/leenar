@@ -2,15 +2,15 @@
 /// <reference types="vite/client" />
 import { describe, it, expect } from "vitest";
 
-// Files still permitted to call raw sb() / local sb closures. SHRINKS per batch.
-// Seed this by running: rg -l "\bsb\(" workers/api/src --glob '!*.test.ts'
-// FLOOR — Task 12 reduced this to exactly the tenancy/ownership layer + two
-// documented special cases. Every other file now routes through
+// Files still permitted to call raw sb() / local sb closures. This list only
+// ever shrinks. Re-derive it with: rg -l "\bsb\(" workers/api/src --glob '!*.test.ts'
+// FLOOR — it is down to exactly the tenancy/ownership layer plus two documented
+// special cases. Every other file routes through
 // scopedQuery/scopedBy*/systemQuery.
 const ALLOWLIST = new Set<string>([
   "src/utils.ts", // defines sb()
   "src/tenancy.ts", // the only wrapper layer
-  "src/ownership.ts", // Task 2 extraction; assertWorkflowOwner/assertEnvOwner ARE the ownership checks the tenancy helpers call
+  "src/ownership.ts", // extracted from tenancy.ts; assertWorkflowOwner/assertEnvOwner ARE the ownership checks the tenancy helpers call
   "src/routes/logs.ts", // one remaining raw sb() call: stack_services multi-id IN query, safe-by-construction (see inline comment)
 ]);
 
@@ -34,16 +34,16 @@ function hasRawSbCall(content: string): boolean {
 
 describe("tenancy static enforcement", () => {
   it("no raw sb() call outside utils.ts/tenancy.ts except reviewed allowlist entries", () => {
-    // NOTE: this used to shell out to `rg` via execSync, but `rg` is not installed as
-    // a real binary on this machine/CI (only available as an interactive-shell function
-    // injected by the Claude Code CLI) — `execSync(... || true)` silently swallowed the
-    // "command not found" failure and always reported zero offenders, making the gate a
-    // no-op. A follow-up swapped that for `node:fs`/`node:path`, which then failed
-    // `tsc --noEmit` because workers/api's tsconfig intentionally has no Node types (to
-    // keep Workers source from typechecking against node globals like `process`/`Buffer`
-    // that don't exist at the Workers runtime). `import.meta.glob` (Vite/Vitest's static
-    // analysis, typed via `vite/client`) reads the same file contents with no Node API
-    // and no new dependency.
+    // Reads the sources via `import.meta.glob` deliberately — the two obvious
+    // alternatives are both traps. Shelling out to `rg` through
+    // `execSync(... || true)` is worse than useless: wherever ripgrep is not on
+    // PATH, `|| true` swallows the "command not found" and the gate silently
+    // reports zero offenders forever. Reading the tree with `node:fs`/`node:path`
+    // instead fails `tsc --noEmit`, because workers/api's tsconfig carries no Node
+    // types on purpose — that is what keeps Workers source from typechecking
+    // against globals like `process`/`Buffer` that don't exist at the Workers
+    // runtime. `import.meta.glob` is resolved statically by Vite/Vitest and typed
+    // via `vite/client`: same file contents, no Node API, no new dependency.
     const offenders = Object.entries(files)
       .filter(([path]) => !path.endsWith(".test.ts"))
       .filter(([, content]) => hasRawSbCall(content))

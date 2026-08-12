@@ -9,11 +9,17 @@
 -- We deliberately do NOT (re)declare the `auth` schema,
 -- auth.users, auth.uid()/auth.jwt()/auth.role(), or the Supabase
 -- roles (anon/authenticated/service_role/...). A real Supabase
--- project provisions all of those; the .validate/ harness stubs
+-- project provisions all of those; an upstream validation harness stubs
 -- them for plain-Postgres CI only and is never shipped.
 --
 -- Keep this file minimal — only extensions the core tables and
 -- functions actually depend on.
+--
+-- Numbering note: these ten files are a squash of the upstream
+-- project's incremental migration history. The bare two- and
+-- three-digit numbers in the headers throughout this directory
+-- ("Upstream sources: 002, 011, …", "renamed in 038") identify
+-- migrations in that upstream history, not files here.
 -- ============================================================
 
 -- gen_random_uuid() column defaults across every core table.

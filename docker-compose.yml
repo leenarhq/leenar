@@ -63,8 +63,7 @@ services:
       # (payload.aud !== 'authenticated' => 401 bad_claims). Without this,
       # GoTrue v2.189.0 mints tokens with an EMPTY aud claim — confirmed live
       # (a fresh signup's JWT had "aud":"") — which every authenticated API
-      # call then rejects. Found during this task's e2e smoke; not present in
-      # Task 2's original compose.
+      # call then rejects.
       GOTRUE_JWT_AUD: authenticated
       # Same class of bug as GOTRUE_JWT_AUD above, found the same way. Without
       # it GoTrue mints tokens with an EMPTY `role` claim (confirmed live, for
@@ -176,7 +175,7 @@ services:
   # reachable from the host/browser, not from inside this container.
   api:
     build:
-      context: .                          # core repo root (bundle için workers/api + supabase gerekli)
+      context: .                          # core repo root — the bundle needs workers/api + supabase
       dockerfile: docker/Dockerfile.api
     restart: unless-stopped
     depends_on:

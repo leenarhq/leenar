@@ -496,7 +496,7 @@ databaseRouter.put("/:projectId/:nodeId/tables", async (c) => {
   }
 });
 
-// Extensions tab (Task 9 UI). Provisioned-only, tenancy-scoped via
+// Extensions tab. Provisioned-only, tenancy-scoped via
 // resolveSupabaseNode — same skeleton as the other provisioned-only routes
 // above. introspectExtensions always returns exactly the closed whitelist
 // (schema/extensions.ts), annotated with live install state.

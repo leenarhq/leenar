@@ -5,14 +5,14 @@
 -- supabase-js, which the original extraction missed because it
 -- reasoned about the API worker only.
 --
--- MANIFEST.md classified `chats` and `user_feedback` as cloud-only.
--- That was true of the WORKER (`routes/dashboardChats.ts` is in
+-- The extraction manifest classified `chats` and `user_feedback` as
+-- cloud-only. That was true of the WORKER (`routes/dashboardChats.ts` is in
 -- registerCloudRoutes, and nothing server-side writes feedback) but
 -- not of the browser: apps/web/src/lib/workflows.ts and
 -- components/dashboard/FeedbackModal.tsx query both tables with the
 -- user's own JWT, and both are reached from console.tsx — the core
 -- console shell. `project_summary` was missed for a different
--- reason: MANIFEST enumerates tables, and it is a view.
+-- reason: that manifest enumerates tables, and it is a view.
 --
 -- Symptom before this file: "Failed to load projects. Could not find
 -- the table 'public.project_summary' in the schema cache" on the
@@ -20,7 +20,7 @@
 -- sidebar conversation list and the chat→canvas entry point
 -- (console.new.tsx creates a conversation on the first message).
 --
--- Sources: 038 (chats, project_summary), 015 (user_feedback).
+-- Upstream sources: 038 (chats, project_summary), 015 (user_feedback).
 -- Definitions are copied verbatim from those migrations — this file
 -- reproduces the live schema, it does not improve on it.
 -- ============================================================

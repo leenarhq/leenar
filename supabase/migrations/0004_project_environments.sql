@@ -5,7 +5,7 @@
 -- project_env_secret_overrides (originally workflow_environments /
 -- workflow_env_node_state / workflow_env_secret_overrides; renamed
 -- in 038, legacy constraint/index/policy names retained).
--- Sources: 030, 031, 032, 033, 038, 045.
+-- Upstream sources: 030, 031, 032, 033, 038, 045.
 -- ============================================================
 
 -- ── project_environments ────────────────────────────────────

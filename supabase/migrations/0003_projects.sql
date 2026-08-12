@@ -4,7 +4,7 @@
 -- The `projects` table (originally `workflows`, renamed in 038;
 -- constraints/indexes/triggers retain their legacy workflow_* /
 -- workflows_* names, exactly as the live schema does).
--- Sources: 002, 011, 012, 030, 033, 036, 037, 038, 057.
+-- Upstream sources: 002, 011, 012, 030, 033, 036, 037, 038, 057.
 -- ============================================================
 
 CREATE TABLE public.projects (

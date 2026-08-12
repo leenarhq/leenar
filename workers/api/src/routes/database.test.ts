@@ -122,7 +122,7 @@ describe("database router", () => {
       expect(body.error).toBe("Failed to fetch project");
     });
 
-    // Task 3.5: back-compat reconcile of a pre-upgrade node's stale canvas
+    // Back-compat reconcile of a pre-upgrade node's stale canvas
     // snapshot, gated on legacy markers, running once on first schema load.
     describe("back-compat snapshot reconcile", () => {
       it("invokes refreshNodeSnapshot with the just-introspected schema as prefetched when the node still carries appliedColumns", async () => {
@@ -643,8 +643,8 @@ describe("database router", () => {
       });
     });
 
-    // Phase 4a task 3: createPolicy/dropPolicy are new SchemaMutation kinds
-    // (task 1-2). The route is fully kind-agnostic — it forwards any mutation
+    // createPolicy/dropPolicy are SchemaMutation kinds like any other.
+    // The route is fully kind-agnostic — it forwards any mutation
     // to applySchemaMutation (provisioned) / applyMutationToSeed (draft) —
     // so these tests just lock that a policy-kind mutation flows through the
     // same two branches as every other kind, without any kind-specific

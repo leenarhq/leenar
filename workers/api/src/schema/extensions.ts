@@ -1,5 +1,5 @@
 // Closed whitelist of Postgres extensions that can be enabled/disabled from
-// the Database workspace's Extensions tab (Task 9). Primarily pgvector.
+// the Database workspace's Extensions tab. Primarily pgvector.
 // This is a CLOSED set: assertWhitelistedExtension throws for anything not
 // listed here BEFORE any DDL is built — both DDL builders route through it
 // (defense-in-depth) so no caller can slip an arbitrary extension name

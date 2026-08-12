@@ -27,3 +27,6 @@ seo_*.json
 # keep shim.sql and validate.sh tracked.
 supabase/core-migrations/.validate/*.sql
 !supabase/core-migrations/.validate/shim.sql
+
+# Local tooling scratch (gstack browse logs) — machine-specific, never shipped.
+.gstack/

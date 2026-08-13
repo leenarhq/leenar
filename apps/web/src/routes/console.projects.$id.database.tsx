@@ -74,7 +74,7 @@ function DatabasePage() {
   if (supabaseNodes.length === 0) {
     return (
       <div className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-4xl p-6">
+        <div className="mx-auto max-w-4xl p-4 sm:p-6">
           <h1 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
             Database
           </h1>
@@ -106,9 +106,9 @@ function DatabasePage() {
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className="mx-auto max-w-4xl p-6">
+      <div className="mx-auto max-w-4xl p-4 sm:p-6">
         {/* Header + node picker */}
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
           <h1 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
             Database
           </h1>
@@ -158,8 +158,9 @@ function DatabasePage() {
           />
         ) : (
           <>
-            {/* Tabs */}
-            <div className="mb-4 flex items-center gap-1 border-b border-border">
+            {/* Tabs — horizontally scrollable so all 5 fit on narrow screens
+                instead of wrapping/clipping. */}
+            <div className="mb-4 flex items-center gap-1 overflow-x-auto border-b border-border">
               {(
                 [
                   { key: "tables", label: "Tables" },
@@ -172,7 +173,7 @@ function DatabasePage() {
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${
                     tab === t.key
                       ? "border-foreground text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground"

@@ -22,8 +22,16 @@ import {
   MessageSquare,
   Rss,
   X,
+  MoreHorizontal,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/auth";
 import { useIsMobile } from "../hooks/use-mobile";
@@ -32,6 +40,7 @@ import { isTabHidden } from "../lib/visibility";
 import { getChats, deleteChat, getProjects, type Chat } from "../lib/workflows";
 import { FeedbackModal } from "../components/dashboard/FeedbackModal";
 import { LeenarMark } from "../components/auth-shell";
+import { MobileDrawer } from "../components/mobile-drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,6 +116,30 @@ const mainNav: NavItem[] = [
     match: "/console/settings",
   },
 ];
+
+// Lets ConsoleTopBar/ProjectContextBar (rendered from route files far from
+// ConsoleLayout) open the mobile nav drawer that ConsoleLayout owns the
+// open/close state for.
+const ConsoleShellContext = createContext<{
+  mobileNavOpen: boolean;
+  openMobileNav: () => void;
+  setMobileNavOpen: (open: boolean) => void;
+} | null>(null);
+
+function useConsoleShell() {
+  const ctx = useContext(ConsoleShellContext);
+  if (!ctx) {
+    // Defensive fallback (should never happen — every console.* route is
+    // nested under ConsoleLayout's provider) so a missing provider degrades
+    // to a no-op toggle instead of crashing the page.
+    return {
+      mobileNavOpen: false,
+      openMobileNav: () => {},
+      setMobileNavOpen: () => {},
+    };
+  }
+  return ctx;
+}
 
 function useTheme() {
   const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
@@ -232,6 +265,35 @@ function Sidebar() {
       .catch(() => {});
     chatsLoadedRef.current = true;
   }, [user, pathname, currentChatId]);
+
+  const { mobileNavOpen, setMobileNavOpen } = useConsoleShell();
+
+  if (isMobile) {
+    // Below the 768px breakpoint there is no persistent rail/full sidebar —
+    // both the project-context and non-project variants collapse into one
+    // drawer, opened via the PanelLeft button wired up in
+    // ConsoleTopBar/ProjectContextBar.
+    return (
+      <MobileDrawer
+        open={mobileNavOpen}
+        onOpenChange={setMobileNavOpen}
+        title="Console navigation"
+      >
+        <MobileNavContent
+          activeProjectId={activeProjectId}
+          isLive={isLive}
+          pathname={pathname}
+          displayName={displayName}
+          initial={initial}
+          onNavigate={() => setMobileNavOpen(false)}
+          onLogout={async () => {
+            await signOut();
+            navigate({ to: "/login" });
+          }}
+        />
+      </MobileDrawer>
+    );
+  }
 
   if (activeProjectId) {
     const railItems = projectRailItems(!!isLive);
@@ -458,8 +520,185 @@ function Sidebar() {
   );
 }
 
+// The mobile drawer's contents: unlike the desktop rail/full split, this
+// combines global console navigation with the active project's tabs (if
+// any) into one scrollable list, so a mobile user can reach both without
+// switching drawers.
+function MobileNavContent({
+  activeProjectId,
+  isLive,
+  pathname,
+  displayName,
+  initial,
+  onNavigate,
+  onLogout,
+}: {
+  activeProjectId: string | null;
+  isLive: boolean;
+  pathname: string;
+  displayName: string;
+  initial: string;
+  onNavigate: () => void;
+  onLogout: () => void;
+}) {
+  const navLinkClass = (active: boolean) =>
+    `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+      active
+        ? "bg-secondary text-foreground"
+        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+    }`;
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex h-[57px] shrink-0 items-center gap-2 border-b border-dashed border-border px-4">
+        <LeenarMark className="h-4 w-auto" />
+        <span className="font-serif text-base">Leenar</span>
+        <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+          CONSOLE
+        </span>
+      </div>
+      <nav className="flex-1 space-y-1 overflow-y-auto p-2">
+        <span className="block px-3 pb-1 pt-2 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+          Console
+        </span>
+        <Link
+          to="/console"
+          onClick={onNavigate}
+          className={navLinkClass(pathname === "/console")}
+        >
+          <LayoutGrid className="h-4 w-4" />
+          Projects
+        </Link>
+        {mainNav.map((item) => {
+          const Icon = item.icon;
+          if (item.disabled || !item.to) return null;
+          const active = item.exact
+            ? pathname === item.to
+            : pathname.startsWith(item.match ?? item.to);
+          return (
+            <Link
+              key={item.label}
+              to={item.to}
+              onClick={onNavigate}
+              className={navLinkClass(active)}
+            >
+              <Icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          );
+        })}
+        {isCloud && (
+          <a
+            href="https://leenar.net/blog"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={navLinkClass(false)}
+          >
+            <Rss className="h-4 w-4" />
+            Blog
+          </a>
+        )}
+
+        {activeProjectId && (
+          <>
+            <span className="block px-3 pb-1 pt-4 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+              Project
+            </span>
+            {projectRailItems(isLive).map((item) => {
+              const Icon = item.icon;
+              const active = isRailItemActive(
+                pathname,
+                activeProjectId,
+                item.key,
+              );
+              return (
+                <Link
+                  key={item.key}
+                  to={item.to}
+                  params={{ id: activeProjectId }}
+                  onClick={onNavigate}
+                  className={navLinkClass(active)}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </>
+        )}
+      </nav>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="flex w-full shrink-0 items-center gap-2 border-t border-dashed border-border p-3 text-left hover:bg-secondary/40">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
+              {initial}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm">{displayName}</div>
+            </div>
+            <ChevronsUpDown className="h-3 w-3 text-muted-foreground" />
+          </button>
+        </DropdownMenuTrigger>
+        <AccountDropdownContent
+          activeProjectId={activeProjectId}
+          onLogout={onLogout}
+          side="top"
+        />
+      </DropdownMenu>
+    </div>
+  );
+}
+
+// Docs/Support links + theme toggle collapsed into one overflow menu — the
+// full row (~260px) doesn't fit next to a title and PanelLeft button on a
+// 360-390px header.
+function TopBarActionsMobile() {
+  const { theme, applyTheme } = useTheme();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label="More"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem asChild>
+          <a href="#">
+            <BookOpen className="h-3.5 w-3.5" /> Docs
+          </a>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <a href="#">
+            <LifeBuoy className="h-3.5 w-3.5" /> Support
+          </a>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => applyTheme("light")}>
+          <Sun className="h-3.5 w-3.5" /> Light
+          {theme === "light" && <span className="ml-auto text-xs">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => applyTheme("system")}>
+          <Monitor className="h-3.5 w-3.5" /> System
+          {theme === "system" && <span className="ml-auto text-xs">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => applyTheme("dark")}>
+          <Moon className="h-3.5 w-3.5" /> Dark
+          {theme === "dark" && <span className="ml-auto text-xs">✓</span>}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function TopBarActions() {
   const { theme, applyTheme } = useTheme();
+  const isMobile = useIsMobile();
+
+  if (isMobile) return <TopBarActionsMobile />;
+
   return (
     <>
       <a
@@ -505,16 +744,21 @@ export function ConsoleTopBar({
   title: ReactNode;
   right?: ReactNode;
 }) {
+  const isMobile = useIsMobile();
+  const { openMobileNav } = useConsoleShell();
   return (
-    <header className="flex h-[57px] items-center justify-between border-b border-dashed border-border px-6">
+    <header className="flex h-[57px] items-center justify-between border-b border-dashed border-border px-3 sm:px-6">
       <div className="flex items-center gap-3">
-        <button
-          aria-label="Toggle sidebar"
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <PanelLeft className="h-4 w-4" />
-        </button>
-        <span className="text-sm">{title}</span>
+        {isMobile && (
+          <button
+            aria-label="Open navigation"
+            onClick={openMobileNav}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
+        )}
+        <span className="truncate text-sm">{title}</span>
       </div>
       <div className="flex items-center gap-2">
         {right}
@@ -532,6 +776,8 @@ const projectStatusTone: Record<string, string> = {
 
 export function ProjectContextBar({ projectId }: { projectId: string }) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const { openMobileNav } = useConsoleShell();
   const { data: projects } = useQuery({
     queryKey: ["projects"],
     queryFn: getProjects,
@@ -540,13 +786,24 @@ export function ProjectContextBar({ projectId }: { projectId: string }) {
   const project = projects?.find((p) => p.id === projectId);
   const status = project?.status ?? "draft";
   return (
-    <header className="flex h-[57px] items-center justify-between border-b border-dashed border-border px-6">
-      <div className="flex items-center gap-3">
+    <header className="flex h-[57px] items-center justify-between border-b border-dashed border-border px-3 sm:px-6">
+      <div className="flex min-w-0 items-center gap-1 sm:gap-3">
+        {isMobile && (
+          <button
+            aria-label="Open navigation"
+            onClick={openMobileNav}
+            className="shrink-0 p-1.5 text-muted-foreground hover:text-foreground"
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-secondary/50">
-              <span className="font-medium">{project?.name ?? projectId}</span>
-              <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <button className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-secondary/50">
+              <span className="truncate font-medium">
+                {project?.name ?? projectId}
+              </span>
+              <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
@@ -565,7 +822,7 @@ export function ProjectContextBar({ projectId }: { projectId: string }) {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <span className="inline-flex items-center gap-1.5 rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">
+        <span className="hidden shrink-0 items-center gap-1.5 rounded border border-border px-2 py-0.5 text-xs text-muted-foreground sm:inline-flex">
           <StatusDot tone={projectStatusTone[status] ?? "neutral"} />
           {statusLabel(status)}
         </span>
@@ -580,6 +837,7 @@ export function ProjectContextBar({ projectId }: { projectId: string }) {
 function ConsoleLayout() {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/login" });
@@ -610,12 +868,20 @@ function ConsoleLayout() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      <Sidebar />
-      <div className="flex flex-1 flex-col h-full min-w-0 overflow-hidden">
-        <Outlet />
+    <ConsoleShellContext.Provider
+      value={{
+        mobileNavOpen,
+        openMobileNav: () => setMobileNavOpen(true),
+        setMobileNavOpen,
+      }}
+    >
+      <div className="flex h-screen overflow-hidden bg-background text-foreground">
+        <Sidebar />
+        <div className="flex flex-1 flex-col h-full min-w-0 overflow-hidden">
+          <Outlet />
+        </div>
+        <GuidedSetup />
       </div>
-      <GuidedSetup />
-    </div>
+    </ConsoleShellContext.Provider>
   );
 }

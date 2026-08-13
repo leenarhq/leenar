@@ -149,7 +149,7 @@ function DeploymentsPage() {
   return (
     <>
       <div className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-4xl p-6">
+        <div className="mx-auto max-w-4xl p-4 sm:p-6">
           {/* Header */}
           <div className="mb-5 flex items-center justify-between">
             <div>
@@ -194,57 +194,65 @@ function DeploymentsPage() {
                 key={dep.id}
                 className="rounded-md border border-border bg-card overflow-hidden"
               >
-                {/* Summary row - clickable */}
+                {/* Summary row - clickable. Stacks into two rows below
+                    sm; `sm:contents` un-wraps the grouping divs at sm+ so
+                    the desktop layout is exactly the original flat row. */}
                 <button
                   onClick={() => toggleExpand(dep)}
-                  className="w-full flex items-center gap-4 px-4 py-3 text-left hover:bg-secondary/20 transition-colors"
+                  className="w-full flex flex-col gap-2 px-4 py-3 text-left hover:bg-secondary/20 transition-colors sm:flex-row sm:items-center sm:gap-4"
                 >
-                  {/* Status icon */}
-                  <StatusIcon status={dep.status} />
+                  <div className="flex items-center gap-3 min-w-0 sm:contents">
+                    {/* Status icon */}
+                    <StatusIcon status={dep.status} />
 
-                  {/* Left: deployment ID + time */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-foreground">
-                        #{dep.id.slice(0, 8)}
-                      </span>
-                      <StatusBadge status={dep.status} />
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-3 text-[11px] text-muted-foreground">
-                      <span>{timeAgo(new Date(dep.started_at).getTime())}</span>
-                      {dep.finished_at && (
-                        <span className="flex items-center gap-1">
-                          <Clock size={10} />
-                          {formatDuration(dep.started_at, dep.finished_at)}
+                    {/* Left: deployment ID + time */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs text-foreground">
+                          #{dep.id.slice(0, 8)}
                         </span>
-                      )}
+                        <StatusBadge status={dep.status} />
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <span>
+                          {timeAgo(new Date(dep.started_at).getTime())}
+                        </span>
+                        {dep.finished_at && (
+                          <span className="flex items-center gap-1">
+                            <Clock size={10} />
+                            {formatDuration(dep.started_at, dep.finished_at)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Right: provider chips */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {Object.entries(dep.provider_refs ?? {}).map(([svc]) => (
-                      <span
-                        key={svc}
-                        className="rounded border border-border px-1.5 py-0.5 font-mono text-[9px] uppercase text-muted-foreground"
-                      >
-                        {svc}
-                      </span>
-                    ))}
-                  </div>
+                  <div className="flex items-center justify-between gap-2 sm:contents">
+                    {/* Right: provider chips */}
+                    <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0">
+                      {Object.entries(dep.provider_refs ?? {}).map(([svc]) => (
+                        <span
+                          key={svc}
+                          className="rounded border border-border px-1.5 py-0.5 font-mono text-[9px] uppercase text-muted-foreground"
+                        >
+                          {svc}
+                        </span>
+                      ))}
+                    </div>
 
-                  {/* Chevron */}
-                  {expanded === dep.id ? (
-                    <ChevronUp
-                      size={14}
-                      className="text-muted-foreground shrink-0"
-                    />
-                  ) : (
-                    <ChevronDown
-                      size={14}
-                      className="text-muted-foreground shrink-0"
-                    />
-                  )}
+                    {/* Chevron */}
+                    {expanded === dep.id ? (
+                      <ChevronUp
+                        size={14}
+                        className="text-muted-foreground shrink-0"
+                      />
+                    ) : (
+                      <ChevronDown
+                        size={14}
+                        className="text-muted-foreground shrink-0"
+                      />
+                    )}
+                  </div>
                 </button>
 
                 {/* Expanded: provider links + build logs */}

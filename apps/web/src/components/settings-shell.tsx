@@ -13,6 +13,7 @@ import {
 import type { ReactNode } from "react";
 import { ConsoleTopBar } from "../routes/console";
 import { isCloud } from "../lib/cloud";
+import { useIsMobile } from "../hooks/use-mobile";
 
 type SettingsRoute =
   | "/console/settings/profile"
@@ -76,24 +77,67 @@ export function SettingsShell({
   title: string;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isMobile = useIsMobile();
+
   return (
     <>
       <ConsoleTopBar title={title} />
-      <div className="flex flex-1">
-        <aside className="w-56 shrink-0 border-r border-dashed border-border p-3">
-          <Link
-            to="/console"
-            className="mb-4 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back
-          </Link>
-          <NavGroup label="Account" items={account} pathname={pathname} />
-          <NavGroup label="Developer" items={developer} pathname={pathname} />
-          <NavGroup label="Danger" items={danger} pathname={pathname} />
-        </aside>
+      <div
+        className={`flex flex-1 ${isMobile ? "flex-col overflow-hidden" : ""}`}
+      >
+        {isMobile ? (
+          <MobileNavStrip pathname={pathname} />
+        ) : (
+          <aside className="w-56 shrink-0 border-r border-dashed border-border p-3">
+            <Link
+              to="/console"
+              className="mb-4 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" /> Back
+            </Link>
+            <NavGroup label="Account" items={account} pathname={pathname} />
+            <NavGroup label="Developer" items={developer} pathname={pathname} />
+            <NavGroup label="Danger" items={danger} pathname={pathname} />
+          </aside>
+        )}
         <div className="flex flex-1 flex-col overflow-auto">{children}</div>
       </div>
     </>
+  );
+}
+
+// Mobile settings nav: a single horizontally-scrollable pill strip instead
+// of the desktop's w-56 side column — switching between settings sub-pages
+// is frequent enough that a drawer (extra tap to open/close) would be worse
+// than a persistent, native-feeling top strip.
+function MobileNavStrip({ pathname }: { pathname: string }) {
+  const allItems = [...account, ...developer, ...danger];
+  return (
+    <nav className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-dashed border-border px-3 py-2">
+      <Link
+        to="/console"
+        className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+      </Link>
+      {allItems.map((item) => {
+        const Icon = item.icon;
+        const active = pathname === item.to;
+        return (
+          <Link
+            key={item.label}
+            to={item.to}
+            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs transition-colors ${
+              active
+                ? "border-foreground bg-secondary text-foreground"
+                : "border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5" /> {item.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 

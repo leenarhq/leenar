@@ -182,11 +182,11 @@ function VercelLogsPanel({
 
         {innerTab === "build" && (
           <div>
-            <div className="mb-3 flex items-center gap-3">
+            <div className="mb-3 flex flex-wrap items-center gap-3">
               <select
                 value={selectedDeployId}
                 onChange={(e) => setSelectedDeployId(e.target.value)}
-                className="max-w-[20rem] truncate rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground"
+                className="max-w-full truncate rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground sm:max-w-[20rem]"
               >
                 {vercel.deployments.map((dep) => {
                   const label = dep.commitMessage ?? dep.id;
@@ -499,7 +499,7 @@ function ServiceLogsPage() {
   return (
     <>
       <div className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-4xl p-6">
+        <div className="mx-auto max-w-4xl p-4 sm:p-6">
           {/* Header */}
           <div className="mb-5 flex items-center justify-between">
             <h1 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -528,14 +528,15 @@ function ServiceLogsPage() {
             </div>
           ) : (
             <>
-              {/* Tab bar */}
+              {/* Tab bar — horizontally scrollable so up to 5 tabs (one can
+                  read "Incidents (12)") don't wrap/clip on narrow screens. */}
               {availableTabs.length > 0 && (
-                <div className="mb-6 flex gap-6 border-b border-border">
+                <div className="mb-6 flex gap-6 overflow-x-auto border-b border-border">
                   {availableTabs.map((t) => (
                     <button
                       key={t}
                       onClick={() => setTab(t)}
-                      className={`pb-2 text-sm transition-colors ${
+                      className={`shrink-0 whitespace-nowrap pb-2 text-sm transition-colors ${
                         tab === t
                           ? "border-b-2 border-foreground text-foreground font-semibold"
                           : "text-muted-foreground hover:text-foreground"

@@ -115,7 +115,7 @@ function ProjectOverview() {
 
   if (d.loading) {
     return (
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-6">
+      <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-4 sm:p-6">
         <div className="h-16 animate-pulse rounded-md border border-border bg-card" />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -141,7 +141,7 @@ function ProjectOverview() {
   // return the same loading UI here to avoid flashing the dashboard for a frame.
   if (d.summary && d.summary.status !== "active") {
     return (
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-6">
+      <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-4 sm:p-6">
         <div className="h-16 animate-pulse rounded-md border border-border bg-card" />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -180,7 +180,7 @@ function ProjectOverview() {
   });
 
   return (
-    <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-6">
+    <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-4 sm:p-6">
       {d.activeSession && (
         <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/30 px-4 py-2.5 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Deployment in

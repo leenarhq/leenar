@@ -211,7 +211,13 @@ CREATE TABLE public.user_audit_log (
     event text NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb,
     ip text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    -- Which transport the action came in on: web | mcp | slack | whatsapp |
+    -- agent | cron (075). Queryable rather than buried in metadata. Core
+    -- writes it too — auditLog() in workers/api/src/utils.ts sets it from the
+    -- auth middleware's transport — so a schema without this column fails
+    -- every audit write with PGRST204, not just cloud's channel reporting.
+    channel text
 );
 
 ALTER TABLE ONLY public.user_audit_log
@@ -222,6 +228,7 @@ ALTER TABLE ONLY public.user_audit_log
 
 CREATE INDEX user_audit_log_event_created_at_idx ON public.user_audit_log USING btree (event, created_at DESC);
 CREATE INDEX user_audit_log_user_id_created_at_idx ON public.user_audit_log USING btree (user_id, created_at DESC);
+CREATE INDEX user_audit_log_user_channel_idx ON public.user_audit_log USING btree (user_id, channel, created_at DESC);
 
 ALTER TABLE public.user_audit_log ENABLE ROW LEVEL SECURITY;
 

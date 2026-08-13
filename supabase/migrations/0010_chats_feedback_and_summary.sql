@@ -64,8 +64,12 @@ CREATE TABLE public.user_feedback (
 ALTER TABLE ONLY public.user_feedback
     ADD CONSTRAINT user_feedback_pkey PRIMARY KEY (id);
 
+-- ON DELETE CASCADE per 019: without it, deleting a user who has ever left
+-- feedback fails on the FK, which is the bug 019 was written to fix. 0010
+-- copied the constraint from 015 and missed the later correction; the diff
+-- oracle did not catch it because user_feedback was not in its table list.
 ALTER TABLE ONLY public.user_feedback
-    ADD CONSTRAINT user_feedback_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id);
+    ADD CONSTRAINT user_feedback_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
 CREATE INDEX user_feedback_created_at_idx ON public.user_feedback USING btree (created_at DESC);
 

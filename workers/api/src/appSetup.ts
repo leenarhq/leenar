@@ -103,13 +103,6 @@ export function createApp(cloudMiddleware: MiddlewareHandler[] = []): Hono<AppEn
     // OAuth callbacks come from GitHub/Vercel — no JWT
     if (/^\/api\/oauth\/[^/]+\/callback$/.test(c.req.path)) return next();
     if (c.req.path === "/api/waitlist") return next();
-    if (c.req.path === "/api/access-request" && c.req.method === "POST")
-      return next();
-    if (c.req.path === "/api/access-request/approve" && c.req.method === "GET")
-      return next();
-    if (c.req.path === "/api/invite/validate") return next();
-    if (c.req.path === "/api/invite/redeem") return next();
-    if (c.req.path === "/api/invite/generate") return next();
     if (c.req.path === "/api/admin/send-reminder") return next();
     if (c.req.path === "/api/admin/send-launch") return next();
     if (c.req.path === "/api/admin/send-checkin") return next();

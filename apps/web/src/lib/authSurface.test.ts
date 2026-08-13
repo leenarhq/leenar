@@ -2,14 +2,11 @@ import { describe, it, expect } from "vitest";
 import { authSurfaceFor } from "./authSurface";
 
 describe("authSurfaceFor", () => {
-  it("enables every cloud-only surface, and leaves signup open", () => {
+  it("enables every cloud-only surface", () => {
     expect(authSurfaceFor(true)).toEqual({
       oauth: true,
       magicLink: true,
       passwordReset: true,
-      // Open since migration 077 dropped the invite trigger — the flag no
-      // longer varies by build.
-      inviteRequired: false,
     });
   });
 
@@ -18,7 +15,6 @@ describe("authSurfaceFor", () => {
       oauth: false,
       magicLink: false,
       passwordReset: false,
-      inviteRequired: false,
     });
   });
 

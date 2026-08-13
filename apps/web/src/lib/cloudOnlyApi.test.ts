@@ -25,7 +25,6 @@ const SRC = resolve(import.meta.dirname, "..");
 /** Route prefixes served only by Leenar Cloud. Mirrors registerCloudRoutes.ts. */
 export const CLOUD_ONLY_MOUNTS = [
   "waitlist",
-  "access-request",
   "usage",
   "incidents",
   "audit-log",

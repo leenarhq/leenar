@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { CheckCircle2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/auth";
+import { useCaptcha } from "../components/auth-captcha";
 import { track } from "../lib/monitoring";
 import { authSurface } from "../lib/authSurface";
 import { resolveLoginEmail, LOGIN_ACCEPTS_USERNAME } from "../lib/ycAlias";
@@ -89,6 +90,8 @@ function LoginPage() {
     setMagicSent(false);
   };
 
+  const captcha = useCaptcha();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLocked) return;
@@ -100,6 +103,7 @@ function LoginPage() {
         const { error } = await supabase.auth.signInWithPassword({
           email: resolveLoginEmail(email),
           password,
+          options: { ...captcha.options },
         });
         if (error) throw error;
         track("user_signed_in", { method: "email" });
@@ -108,6 +112,7 @@ function LoginPage() {
       if (view === "forgot") {
         await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
+          ...captcha.options,
         });
         setForgotSent(true);
       }
@@ -117,12 +122,15 @@ function LoginPage() {
           options: {
             emailRedirectTo: CALLBACK_URL,
             shouldCreateUser: false,
+            ...captcha.options,
           },
         });
         if (error) throw error;
         setMagicSent(true);
       }
     } catch (err: any) {
+      // The token this attempt carried is spent either way.
+      captcha.reset();
       // Never reveal whether an email is registered: when signups are
       // disabled, Supabase errors on unknown emails. Treat that class of
       // error as a fake success so the UI response is identical either way.
@@ -270,7 +278,11 @@ function LoginPage() {
                 }
               />
             )}
-            <AuthSubmit type="submit" disabled={loading || isLocked}>
+            {captcha.widget}
+            <AuthSubmit
+              type="submit"
+              disabled={loading || isLocked || !captcha.ready}
+            >
               {isLocked
                 ? `Locked (${lockSecsLeft}s)`
                 : loading
@@ -293,7 +305,7 @@ function LoginPage() {
               Sign in with magic link instead
             </button>
           )}
-          {view === "signin" && !authSurface.inviteRequired && (
+          {view === "signin" && (
             <p className="text-muted-foreground">
               Don&apos;t have an account?{" "}
               <Link to="/signup" className="text-foreground hover:underline">

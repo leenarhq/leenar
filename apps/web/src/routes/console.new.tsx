@@ -20,6 +20,7 @@ import {
 } from "../lib/workflows";
 import { createProject } from "../lib/workflows";
 import { ENV_FLOW } from "../lib/envFlow";
+import { takePendingPrompt } from "../lib/pendingPrompt";
 import {
   applyAutoLayout,
   inferServiceType,
@@ -593,6 +594,24 @@ function NewStackPage() {
   }, [repoUrl, repoLoading, session]);
 
   const send = useCallback(() => sendText(input.trim()), [input, sendText]);
+
+  /**
+   * A prompt typed into the landing hero before signing in. It arrives via
+   * sessionStorage (see lib/pendingPrompt) because the trip here can detour
+   * through sign-up and an OAuth provider. Sent as if it had been typed in the
+   * box below — the visitor already pressed Enter on it once.
+   *
+   * Guarded by a ref as well as the read-once take(), because this runs again
+   * as soon as `sendText` changes identity, which it does on every message.
+   */
+  const pendingSentRef = useRef(false);
+  useEffect(() => {
+    if (!session || chatId || pendingSentRef.current) return;
+    const prompt = takePendingPrompt();
+    if (!prompt) return;
+    pendingSentRef.current = true;
+    void sendText(prompt);
+  }, [session, chatId, sendText]);
 
   const approve = useCallback(async () => {
     if (!proposal || approving) return;

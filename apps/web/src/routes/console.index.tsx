@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Search,
@@ -26,6 +26,7 @@ import {
   type ProjectHealthSnapshot,
 } from "../lib/api";
 import { timeAgo } from "../lib/utils";
+import { hasPendingPrompt } from "../lib/pendingPrompt";
 import { NOUNS, statusLabel, statusTone } from "../lib/labels";
 import {
   DropdownMenu,
@@ -63,6 +64,15 @@ function ProjectsPage() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<SortKey>("updated");
   const [showScanModal, setShowScanModal] = useState(false);
+
+  /**
+   * Sign-up and sign-in both land here. Someone who arrived by typing a prompt
+   * into the landing hero is on their way to the chat, not to an empty project
+   * list — /console/new picks the prompt up and sends it.
+   */
+  useEffect(() => {
+    if (hasPendingPrompt()) navigate({ to: "/console/new", replace: true });
+  }, [navigate]);
 
   const projectsQuery = useQuery({
     queryKey: ["projects"],

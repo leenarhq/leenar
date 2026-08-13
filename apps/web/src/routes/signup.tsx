@@ -72,7 +72,22 @@ function SignupPage() {
     navigate({ to: isRecovery ? "/reset-password" : "/console" });
   }, [authLoading, session, isRecovery, navigate]);
 
-  return authSurface.inviteRequired ? <InviteSignup /> : <SelfHostSignup />;
+  /**
+   * Signup is open (migration 077). Invite links that were mailed out while it
+   * was gated still work, so a `#token=` in the URL keeps routing to the
+   * redemption flow — the token lives in the fragment, which never reaches the
+   * server, so this is settled after mount rather than during SSR.
+   */
+  const [hasInviteToken, setHasInviteToken] = useState(false);
+  useEffect(() => {
+    setHasInviteToken(Boolean(getTokenFromFragment()));
+  }, []);
+
+  return authSurface.inviteRequired || hasInviteToken ? (
+    <InviteSignup />
+  ) : (
+    <OpenSignup />
+  );
 }
 
 function InviteSignup() {
@@ -273,17 +288,16 @@ function InviteSignup() {
 }
 
 /**
- * Open signup for the self-hosted core build. Cloud's invite gate is enforced
- * by the `check_invite_before_signup` trigger on `auth.users` (migration 027),
- * which is cloud-only and never ships in core-migrations — so calling
- * signUp() directly here is the intended path, not a bypass.
+ * The signup form, on cloud and self-host alike.
  *
- * The compose stack sets GOTRUE_MAILER_AUTOCONFIRM=true, so the account is
- * live immediately and signUp() returns a session; the redirect effect in
- * SignupPage picks it up. The timed navigate below is a fallback for the case
- * where confirmation is later turned on and no session comes back.
+ * Whether an account is usable straight away is the backend's call, not this
+ * form's: the compose stack sets GOTRUE_MAILER_AUTOCONFIRM=true and signUp()
+ * comes back with a session, while cloud requires a confirmed email and comes
+ * back without one. So the outcome is read from the response rather than
+ * assumed — a session means the redirect effect in SignupPage takes over, and
+ * no session means an email is on its way and saying so is the whole job.
  */
-function SelfHostSignup() {
+function OpenSignup() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -291,21 +305,28 @@ function SelfHostSignup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { name } },
       });
       if (signUpError) throw signUpError;
-      track("user_signed_up", { method: "self_host" });
+      track("user_signed_up", {
+        method: data.session ? "password" : "password_confirm_email",
+      });
+      setNeedsConfirmation(!data.session);
       setDone(true);
-      setTimeout(() => navigate({ to: "/console" }), 1500);
+      // With a session the auth listener redirects on its own; this is the
+      // fallback for a slow emit. Never fires when a confirmation is pending —
+      // /console would only bounce them back to /login.
+      if (data.session) setTimeout(() => navigate({ to: "/console" }), 1500);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -318,7 +339,7 @@ function SelfHostSignup() {
       backTo="/login"
       backLabel="Sign in instead"
       title="Create your account"
-      subtitle="Set up the first account on this Leenar instance."
+      subtitle="Describe a stack and Leenar wires it into your own cloud accounts."
     >
       {error && (
         <p className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -328,10 +349,23 @@ function SelfHostSignup() {
       {done ? (
         <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-secondary/20 px-4 py-8 text-center">
           <CheckCircle2 className="h-6 w-6 text-emerald-400" />
-          <p className="text-sm font-medium">Account created!</p>
-          <p className="text-xs text-muted-foreground">
-            Redirecting to console…
-          </p>
+          {needsConfirmation ? (
+            <>
+              <p className="text-sm font-medium">Confirm your email</p>
+              <p className="text-xs text-muted-foreground">
+                We sent a link to{" "}
+                <span className="text-foreground">{email}</span>. Open it and
+                you&apos;ll land straight in the console.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium">Account created!</p>
+              <p className="text-xs text-muted-foreground">
+                Redirecting to console…
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <form className="space-y-4" onSubmit={handleSubmit}>

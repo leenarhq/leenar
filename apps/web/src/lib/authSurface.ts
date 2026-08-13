@@ -12,10 +12,12 @@ import { isCloud } from "./cloud";
  * - `magicLink` / `passwordReset` — the bundled auth container runs with a
  *   noop mail client. `POST /auth/v1/recover` returns 200 and no mail is ever
  *   sent, so the user waits for an email that does not exist.
- * - `inviteRequired` — `/api/invite/*` is registered only in
- *   `registerCloudRoutes`. Cloud's real gate is the `check_invite_before_signup`
- *   trigger from migration 027, which is cloud-only and absent from a
- *   self-host database, so opening signup here cannot weaken cloud.
+ * - `inviteRequired` — false everywhere now. Cloud ran invite-only while access
+ *   was being rolled out: `/api/invite/*` plus the `check_invite_before_signup`
+ *   trigger from migration 027. Migration 077 drops that trigger and signup is
+ *   open, so the flag no longer varies by build. It stays as the one switch
+ *   that puts the gate back (flip it and re-add the trigger — both halves are
+ *   required; the frontend alone is not a gate).
  *
  * There is deliberately no `legalLinks` flag. Leenar's Terms and Privacy links
  * live only in the invite signup flow, which by definition renders only when
@@ -34,7 +36,10 @@ export interface AuthSurface {
   magicLink: boolean;
   /** "Forgot password?" on the login form. */
   passwordReset: boolean;
-  /** Signup demands a valid invite token; when false, signup is open. */
+  /**
+   * Signup demands a valid invite token. False on every build today — see the
+   * note above before turning it back on.
+   */
   inviteRequired: boolean;
 }
 
@@ -43,7 +48,7 @@ export function authSurfaceFor(cloud: boolean): AuthSurface {
     oauth: cloud,
     magicLink: cloud,
     passwordReset: cloud,
-    inviteRequired: cloud,
+    inviteRequired: false,
   };
 }
 

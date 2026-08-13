@@ -353,7 +353,9 @@ function Sidebar() {
         })}
         {isCloud && (
           <a
-            href="https://blog.leenar.net"
+            // Absolute, not a router link: the blog is a cloud-only marketing
+            // route, and the core build ships this console without it.
+            href="https://leenar.net/blog"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"

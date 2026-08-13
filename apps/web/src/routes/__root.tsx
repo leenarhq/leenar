@@ -123,7 +123,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         },
         {
           rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Onest:wght@500;600;700&display=swap",
+          // Host Grotesk + DM Sans are the marketing surface's display/body
+          // pair (see `.marketing-root` in styles.css); the rest is the console.
+          href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Host+Grotesk:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Onest:wght@500;600;700&display=swap",
         },
       ],
     }),

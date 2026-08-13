@@ -1,6 +1,7 @@
 import handler from "@tanstack/react-start/server-entry";
 import { clientIp } from "./clientIp";
 import { maintenanceResponse } from "./edgeMaintenance";
+import { feedResponse } from "./lib/feeds";
 
 // Set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY + API_URL in Cloudflare → Settings → Variables.
 // API_URL is the origin the SPA calls; the CSP connect-src must allow it, so it
@@ -187,6 +188,12 @@ export default {
         headers: { Allow: "GET, HEAD, POST" },
       });
     }
+
+    // The feeds are generated, not stored: both enumerate the blog posts, which
+    // live as markdown in this bundle. Served here rather than as route
+    // components because neither is HTML.
+    const feed = feedResponse(path);
+    if (feed) return feed;
 
     const response: Response = await tsHandler.fetch(request, env, ctx);
     const headers = new Headers(response.headers);

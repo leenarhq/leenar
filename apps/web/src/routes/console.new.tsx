@@ -18,6 +18,12 @@ import {
 } from "../lib/api";
 import { ImportReport } from "../components/console/ImportReport";
 import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "../components/ui/tabs";
+import {
   createChatConversation,
   saveChatHistory,
   loadChatHistory,
@@ -27,6 +33,7 @@ import { ENV_FLOW } from "../lib/envFlow";
 import { remapCanvasNodeId } from "../lib/canvasNodeId";
 import { takePendingPrompt } from "../lib/pendingPrompt";
 import { takePendingImport } from "../lib/pendingImport";
+import { track } from "../lib/monitoring";
 import {
   applyAutoLayout,
   inferServiceType,
@@ -449,6 +456,7 @@ function NewStackPage() {
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[] | null>(null);
   const [reposLoading, setReposLoading] = useState(false);
   const [builderInfo, setBuilderInfo] = useState<BuilderInfo | null>(null);
+  const [activeTab, setActiveTab] = useState<"idea" | "import">("idea");
 
   const reposFetchedRef = useRef(false);
   const draftWorkflowIdRef = useRef<string | null>(null);
@@ -487,19 +495,31 @@ function NewStackPage() {
     importIntentCheckedRef.current = true;
     const fromStorage = takePendingImport();
     const fromQuery = new URLSearchParams(window.location.search).get("import");
-    if (fromStorage || fromQuery) setWantsRepoFocus(true);
+    if (fromStorage || fromQuery) {
+      // The import pane is CSS-hidden (not unmounted — see the forceMount
+      // note on TabsContent) while the "idea" tab is active, and a hidden
+      // field can't take focus. Switch tabs first so it's visible before
+      // the focus effect below runs.
+      setActiveTab("import");
+      setWantsRepoFocus(true);
+    }
   }, []);
 
-  // Focus the repo field once it's actually on screen — which element that
-  // is (the <select> of loaded repos, or the plain URL <input> fallback)
-  // depends on whether the GitHub repos fetch above has resolved yet.
+  // Focus the repo field once it's actually usable. repoSelectRef/repoInputRef
+  // are attached from first mount (both TabsContent panes use forceMount, so
+  // this doesn't wait on Radix's own mount commit — see the note there), but
+  // which element exists — the <select> of loaded repos, or the plain URL
+  // <input> fallback, or neither while the "Loading repos…" placeholder is
+  // showing — depends on whether the GitHub repos fetch above has resolved.
+  // reposLoading/githubRepos stay in the deps for that reason, not to catch
+  // a tab-mount race.
   useEffect(() => {
-    if (!wantsRepoFocus) return;
+    if (!wantsRepoFocus || activeTab !== "import") return;
     const field = repoSelectRef.current ?? repoInputRef.current;
     if (!field) return;
     field.focus();
     setWantsRepoFocus(false);
-  }, [wantsRepoFocus, reposLoading, githubRepos]);
+  }, [wantsRepoFocus, activeTab, reposLoading, githubRepos]);
 
   // Load existing chat when chatId is in URL
   useEffect(() => {
@@ -673,6 +693,11 @@ function NewStackPage() {
     setRepoError(null);
     try {
       const result = await analyzeRepoForStack(url, session);
+      track("repo_analyzed", {
+        builder: result.builder?.name ?? null,
+        backend_ownership: result.builder?.backendOwnership ?? null,
+        env_style: result.builder?.envStyle ?? null,
+      });
       const p = result.proposal as StackProposal;
       setProposal(p);
       setBuilderInfo(result.builder);
@@ -834,132 +859,187 @@ function NewStackPage() {
               </div>
 
               <h1 className="mb-2 text-center font-serif text-3xl">
-                {firstName
-                  ? `Got an idea, ${firstName}?`
-                  : "What are you building?"}
+                {`What are you building${firstName ? `, ${firstName}` : ""}?`}
               </h1>
-              <p className="mb-8 text-center text-sm text-muted-foreground">
-                Describe your project in plain English — the AI will propose an
-                infrastructure stack.
+              <p className="mb-6 text-center text-sm text-muted-foreground">
+                Describe it, or bring something you already built.
               </p>
 
-              {/* Suggestion chips */}
-              <div className="mb-6 flex flex-wrap justify-center gap-2">
-                {SUGGESTIONS.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    onClick={() => sendText(suggestion)}
-                    disabled={loading}
-                    className="rounded-full border border-border bg-secondary/30 px-3 py-1.5 text-xs text-muted-foreground shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-[var(--app-accent)]/40 hover:bg-secondary/60 hover:text-foreground hover:shadow disabled:pointer-events-none disabled:opacity-50 disabled:hover:translate-y-0"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-
-              {/* Chat input card */}
-              <div
-                data-tour="chat"
-                className="rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow duration-150 focus-within:border-[var(--app-accent)]/50 focus-within:ring-2 focus-within:ring-[var(--app-accent)]/20"
+              <Tabs
+                value={activeTab}
+                onValueChange={(value) => {
+                  setActiveTab(value as "idea" | "import");
+                  track("new_project_path_selected", { path: value });
+                }}
               >
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  placeholder="Describe your project — e.g. a SaaS app with auth, database and email…"
-                  rows={3}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                    autoResize();
-                  }}
-                  onKeyDown={onKey}
-                  disabled={loading}
-                  className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none disabled:opacity-50"
-                />
-                <div className="mt-3 flex items-center justify-end">
-                  <button
-                    onClick={send}
-                    disabled={!input.trim() || loading}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-sm transition-all duration-150 hover:opacity-90 hover:shadow disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
-                  >
-                    {loading ? (
-                      "Thinking…"
-                    ) : (
-                      <>
-                        Send
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 16 16"
-                          fill="none"
-                        >
-                          <path
-                            d="M8 13V3M3 8l5-5 5 5"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </>
-                    )}
-                  </button>
+                {/* data-tour="chat" lives here, not on the chat card below:
+                    the SetupSpotlight "build" step targets it, and the chat
+                    card only exists in the DOM while the "idea" tab is
+                    active (see the forceMount note on TabsContent below).
+                    This wrapper is on-screen regardless of which tab is
+                    selected, so a user who lands on/switches to "import"
+                    doesn't strand an active tour step with nothing to
+                    spotlight. */}
+                <div data-tour="chat" className="mb-6 flex justify-center">
+                  <TabsList>
+                    <TabsTrigger value="idea">New idea</TabsTrigger>
+                    <TabsTrigger value="import">
+                      I already built something
+                    </TabsTrigger>
+                  </TabsList>
                 </div>
-              </div>
 
-              {/* Import from GitHub */}
-              <div className="mt-6">
-                <div className="mb-3 flex items-center gap-3 text-xs text-muted-foreground">
-                  <div className="h-px flex-1 bg-border" />
-                  <span>or import from GitHub</span>
-                  <div className="h-px flex-1 bg-border" />
-                </div>
-                <div className="flex gap-2">
-                  {reposLoading ? (
-                    <div className="flex-1 rounded-md border border-border bg-secondary/30 px-3 py-2 text-xs text-muted-foreground/50">
-                      Loading repos…
-                    </div>
-                  ) : githubRepos && githubRepos.length > 0 ? (
-                    <select
-                      ref={repoSelectRef}
-                      value={repoUrl}
-                      onChange={(e) => setRepoUrl(e.target.value)}
-                      disabled={repoLoading}
-                      className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-xs text-foreground focus:outline-none disabled:opacity-50"
-                    >
-                      <option value="">Select a repository…</option>
-                      {githubRepos.map((r) => (
-                        <option key={r.id} value={r.html_url}>
-                          {r.full_name}
-                          {r.private ? " 🔒" : ""}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      ref={repoInputRef}
-                      type="text"
-                      placeholder="https://github.com/you/your-repo"
-                      value={repoUrl}
-                      onChange={(e) => setRepoUrl(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") importFromRepo();
+                {/* Both panes use forceMount + CSS-driven visibility rather
+                    than Radix's default conditional mount/unmount. Radix's
+                    default swaps a pane's presence via its own internal
+                    Presence state machine, which lands the mount in a commit
+                    that this component doesn't control — so an effect here
+                    reacting to `activeTab` can run before the pane (and the
+                    refs inside it) actually exist. forceMount keeps both
+                    panes mounted from the first render, so repoSelectRef /
+                    repoInputRef are attached as soon as NewStackPage itself
+                    renders, and the auto-focus effect below no longer
+                    depends on an unrelated re-render (previously the GitHub
+                    repos fetch's setReposLoading(false)) to happen to land
+                    after Radix's own mount commit. */}
+                <TabsContent
+                  value="idea"
+                  forceMount
+                  className="data-[state=inactive]:hidden"
+                >
+                  {/* Suggestion chips */}
+                  <div className="mb-6 flex flex-wrap justify-center gap-2">
+                    {SUGGESTIONS.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        onClick={() => sendText(suggestion)}
+                        disabled={loading}
+                        className="rounded-full border border-border bg-secondary/30 px-3 py-1.5 text-xs text-muted-foreground shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-[var(--app-accent)]/40 hover:bg-secondary/60 hover:text-foreground hover:shadow disabled:pointer-events-none disabled:opacity-50 disabled:hover:translate-y-0"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Chat input card */}
+                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow duration-150 focus-within:border-[var(--app-accent)]/50 focus-within:ring-2 focus-within:ring-[var(--app-accent)]/20">
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      placeholder="Describe your project — e.g. a SaaS app with auth, database and email…"
+                      rows={3}
+                      onChange={(e) => {
+                        setInput(e.target.value);
+                        autoResize();
                       }}
-                      disabled={repoLoading}
-                      className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
+                      onKeyDown={onKey}
+                      disabled={loading}
+                      className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none disabled:opacity-50"
                     />
-                  )}
-                  <button
-                    onClick={importFromRepo}
-                    disabled={!repoUrl.trim() || repoLoading}
-                    className="rounded-md border border-border bg-secondary/40 px-4 py-2 text-xs hover:bg-secondary/80 disabled:opacity-50"
-                  >
-                    {repoLoading ? "Analyzing…" : "Analyze"}
-                  </button>
-                </div>
-                {repoError && (
-                  <p className="mt-2 text-xs text-red-400">{repoError}</p>
-                )}
-              </div>
+                    <div className="mt-3 flex items-center justify-end">
+                      <button
+                        onClick={send}
+                        disabled={!input.trim() || loading}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-sm transition-all duration-150 hover:opacity-90 hover:shadow disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                      >
+                        {loading ? (
+                          "Thinking…"
+                        ) : (
+                          <>
+                            Send
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                            >
+                              <path
+                                d="M8 13V3M3 8l5-5 5 5"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent
+                  value="import"
+                  forceMount
+                  className="data-[state=inactive]:hidden"
+                >
+                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                    <h2 className="text-sm font-medium text-foreground">
+                      Take it to production
+                    </h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Point us at the repo. Nothing is written back to it.
+                    </p>
+
+                    <div className="mt-4 flex gap-2">
+                      {reposLoading ? (
+                        <div className="flex-1 rounded-md border border-border bg-secondary/30 px-3 py-2 text-xs text-muted-foreground/50">
+                          Loading repos…
+                        </div>
+                      ) : githubRepos && githubRepos.length > 0 ? (
+                        <select
+                          ref={repoSelectRef}
+                          value={repoUrl}
+                          onChange={(e) => setRepoUrl(e.target.value)}
+                          disabled={repoLoading}
+                          className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-xs text-foreground focus:outline-none disabled:opacity-50"
+                        >
+                          <option value="">Select a repository…</option>
+                          {githubRepos.map((r) => (
+                            <option key={r.id} value={r.html_url}>
+                              {r.full_name}
+                              {r.private ? " 🔒" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          ref={repoInputRef}
+                          type="text"
+                          placeholder="https://github.com/you/your-repo"
+                          value={repoUrl}
+                          onChange={(e) => setRepoUrl(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") importFromRepo();
+                          }}
+                          disabled={repoLoading}
+                          className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
+                        />
+                      )}
+                      <button
+                        onClick={importFromRepo}
+                        disabled={!repoUrl.trim() || repoLoading}
+                        className="rounded-md border border-border bg-secondary/40 px-4 py-2 text-xs hover:bg-secondary/80 disabled:opacity-50"
+                      >
+                        {repoLoading ? "Analyzing…" : "Analyze"}
+                      </button>
+                    </div>
+                    {repoError && (
+                      <p className="mt-2 text-xs text-red-400">{repoError}</p>
+                    )}
+
+                    <div className="mt-4 border-l-2 border-border pl-3 text-xs text-muted-foreground">
+                      Built with Lovable? We find the Supabase project your app
+                      already uses and connect it. We never create a second,
+                      empty one.
+                    </div>
+
+                    <p className="mt-3 text-[11px] text-muted-foreground/70">
+                      Lovable, v0, Bolt, or any GitHub repo
+                    </p>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         ) : (

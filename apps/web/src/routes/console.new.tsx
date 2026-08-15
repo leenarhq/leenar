@@ -9,10 +9,14 @@ import {
   getConnectedServices,
   analyzeRepoForStack,
   getGitHubRepos,
+  importNode,
+  saveEnvCanvas,
   type ChatMessage,
   type StackProposal,
   type GitHubRepo,
+  type BuilderInfo,
 } from "../lib/api";
+import { ImportReport } from "../components/console/ImportReport";
 import {
   createChatConversation,
   saveChatHistory,
@@ -20,7 +24,9 @@ import {
 } from "../lib/workflows";
 import { createProject } from "../lib/workflows";
 import { ENV_FLOW } from "../lib/envFlow";
+import { remapCanvasNodeId } from "../lib/canvasNodeId";
 import { takePendingPrompt } from "../lib/pendingPrompt";
+import { takePendingImport } from "../lib/pendingImport";
 import {
   applyAutoLayout,
   inferServiceType,
@@ -150,6 +156,18 @@ function proposalToCanvas(proposal: StackProposal) {
         iconName: meta.iconName,
         provider: svc.service_type,
         ...(repoUrl ? { existing_repo: repoUrl } : {}),
+        // A Supabase backend the user already owns is adopted, not provisioned.
+        // Only `imported` is authoring intent and belongs in the canvas JSON:
+        // the ref, the status and the dashboard URL are runtime state, stripped
+        // from every canvas write (RUNTIME_KEYS in useWorkflowPersistence,
+        // RUNTIME_NODE_KEYS in canvasRuntime). Writing them here would survive
+        // exactly until the first autosave. approve() below makes them durable
+        // in project_env_node_state instead. Gated on supabase because only
+        // Supabase services ever carry an existing_ref today, and a future
+        // adapter's ref would mean something else entirely.
+        ...(svc.service_type === "supabase" && svc.existing_ref
+          ? { imported: true }
+          : {}),
       },
     };
   });
@@ -181,9 +199,70 @@ function proposalToCanvas(proposal: StackProposal) {
         },
       };
     })
-    .filter(Boolean);
+    .filter((e): e is NonNullable<typeof e> => e !== null);
 
   return { nodes: applyAutoLayout(nodes as any, edges as any), edges };
+}
+
+/** The Supabase project the analyzed repo already talks to AND the user
+ *  provably owns. `/from-repo` sets `existing_ref` only for Supabase and only
+ *  when ownership resolved to "user", so anything else is not adoptable. */
+function adoptedSupabaseRef(proposal: StackProposal): string | null {
+  return (
+    proposal.services.find(
+      (s) => s.service_type === "supabase" && s.existing_ref,
+    )?.existing_ref ?? null
+  );
+}
+
+/**
+ * Stamp the adopted Supabase project's runtime keys onto one node.
+ *
+ * Used for the `projects.canvas` copy ONLY — the environment canvas keeps the
+ * authoring shape proposalToCanvas emits. That asymmetry is deliberate and load
+ * bearing; please don't "clean it up" by folding these keys back into
+ * proposalToCanvas (they'd be stripped) or by dropping them here (a second,
+ * empty Supabase project gets provisioned). Why the two sinks differ:
+ *
+ *  - `projects.canvas` is written exactly once, by createProject via supabase-js
+ *    (lib/workflows.ts). A stripping write path to this row does exist —
+ *    saveCanvasApi (lib/api.ts) → PATCH /api/projects/:id/canvas →
+ *    stripRuntimeFromCanvas (workers/api/src/routes/workflowProvision.ts) — but
+ *    it never fires in practice: every saveCanvasApi call site in
+ *    useWorkflowPersistence.ts sits in the `else` branch of `if (envId)`, and a
+ *    real project always has an environment row (the AFTER INSERT trigger in
+ *    supabase/migrations/038_projects_rename.sql creates one), so autosave
+ *    always takes the saveEnvCanvas branch instead. `deployWorkflow`
+ *    (workers/api/src/deploy.ts, reached by the MCP `deploy_workflow` tool) and
+ *    driftReprovision read that project row and never merge
+ *    project_env_node_state, so unless the ref is in this JSON,
+ *    `isAlreadyProvisioned` misses it and an agent-triggered deploy provisions
+ *    a second, empty database beside the one the app already uses.
+ *  - `project_environments.canvas` is round-tripped through the canvas endpoints
+ *    on every autosave, which strip exactly these keys. There the durable truth
+ *    is the project_env_node_state row approve() writes through POST
+ *    /import-node, merged back onto the node at load time.
+ */
+function withAdoptedSupabaseRuntime<
+  N extends { id: string; data: Record<string, unknown> },
+  C extends { nodes: N[] },
+>(canvas: C, nodeId: string, ref: string): C {
+  return {
+    ...canvas,
+    nodes: canvas.nodes.map((n) =>
+      n.id === nodeId
+        ? {
+            ...n,
+            data: {
+              ...n.data,
+              status: "provisioned",
+              supabaseProjectRef: ref,
+              provisionedUrl: `https://supabase.com/dashboard/project/${ref}`,
+            },
+          }
+        : n,
+    ),
+  };
 }
 
 /* ── aiAsksForGitHubRepo ────────────────────────────────────── */
@@ -369,11 +448,15 @@ function NewStackPage() {
   const [repoError, setRepoError] = useState<string | null>(null);
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[] | null>(null);
   const [reposLoading, setReposLoading] = useState(false);
+  const [builderInfo, setBuilderInfo] = useState<BuilderInfo | null>(null);
 
   const reposFetchedRef = useRef(false);
   const draftWorkflowIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const repoSelectRef = useRef<HTMLSelectElement>(null);
+  const repoInputRef = useRef<HTMLInputElement>(null);
+  const [wantsRepoFocus, setWantsRepoFocus] = useState(false);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -390,6 +473,33 @@ function NewStackPage() {
       .catch(() => setGithubRepos(null))
       .finally(() => setReposLoading(false));
   }, [session]);
+
+  /**
+   * Import intent carried from an SEO guide's CTA (e.g. "Try Leenar" on the
+   * Lovable guide). Arrives via localStorage (see lib/pendingImport) because
+   * the trip here can detour through sign-up and email confirmation, with a
+   * direct `?import=` query param honoured too for anyone who lands here
+   * from a shared link instead of clicking the CTA fresh.
+   */
+  const importIntentCheckedRef = useRef(false);
+  useEffect(() => {
+    if (importIntentCheckedRef.current) return;
+    importIntentCheckedRef.current = true;
+    const fromStorage = takePendingImport();
+    const fromQuery = new URLSearchParams(window.location.search).get("import");
+    if (fromStorage || fromQuery) setWantsRepoFocus(true);
+  }, []);
+
+  // Focus the repo field once it's actually on screen — which element that
+  // is (the <select> of loaded repos, or the plain URL <input> fallback)
+  // depends on whether the GitHub repos fetch above has resolved yet.
+  useEffect(() => {
+    if (!wantsRepoFocus) return;
+    const field = repoSelectRef.current ?? repoInputRef.current;
+    if (!field) return;
+    field.focus();
+    setWantsRepoFocus(false);
+  }, [wantsRepoFocus, reposLoading, githubRepos]);
 
   // Load existing chat when chatId is in URL
   useEffect(() => {
@@ -529,6 +639,10 @@ function NewStackPage() {
           setProposalMsgIdx(replyIdx);
           setProposalSplitAt(next.length + (res.reply ? 1 : 0));
           setProposal(res.proposal);
+          // This proposal came from chat, not from a repo import — any
+          // ImportReport left over from an earlier import no longer
+          // describes what Approve is about to do.
+          setBuilderInfo(null);
           if (session) {
             const neededServices = res.proposal.services.map(
               (s) => s.service_type,
@@ -561,6 +675,7 @@ function NewStackPage() {
       const result = await analyzeRepoForStack(url, session);
       const p = result.proposal as StackProposal;
       setProposal(p);
+      setBuilderInfo(result.builder);
       setProposalSplitAt(2);
       setProposalMsgIdx(null);
       setMessages([
@@ -618,7 +733,53 @@ function NewStackPage() {
     setApproving(true);
     try {
       const canvas = proposalToCanvas(proposal);
-      const project = await createProject(proposal.name, canvas as any);
+      const ref = adoptedSupabaseRef(proposal);
+      const placeholderId = canvas.nodes.find(
+        (n) => (n.data as { provider?: string }).provider === "supabase",
+      )?.id;
+
+      // `projects.canvas` is the only copy deployWorkflow / driftReprovision
+      // ever read, and neither merges project_env_node_state — so the adopted
+      // ref is stamped into that copy (and only that copy). See
+      // withAdoptedSupabaseRuntime for why the environment canvas differs.
+      const project = await createProject(
+        proposal.name,
+        (ref && placeholderId
+          ? withAdoptedSupabaseRuntime(canvas, placeholderId, ref)
+          : canvas) as any,
+      );
+
+      // Adopting the repo's existing Supabase project also has to survive in the
+      // environment canvas, and there it cannot ride in the JSON: the ref and the
+      // provisioned status are runtime keys, stripped by every autosave, so a
+      // canvas-only marker is gone after one edit and Deploy would then create a
+      // second, empty database. project_env_node_state is where that state lives,
+      // and POST /import-node is the only path to it the web client can reach. It
+      // mints the node id server-side, so the proposal canvas is rewritten around
+      // the id it returns — replacing the whole env canvas, which also drops the
+      // node import-node appended.
+      // Best-effort: if any of it fails the canvas as created still stands and
+      // the Supabase node simply provisions the ordinary way.
+      if (ref && placeholderId && session) {
+        try {
+          const imported = await importNode(
+            project.id,
+            "supabase",
+            ref,
+            undefined,
+            session,
+          );
+          await saveEnvCanvas(
+            project.id,
+            imported.envId,
+            remapCanvasNodeId(canvas, placeholderId, imported.node.id),
+            session,
+            imported.canvas_version,
+          );
+        } catch {
+          /* adoption failed — the project and its canvas are still valid */
+        }
+      }
 
       navigate({
         to: "/console/projects/$id/canvas",
@@ -628,7 +789,7 @@ function NewStackPage() {
       setError((e as Error).message || "Failed to create project.");
       setApproving(false);
     }
-  }, [proposal, approving, navigate]);
+  }, [proposal, approving, navigate, session]);
 
   const onKey = useCallback(
     (e: React.KeyboardEvent) => {
@@ -759,6 +920,7 @@ function NewStackPage() {
                     </div>
                   ) : githubRepos && githubRepos.length > 0 ? (
                     <select
+                      ref={repoSelectRef}
                       value={repoUrl}
                       onChange={(e) => setRepoUrl(e.target.value)}
                       disabled={repoLoading}
@@ -774,6 +936,7 @@ function NewStackPage() {
                     </select>
                   ) : (
                     <input
+                      ref={repoInputRef}
                       type="text"
                       placeholder="https://github.com/you/your-repo"
                       value={repoUrl}
@@ -830,6 +993,8 @@ function NewStackPage() {
                       </div>
                     );
                   })}
+
+                {builderInfo && <ImportReport builder={builderInfo} />}
 
                 {proposal && (
                   <ProposalCard

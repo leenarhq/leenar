@@ -22,6 +22,7 @@ export interface ServiceItem {
   service_type: "github" | "vercel" | "supabase" | "resend";
   display_name: string;
   existing_repo?: string | null;
+  existing_ref?: string | null;
 }
 
 export interface ConnectionItem {
@@ -430,6 +431,16 @@ export async function importNode(
   return res.json();
 }
 
+export type EnvStyle = "env-file" | "hardcoded" | "unknown";
+
+export interface BuilderInfo {
+  name: string;
+  supabaseRef: string | null;
+  envStyle: EnvStyle;
+  backendOwnership: "user" | "external" | "unknown";
+  notMigrated: string[];
+}
+
 export interface RepoProposal {
   proposal: {
     name: string;
@@ -438,11 +449,13 @@ export interface RepoProposal {
       service_type: string;
       display_name: string;
       existing_repo: string | null;
+      existing_ref: string | null;
     }>;
     connections: Array<{ from_type: string; to_type: string }>;
   };
   repoFullName: string;
   detected_env_vars?: string[];
+  builder: BuilderInfo | null;
 }
 
 export async function analyzeRepoForStack(

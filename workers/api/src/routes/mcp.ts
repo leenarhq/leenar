@@ -28,6 +28,7 @@ import {
   updateNode,
   removeNode,
   removeEdge,
+  importFromBuilder,
 } from "./mcpCanvasTools";
 import { getWorkflowEnvVars } from "../insights/collectors";
 
@@ -92,6 +93,8 @@ export async function callTool(
       return listGithubRepos(userId, env);
     case "list_supabase_projects":
       return listSupabaseProjects(userId, env);
+    case "import_from_builder":
+      return importFromBuilder(userId, env, args as { repo_url?: string });
     case "add_service":
       return addService(args.project_id, args.provider, userId, env);
     case "connect_services":

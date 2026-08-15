@@ -3,8 +3,9 @@ import type { Context } from "hono";
 import { z } from "zod";
 import type { Env } from "../types";
 import { deprovisionVercel, deleteVercelEnvVar } from "../connectors/vercel";
-import { deprovisionSupabase, configureSupabaseAuth } from "../connectors/supabase";
+import { deprovisionSupabase, configureSupabaseAuth, listProjectRefs } from "../connectors/supabase";
 import { verifyRepo } from "../connectors/github";
+import { detectBuilder } from "../importers";
 import {
   getAccountId,
   deprovisionCloudflareWorker,
@@ -3299,37 +3300,57 @@ export function sanitizeProjectName(
   );
 }
 
-// POST /api/workflows/from-repo — analyze a GitHub repo and suggest a Leenar canvas
-// Fetches package.json + .env.example to detect which services to provision.
-workflowProvision.post("/from-repo", async (c) => {
-  const userId = c.get("userId");
+/** Thrown by analyzeRepo for the two input-validation cases whose message is
+ *  safe to show the caller as a 400. Anything else analyzeRepo lets escape
+ *  (network blips, a failed listProjectRefs call, ...) is an unexpected
+ *  internal error and must reach the global handler's Sentry log + 500,
+ *  not get flattened into a 400 with a leaked exception message. */
+export class InvalidRepoUrlError extends Error {}
 
-  // Rate limit: 20 analyses per 5 minutes per user (prevents GitHub token abuse)
-  if (!(await provisioningHooks.rateLimit.check(c.env, userId, "from-repo", 20, 5 * 60_000))) {
-    return c.json(
-      { error: "Too many requests. Please wait a few minutes." },
-      429,
-    );
-  }
+export interface AnalyzeRepoResult {
+  proposal: {
+    name: string;
+    summary: string;
+    services: Array<{
+      service_type: RepoSvcType;
+      display_name: string;
+      existing_repo: string | null;
+      existing_ref: string | null;
+    }>;
+    connections: Array<{ from_type: string; to_type: string }>;
+  };
+  detected_env_vars: string[];
+  repoFullName: string;
+  builder: {
+    name: string;
+    supabaseRef: string | null;
+    envStyle: string;
+    backendOwnership: "user" | "external" | "unknown";
+    notMigrated: string[];
+  } | null;
+}
 
-  const body = await c.req.json<{ repoUrl?: string }>().catch(() => ({}));
-  const repoUrl = (body as { repoUrl?: string }).repoUrl;
-  if (!repoUrl || typeof repoUrl !== "string" || repoUrl.length > 256)
-    return c.json({ error: "repoUrl required" }, 400);
-
+/** Throws InvalidRepoUrlError (message safe to show the caller) when the URL
+ *  is unusable. Any other error it lets through is an unexpected internal
+ *  failure — callers must not flatten those into a 400. */
+export async function analyzeRepo(
+  env: Env,
+  userId: string,
+  repoUrl: string,
+): Promise<AnalyzeRepoResult> {
   const parsed = parseGitHubUrl(repoUrl);
-  if (!parsed) return c.json({ error: "Invalid GitHub repo URL" }, 400);
+  if (!parsed) throw new InvalidRepoUrlError("Invalid GitHub repo URL");
   const { owner, repo } = parsed;
 
   // Strict alphanumeric validation — blocks path traversal and injection
   const SAFE_SEGMENT = /^[a-zA-Z0-9_.-]+$/;
   if (!SAFE_SEGMENT.test(owner) || !SAFE_SEGMENT.test(repo))
-    return c.json({ error: "Invalid GitHub repo URL" }, 400);
+    throw new InvalidRepoUrlError("Invalid GitHub repo URL");
 
   // Use the user's GitHub token so private repos work too
   let ghToken: string | null = null;
   try {
-    ghToken = await getUserToken(c.env, userId, "github");
+    ghToken = await getUserToken(env, userId, "github");
   } catch {
     /* not connected — fall back to unauthenticated */
   }
@@ -3488,6 +3509,38 @@ workflowProvision.post("/from-repo", async (c) => {
     rootFiles,
   );
 
+  // Which backend does this repo already talk to, and is it the user's?
+  const builderHint = await detectBuilder(rootFiles, deps, fetchRepoFile);
+
+  let backendOwnership: "user" | "external" | "unknown" = "unknown";
+  if (builderHint?.supabaseRef) {
+    let sbToken: string | null = null;
+    try {
+      sbToken = await getUserToken(env, userId, "supabase");
+    } catch {
+      /* not connected — ownership stays unknown */
+    }
+    const owned = sbToken ? await listProjectRefs(sbToken) : null;
+    if (owned)
+      backendOwnership = owned.includes(builderHint.supabaseRef)
+        ? "user"
+        : "external";
+  }
+
+  // An external backend (Lovable Cloud, or an account the user has not
+  // connected) must NOT get a fresh empty Supabase project: the deployed app
+  // would keep talking to the old one and the new project would be dead
+  // weight. Drop it and let the report explain.
+  const keepSupabase = backendOwnership !== "external";
+  const finalServices = keepSupabase
+    ? services
+    : services.filter((s) => s !== "supabase");
+  const finalConnections = keepSupabase
+    ? connections
+    : connections.filter(
+        (conn) => conn.from_type !== "supabase" && conn.to_type !== "supabase",
+      );
+
   const SERVICE_META: Record<
     RepoSvcType,
     { display_name: string; existing_repo?: string }
@@ -3509,20 +3562,66 @@ workflowProvision.post("/from-repo", async (c) => {
     repo,
   );
 
-  return c.json({
+  const NOT_MIGRATED = [
+    "database rows",
+    "auth users",
+    "storage files",
+    "backend secrets",
+  ];
+
+  return {
     proposal: {
       name: projectName,
-      summary: `Detected from ${repoFullName}: ${services.join(", ")}`,
-      services: services.map((s) => ({
+      summary: `Detected from ${repoFullName}: ${finalServices.join(", ")}`,
+      services: finalServices.map((s) => ({
         service_type: s,
         display_name: SERVICE_META[s].display_name,
         existing_repo: SERVICE_META[s].existing_repo ?? null,
+        existing_ref:
+          s === "supabase" && backendOwnership === "user"
+            ? builderHint!.supabaseRef
+            : null,
       })),
-      connections,
+      connections: finalConnections,
     },
     detected_env_vars: envKeys,
     repoFullName,
-  });
+    builder: builderHint
+      ? {
+          name: builderHint.builder,
+          supabaseRef: builderHint.supabaseRef,
+          envStyle: builderHint.envStyle,
+          backendOwnership,
+          notMigrated: backendOwnership === "external" ? NOT_MIGRATED : [],
+        }
+      : null,
+  };
+}
+
+// POST /api/workflows/from-repo — analyze a GitHub repo and suggest a Leenar canvas
+// Fetches package.json + .env.example to detect which services to provision.
+workflowProvision.post("/from-repo", async (c) => {
+  const userId = c.get("userId");
+
+  // Rate limit: 20 analyses per 5 minutes per user (prevents GitHub token abuse)
+  if (!(await provisioningHooks.rateLimit.check(c.env, userId, "from-repo", 20, 5 * 60_000))) {
+    return c.json(
+      { error: "Too many requests. Please wait a few minutes." },
+      429,
+    );
+  }
+
+  const body = await c.req.json<{ repoUrl?: string }>().catch(() => ({}));
+  const repoUrl = (body as { repoUrl?: string }).repoUrl;
+  if (!repoUrl || typeof repoUrl !== "string" || repoUrl.length > 256)
+    return c.json({ error: "repoUrl required" }, 400);
+
+  try {
+    return c.json(await analyzeRepo(c.env, userId, repoUrl));
+  } catch (e) {
+    if (e instanceof InvalidRepoUrlError) return c.json({ error: e.message }, 400);
+    throw e;
+  }
 });
 
 // POST /api/workflows/diagnose — AI-powered provision error diagnosis

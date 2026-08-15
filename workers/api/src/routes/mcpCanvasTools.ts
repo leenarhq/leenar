@@ -17,7 +17,7 @@
 // routes/mcp.core.ts and holds none of these symbols.
 import type { Env } from "../types";
 import type { WorkingNode } from "../canvasDiff";
-import { type CanvasEdge, type CanvasNode } from "./workflowProvision";
+import { type CanvasEdge, type CanvasNode, analyzeRepo } from "./workflowProvision";
 import { isUUID, auditLog, getUserToken } from "../utils";
 import { scopedQuery } from "../tenancy";
 import { patchCanvasWithVersion, assertCanvasUnlocked } from "../canvasVersion";
@@ -282,6 +282,24 @@ export const CANVAS_TOOL_SCHEMAS = [
       required: ["project_id"],
     },
   },
+  {
+    name: "import_from_builder",
+    description:
+      "Analyse a GitHub repository built by an AI app builder (Lovable, and others as they are added). " +
+      "Reports which Supabase project the app already talks to, whether that project belongs to the " +
+      "user, and which services Leenar would put on the canvas. Read-only: it inspects the repo and " +
+      "does not change anything.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repo_url: {
+          type: "string",
+          description: "GitHub repository URL, e.g. https://github.com/acme/app",
+        },
+      },
+      required: ["repo_url"],
+    },
+  },
 ];
 
 // Tools the web canvas-editing agent (mode:"canvas") may call: read tools +
@@ -299,6 +317,7 @@ export const CANVAS_ALLOWED_TOOLS = new Set([
   "list_vercel_projects",
   "list_github_repos",
   "list_supabase_projects",
+  "import_from_builder",
   // canvas authoring (dual-mode: mutate env._workingCanvas when present)
   "add_service",
   "connect_services",
@@ -919,4 +938,14 @@ export async function listEnvironments(projectId: string, userId: string, env: E
   if (result && typeof result === "object" && !Array.isArray(result) && "error" in result)
     throw new Error(result.error);
   return result;
+}
+
+export async function importFromBuilder(
+  userId: string,
+  env: Env,
+  args: { repo_url?: string },
+) {
+  const repoUrl = typeof args.repo_url === "string" ? args.repo_url : "";
+  if (!repoUrl) throw new Error("repo_url is required");
+  return analyzeRepo(env, userId, repoUrl);
 }

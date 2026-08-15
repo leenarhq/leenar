@@ -928,3 +928,16 @@ export async function refreshNodeSnapshot(
     clearAppliedColumns: true,
   });
 }
+
+/** Project refs the token's account owns. Returns `null` when the call
+ *  fails, so a transient Supabase outage degrades to "unknown ownership"
+ *  rather than wrongly claiming the user does not own their own project. */
+export async function listProjectRefs(token: string): Promise<string[] | null> {
+  const res = await fetch(`${SB_MGMT}/v1/projects`, {
+    headers: sbHeaders(token),
+    signal: AbortSignal.timeout(15_000),
+  }).catch(() => null);
+  if (!res || !res.ok) return null;
+  const data = (await res.json().catch(() => [])) as Array<{ id?: string }>;
+  return data.map((p) => p.id).filter((id): id is string => typeof id === "string");
+}

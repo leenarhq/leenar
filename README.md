@@ -1,7 +1,7 @@
 <div align="center">
 
 <a href="https://leenar.net">
-  <img src=".github/assets/leenar-banner.png" alt="Leenar — deploy your entire stack in one click" width="100%">
+  <img src=".github/assets/leenar-banner.png" alt="Leenar — ship the app, skip the DevOps" width="100%">
 </a>
 
 ### Describe your infrastructure. Watch it become a canvas. Deploy it for real.

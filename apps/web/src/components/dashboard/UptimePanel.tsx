@@ -1,7 +1,9 @@
 import { Gauge } from "lucide-react";
 import type { UptimeNodeSummary } from "../../lib/api";
-import { Panel, EmptyRow, StatusDot } from "./Panel";
+import { Panel, EmptyRow } from "./Panel";
 import { TimeSeriesChart } from "./TimeSeriesChart";
+import { Row, Mono, Dim } from "../console/Rows";
+import { StateDot, toneFor } from "../console/StateTag";
 
 type CanvasLike = {
   nodes?: Array<{ id: string; data?: { label?: string } }>;
@@ -19,29 +21,28 @@ export function UptimePanel({
     canvas?.nodes?.find((n) => n.id === id)?.data?.label ?? id;
 
   return (
-    <Panel title="Uptime" icon={Gauge}>
+    <Panel title="Uptime" icon={Gauge} bodyClassName="p-0">
       {entries.length === 0 ? (
         <EmptyRow>No uptime checks yet</EmptyRow>
       ) : (
-        <ul className="space-y-2.5">
+        <div>
           {entries.map(([nodeId, u]) => (
-            <li key={nodeId} className="text-xs">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-2 truncate">
-                  <StatusDot tone={u.status} />
-                  <span className="truncate font-mono">
-                    {nodeLabel(nodeId)}
-                  </span>
+            <div
+              key={nodeId}
+              className="border-b border-border-soft last:border-b-0"
+            >
+              <div className="flex items-center gap-3.5 px-4 py-3 text-[13px]">
+                <StateDot tone={toneFor(u.status)} />
+                <span className="flex-1 truncate font-mono text-[12px]">
+                  {nodeLabel(nodeId)}
                 </span>
-                <span className="text-muted-foreground">
-                  {u.uptime7d.toFixed(1)}%
-                  {u.lastLatencyMs != null && (
-                    <span className="ml-2">{u.lastLatencyMs}ms</span>
-                  )}
-                </span>
+                <Mono>{u.uptime7d.toFixed(1)}%</Mono>
+                {u.lastLatencyMs != null && <Dim>{u.lastLatencyMs}ms</Dim>}
               </div>
               {u.sparkline.length >= 2 && (
-                <div className="mt-1 text-foreground/40">
+                // text-dim, not text-foreground/40: one of the three weights
+                // rather than a hand-made fourth.
+                <div className="px-4 pb-3 text-dim">
                   <TimeSeriesChart
                     height={40}
                     yFormat={(v) => `${Math.round(v)}`}
@@ -58,9 +59,9 @@ export function UptimePanel({
                   />
                 </div>
               )}
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </Panel>
   );

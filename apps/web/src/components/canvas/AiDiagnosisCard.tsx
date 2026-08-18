@@ -19,16 +19,16 @@ export function AiDiagnosisCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 12 }}
       transition={{ duration: 0.2 }}
-      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-[440px] max-w-[calc(100vw-2rem)] rounded-xl border border-amber-500/20 bg-surface-container-low/95 backdrop-blur-md p-4 shadow-2xl"
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-[440px] max-w-[calc(100vw-2rem)] rounded-xl border border-warn/20 bg-popover backdrop-blur-md p-4 shadow-2xl"
     >
       <div className="flex items-start gap-3">
-        <div className="w-7 h-7 rounded-lg bg-amber-500/12 border border-amber-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-lg bg-warn/10 border border-warn/30 flex items-center justify-center flex-shrink-0 mt-0.5">
           <svg
             width="13"
             height="13"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="rgba(251,191,36,0.85)"
+            stroke="var(--warn)"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -38,15 +38,15 @@ export function AiDiagnosisCard({
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-amber-400/90 mb-1">
+          <p className="text-[13px] font-semibold text-warn mb-1">
             AI Diagnosis
           </p>
           {aiSuggestionLoading ? (
-            <p className="text-[13px] text-white/35 animate-pulse">
+            <p className="text-[13px] text-dim animate-pulse">
               Analyzing error…
             </p>
           ) : (
-            <p className="text-[13px] text-white/60 leading-relaxed">
+            <p className="text-[13px] text-muted-foreground leading-relaxed">
               {aiSuggestion}
             </p>
           )}
@@ -60,7 +60,7 @@ export function AiDiagnosisCard({
                   href="https://github.com/settings/installations"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2.5 py-1 rounded-md bg-amber-500/12 border border-amber-500/25 text-[12px] font-semibold text-amber-400 hover:bg-amber-500/20 transition-colors"
+                  className="px-2.5 py-1 rounded-md bg-warn/10 border border-warn/30 text-[12px] font-semibold text-warn hover:bg-warn/15 transition-colors"
                 >
                   Configure Vercel App on GitHub →
                 </a>
@@ -78,7 +78,7 @@ export function AiDiagnosisCard({
                     <button
                       key={svc}
                       onClick={() => onConnectService(svc)}
-                      className="px-2.5 py-1 rounded-md bg-amber-500/12 border border-amber-500/25 text-[12px] font-semibold text-amber-400 hover:bg-amber-500/20 transition-colors"
+                      className="px-2.5 py-1 rounded-md bg-warn/10 border border-warn/30 text-[12px] font-semibold text-warn hover:bg-warn/15 transition-colors"
                     >
                       {label}
                     </button>
@@ -86,7 +86,7 @@ export function AiDiagnosisCard({
               )}
               <a
                 href="/console/integrations"
-                className="px-2.5 py-1 rounded-md bg-white/[0.05] border border-white/[0.08] text-[12px] font-semibold text-white/40 hover:text-white/60 hover:bg-white/[0.08] transition-colors"
+                className="px-2.5 py-1 rounded-md bg-[var(--hover)] border border-border text-[12px] font-semibold text-muted-foreground hover:text-muted-foreground hover:bg-secondary transition-colors"
               >
                 Integrations
               </a>

@@ -284,11 +284,11 @@ export function DomainsTab({
       {/* ── Resend: Domain Management ── */}
       {provider === "resend" && (
         <>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/25 px-1 pt-1">
+          <p className="px-1 pt-1 font-mono text-[10px] lowercase text-dim">
             Sending Domains
           </p>
           {resendNodeDomainLoading ? (
-            <div className="flex items-center gap-1.5 text-white/30 text-[12px] py-2">
+            <div className="flex items-center gap-1.5 text-dim text-[12px] py-2">
               <Loader2 size={11} className="animate-spin" />
               <span>Loading domains…</span>
             </div>
@@ -299,25 +299,25 @@ export function DomainsTab({
                   {resendNodeDomains.map((d) => {
                     const statusColor =
                       d.status === "verified"
-                        ? "bg-emerald-400"
+                        ? "bg-ok"
                         : d.status === "permanent_failure"
-                          ? "bg-red-400/70"
+                          ? "bg-crit"
                           : d.status === "temporary_failure"
-                            ? "bg-orange-400/70"
-                            : "bg-amber-400";
+                            ? "bg-warn"
+                            : "bg-warn";
                     const isExpanded = expandedDomainId === d.id;
                     const records = resendNodeRecords[d.id];
                     return (
                       <div
                         key={d.id}
-                        className="rounded-lg bg-white/[0.03] border border-white/[0.06] overflow-hidden"
+                        className="rounded-lg bg-[var(--hover)] border border-border-soft overflow-hidden"
                       >
                         <div className="flex items-center justify-between gap-2 px-2.5 py-2">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span
                               className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusColor}${d.status !== "verified" ? " animate-pulse" : ""}`}
                             />
-                            <span className="text-[13px] text-white/70 font-mono truncate">
+                            <span className="text-[13px] text-foreground font-mono truncate">
                               {d.name}
                             </span>
                             {d.status !== "verified" && (
@@ -325,7 +325,7 @@ export function DomainsTab({
                                 onClick={() =>
                                   handleToggleResendDomainRecords(d.id)
                                 }
-                                className="text-[11px] text-amber-400/60 hover:text-amber-400 transition-colors flex-shrink-0"
+                                className="shrink-0 text-[11px] text-warn transition-opacity hover:opacity-80"
                               >
                                 {isExpanded ? "hide DNS" : "DNS records"}
                               </button>
@@ -334,7 +334,7 @@ export function DomainsTab({
                           <button
                             onClick={() => handleDeleteResendDomain(d.id)}
                             disabled={removingResendDomainId === d.id}
-                            className="text-white/25 hover:text-red-400/70 transition-colors flex-shrink-0"
+                            className="text-dim hover:text-crit transition-colors flex-shrink-0"
                           >
                             {removingResendDomainId === d.id ? (
                               <Loader2 size={10} className="animate-spin" />
@@ -344,15 +344,15 @@ export function DomainsTab({
                           </button>
                         </div>
                         {isExpanded && (
-                          <div className="border-t border-white/[0.06] px-2.5 py-2 space-y-1.5">
+                          <div className="border-t border-border-soft px-2.5 py-2 space-y-1.5">
                             {records ? (
                               records.map((r, i) => (
                                 <div
                                   key={i}
-                                  className="rounded bg-amber-500/8 border border-amber-500/15 p-2 space-y-1"
+                                  className="rounded bg-warn/10 border border-warn/20 p-2 space-y-1"
                                 >
                                   <div className="flex items-center justify-between gap-1">
-                                    <span className="text-[11px] font-mono text-white/40">
+                                    <span className="text-[11px] font-mono text-muted-foreground">
                                       {r.type} · {r.record}
                                     </span>
                                     <button
@@ -362,23 +362,23 @@ export function DomainsTab({
                                           `resend-${d.id}-${i}`,
                                         )
                                       }
-                                      className="text-[11px] text-white/40 hover:text-white/70 transition-colors"
+                                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
                                     >
                                       {copiedKey === `resend-${d.id}-${i}`
                                         ? "✓"
                                         : "copy"}
                                     </button>
                                   </div>
-                                  <p className="text-[11px] font-mono text-white/50 truncate">
+                                  <p className="text-[11px] font-mono text-muted-foreground truncate">
                                     {r.name}
                                   </p>
-                                  <p className="text-[11px] font-mono text-white/35 break-all">
+                                  <p className="text-[11px] font-mono text-dim break-all">
                                     {r.value}
                                   </p>
                                 </div>
                               ))
                             ) : (
-                              <div className="flex items-center gap-1.5 text-white/30 text-[11px]">
+                              <div className="flex items-center gap-1.5 text-dim text-[11px]">
                                 <Loader2 size={9} className="animate-spin" />
                                 <span>Loading DNS records…</span>
                               </div>
@@ -391,9 +391,7 @@ export function DomainsTab({
                 </div>
               )}
               {resendNodeDomainError && (
-                <p className="text-[12px] text-red-400/70">
-                  {resendNodeDomainError}
-                </p>
+                <p className="text-[12px] text-crit">{resendNodeDomainError}</p>
               )}
               <div className="flex gap-1.5">
                 <input
@@ -409,7 +407,7 @@ export function DomainsTab({
                 <button
                   onClick={handleCreateResendDomain}
                   disabled={!newResendDomain.trim() || addingResendDomain}
-                  className="px-2.5 py-1.5 rounded-lg bg-white/[0.07] text-white/60 hover:bg-white/[0.11] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center"
+                  className="px-2.5 py-1.5 rounded-lg bg-secondary text-muted-foreground hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center"
                 >
                   {addingResendDomain ? (
                     <Loader2 size={11} className="animate-spin" />
@@ -426,11 +424,11 @@ export function DomainsTab({
       {/* ── Vercel: Custom Domains (provisioned only) ── */}
       {provider === "vercel" && isProvisioned && localData.vercelProjectId && (
         <>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/25 px-1 pt-1">
+          <p className="px-1 pt-1 font-mono text-[10px] lowercase text-dim">
             Custom Domains
           </p>
           {vercelDomainLoading ? (
-            <div className="flex items-center gap-1.5 text-white/30 text-[12px] py-2">
+            <div className="flex items-center gap-1.5 text-dim text-[12px] py-2">
               <Loader2 size={11} className="animate-spin" />
               <span>Loading domains…</span>
             </div>
@@ -441,21 +439,21 @@ export function DomainsTab({
                   {vercelDomains.map((d) => (
                     <div
                       key={d.name}
-                      className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5 space-y-1.5"
+                      className="rounded-lg bg-[var(--hover)] border border-border-soft p-2.5 space-y-1.5"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <span
-                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${d.verified ? "bg-emerald-400" : "bg-amber-400 animate-pulse"}`}
+                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${d.verified ? "bg-ok" : "bg-warn animate-pulse"}`}
                           />
-                          <span className="text-[13px] text-white/70 font-mono truncate">
+                          <span className="text-[13px] text-foreground font-mono truncate">
                             {d.name}
                           </span>
                         </div>
                         <button
                           onClick={() => handleRemoveVercelDomain(d.name)}
                           disabled={removingDomain === d.name}
-                          className="text-white/25 hover:text-red-400/70 transition-colors flex-shrink-0"
+                          className="text-dim hover:text-crit transition-colors flex-shrink-0"
                         >
                           {removingDomain === d.name ? (
                             <Loader2 size={10} className="animate-spin" />
@@ -467,29 +465,29 @@ export function DomainsTab({
                       {!d.verified && (
                         <div className="space-y-1.5">
                           {d.cname && (
-                            <div className="rounded bg-amber-500/8 border border-amber-500/15 p-2 space-y-1">
-                              <p className="text-[11px] text-amber-400/60 uppercase tracking-wider">
+                            <div className="rounded bg-warn/10 border border-warn/20 p-2 space-y-1">
+                              <p className="font-mono text-[10px] lowercase text-warn">
                                 Add DNS record to route traffic
                               </p>
                               <div className="flex items-center justify-between gap-1">
-                                <span className="text-[11px] font-mono text-white/30">
+                                <span className="text-[11px] font-mono text-dim">
                                   CNAME
                                 </span>
-                                <span className="text-[11px] font-mono text-white/50 truncate mx-1">
+                                <span className="text-[11px] font-mono text-muted-foreground truncate mx-1">
                                   {d.name}
                                 </span>
                                 <button
                                   onClick={() =>
                                     copyToClipboard(d.cname!, `${d.name}-cname`)
                                   }
-                                  className="text-[11px] font-mono text-white/40 hover:text-white/70 flex-shrink-0 flex items-center gap-0.5 transition-colors"
+                                  className="text-[11px] font-mono text-muted-foreground hover:text-foreground flex-shrink-0 flex items-center gap-0.5 transition-colors"
                                 >
                                   {copiedKey === `${d.name}-cname`
                                     ? "✓"
                                     : "copy"}
                                 </button>
                               </div>
-                              <p className="text-[11px] font-mono text-white/40 break-all">
+                              <p className="text-[11px] font-mono text-muted-foreground break-all">
                                 {d.cname}
                               </p>
                             </div>
@@ -497,30 +495,30 @@ export function DomainsTab({
                           {d.verification?.map((v, i) => (
                             <div
                               key={i}
-                              className="rounded bg-amber-500/8 border border-amber-500/15 p-2 space-y-1"
+                              className="rounded bg-warn/10 border border-warn/20 p-2 space-y-1"
                             >
-                              <p className="text-[11px] text-amber-400/60 uppercase tracking-wider">
+                              <p className="font-mono text-[10px] lowercase text-warn">
                                 Add DNS record to verify
                               </p>
                               <div className="flex items-center justify-between gap-1">
-                                <span className="text-[11px] font-mono text-white/30">
+                                <span className="text-[11px] font-mono text-dim">
                                   {v.type}
                                 </span>
-                                <span className="text-[11px] font-mono text-white/50 truncate mx-1">
+                                <span className="text-[11px] font-mono text-muted-foreground truncate mx-1">
                                   {v.domain}
                                 </span>
                                 <button
                                   onClick={() =>
                                     copyToClipboard(v.value, `${d.name}-${i}`)
                                   }
-                                  className="text-[11px] font-mono text-white/40 hover:text-white/70 flex-shrink-0 flex items-center gap-0.5 transition-colors"
+                                  className="text-[11px] font-mono text-muted-foreground hover:text-foreground flex-shrink-0 flex items-center gap-0.5 transition-colors"
                                 >
                                   {copiedKey === `${d.name}-${i}`
                                     ? "✓"
                                     : "copy"}
                                 </button>
                               </div>
-                              <p className="text-[11px] font-mono text-white/40 break-all">
+                              <p className="text-[11px] font-mono text-muted-foreground break-all">
                                 {v.value}
                               </p>
                             </div>
@@ -532,15 +530,15 @@ export function DomainsTab({
                 </div>
               )}
               {vercelDomainError && (
-                <p className="text-[12px] text-red-400/70">
-                  {vercelDomainError}
-                </p>
+                <p className="text-[12px] text-crit">{vercelDomainError}</p>
               )}
               {cfDnsPrompt && (
                 <div
                   style={{
-                    background: "rgba(249,115,22,0.08)",
-                    border: "1px solid rgba(249,115,22,0.25)",
+                    background:
+                      "color-mix(in srgb, var(--warn) 8%, transparent)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--warn) 30%, transparent)",
                     borderRadius: 8,
                     padding: "8px 10px",
                     display: "flex",
@@ -550,7 +548,7 @@ export function DomainsTab({
                 >
                   <p
                     className="text-[12px]"
-                    style={{ color: "#f97316", margin: 0 }}
+                    style={{ color: "var(--foreground)", margin: 0 }}
                   >
                     Your Cloudflare account is connected. Add DNS records
                     automatically?
@@ -565,8 +563,8 @@ export function DomainsTab({
                         padding: "4px 10px",
                         borderRadius: 6,
                         border: "none",
-                        background: "#f97316",
-                        color: "#fff",
+                        background: "var(--foreground)",
+                        color: "var(--primary-foreground)",
                         cursor: cfDnsAdding ? "not-allowed" : "pointer",
                         opacity: cfDnsAdding ? 0.6 : 1,
                       }}
@@ -581,9 +579,9 @@ export function DomainsTab({
                         fontWeight: 500,
                         padding: "4px 10px",
                         borderRadius: 6,
-                        border: "1px solid var(--app-border)",
+                        border: "1px solid var(--border)",
                         background: "transparent",
-                        color: "var(--app-text-muted)",
+                        color: "var(--muted-foreground)",
                         cursor: "pointer",
                       }}
                     >
@@ -593,7 +591,7 @@ export function DomainsTab({
                 </div>
               )}
               {cfDnsAdded && cfDnsAdded.length > 0 && (
-                <p className="text-[12px] text-emerald-400/80">
+                <p className="text-[12px] text-ok">
                   ✓ Cloudflare DNS added: {cfDnsAdded.join(", ")}
                 </p>
               )}
@@ -611,7 +609,7 @@ export function DomainsTab({
                 <button
                   onClick={handleAddVercelDomain}
                   disabled={!newDomain.trim() || addingDomain}
-                  className="px-2.5 py-1.5 rounded-lg bg-white/[0.07] text-white/60 hover:bg-white/[0.11] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center"
+                  className="px-2.5 py-1.5 rounded-lg bg-secondary text-muted-foreground hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center"
                 >
                   {addingDomain ? (
                     <Loader2 size={11} className="animate-spin" />

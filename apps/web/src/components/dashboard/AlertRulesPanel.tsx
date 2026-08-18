@@ -12,6 +12,11 @@ import {
   type AlertChannel,
 } from "../../lib/api";
 import { Panel, EmptyRow } from "./Panel";
+import { StateTag, toneFor } from "../console/StateTag";
+
+/** The four form controls share one shape. */
+const FIELD =
+  "rounded-lg border border-border bg-secondary px-2 py-1 text-[12px]";
 
 const METRIC_LABEL: Record<AlertMetric, string> = {
   cost_month_usd: "Monthly cost ($)",
@@ -108,17 +113,17 @@ export function AlertRulesPanel({
                   <span className="flex items-center gap-2">
                     <button
                       onClick={() => toggle(rule)}
-                      className={`rounded px-1.5 py-0.5 text-[10px] uppercase ${
-                        rule.enabled
-                          ? "text-emerald-400"
-                          : "text-muted-foreground"
-                      }`}
+                      aria-label={rule.enabled ? "Disable rule" : "Enable rule"}
                     >
-                      {rule.enabled ? "on" : "off"}
+                      <StateTag
+                        tone={toneFor(rule.enabled ? "on" : "off")}
+                        label={rule.enabled ? "on" : "off"}
+                      />
                     </button>
                     <button
                       onClick={() => remove(rule.id)}
-                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Delete rule"
+                      className="text-muted-foreground transition-colors hover:text-crit"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -128,11 +133,11 @@ export function AlertRulesPanel({
             </ul>
           )}
 
-          <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-border-soft pt-3">
             <select
               value={metric}
               onChange={(e) => setMetric(e.target.value as AlertMetric)}
-              className="rounded border border-border bg-secondary/30 px-1.5 py-1 text-xs"
+              className={FIELD}
             >
               {(Object.keys(METRIC_LABEL) as AlertMetric[]).map((m) => (
                 <option key={m} value={m}>
@@ -143,7 +148,7 @@ export function AlertRulesPanel({
             <select
               value={operator}
               onChange={(e) => setOperator(e.target.value as AlertOperator)}
-              className="rounded border border-border bg-secondary/30 px-1.5 py-1 text-xs"
+              className={FIELD}
             >
               {(Object.keys(OP_LABEL) as AlertOperator[]).map((o) => (
                 <option key={o} value={o}>
@@ -156,20 +161,23 @@ export function AlertRulesPanel({
               onChange={(e) => setThreshold(e.target.value)}
               inputMode="decimal"
               placeholder="value"
-              className="w-16 rounded border border-border bg-secondary/30 px-1.5 py-1 text-xs"
+              className={`w-16 ${FIELD}`}
             />
             <select
               value={channel}
               onChange={(e) => setChannel(e.target.value as AlertChannel)}
-              className="rounded border border-border bg-secondary/30 px-1.5 py-1 text-xs"
+              className={FIELD}
             >
               <option value="email">email</option>
               <option value="slack">slack</option>
             </select>
+            {/* bg-primary, not bg-foreground: primary inverts correctly on
+                the light theme, foreground does not. */}
             <button
               onClick={add}
               disabled={adding || threshold.trim() === ""}
-              className="inline-flex items-center gap-1 rounded bg-foreground px-2 py-1 text-xs text-background hover:opacity-90 disabled:opacity-50"
+              aria-label="Add rule"
+              className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[13px] text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {adding ? (
                 <Loader2 className="h-3 w-3 animate-spin" />

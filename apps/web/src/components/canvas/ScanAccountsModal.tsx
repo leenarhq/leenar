@@ -207,10 +207,10 @@ export function ScanAccountsModal({
       transition={{ duration: 0.15 }}
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <motion.div
-        className="relative z-10 w-[480px] max-h-[75vh] flex flex-col rounded-2xl border border-white/[0.08] shadow-2xl"
-        style={{ background: "var(--app-menu-bg)" }}
+        className="relative z-10 flex max-h-[75vh] w-[480px] flex-col rounded-2xl border border-border-soft shadow-[var(--raise-lg)]"
+        style={{ background: "var(--popover)" }}
         initial={{ scale: 0.95, y: 8 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 8 }}
@@ -218,18 +218,18 @@ export function ScanAccountsModal({
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border-soft">
           <div>
-            <h2 className="text-[15px] font-semibold text-white/85 tracking-tight">
+            <h2 className="text-[15px] font-semibold text-foreground tracking-tight">
               Scan Accounts
             </h2>
-            <p className="text-[13px] text-white/35 mt-0.5">
+            <p className="text-[13px] text-dim mt-0.5">
               Import existing Vercel & Supabase projects
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+            className="p-1 rounded-md text-dim hover:text-foreground hover:bg-secondary transition-all"
           >
             <svg
               width="12"
@@ -250,8 +250,8 @@ export function ScanAccountsModal({
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
           {loading ? (
             <div className="flex items-center justify-center py-10">
-              <div className="w-5 h-5 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
-              <span className="ml-3 text-[14px] text-white/40">
+              <div className="w-5 h-5 rounded-full border-2 border-border border-t-foreground animate-spin" />
+              <span className="ml-3 text-[14px] text-muted-foreground">
                 Scanning accounts…
               </span>
             </div>
@@ -260,7 +260,7 @@ export function ScanAccountsModal({
               {/* Vercel section */}
               <ProjectSection
                 label="Vercel"
-                color="#fff"
+                color="var(--primary-foreground)"
                 icon={<TriangleIcon />}
                 projects={vercelProjects.map((p) => ({
                   id: p.id,
@@ -278,7 +278,7 @@ export function ScanAccountsModal({
               {/* Supabase section */}
               <ProjectSection
                 label="Supabase"
-                color="#3ecf8e"
+                color="var(--foreground)"
                 icon={<DatabaseIcon />}
                 projects={supabaseProjects.map((p) => ({
                   id: p.ref,
@@ -293,7 +293,7 @@ export function ScanAccountsModal({
               {/* GitHub section */}
               <ProjectSection
                 label="GitHub"
-                color="#fff"
+                color="var(--primary-foreground)"
                 icon={<GitHubIcon />}
                 projects={githubRepos.map((r) => ({
                   id: r.full_name,
@@ -308,7 +308,7 @@ export function ScanAccountsModal({
               {/* Connections */}
               {showConnections && (
                 <div>
-                  <p className="text-[11px] font-mono uppercase tracking-[0.12em] text-white/25 mb-2">
+                  <p className="text-[11px] font-mono lowercase text-dim mb-2">
                     Connections
                   </p>
                   <div className="space-y-1">
@@ -321,10 +321,10 @@ export function ScanAccountsModal({
                           <button
                             key={k}
                             onClick={() => toggleConn(sp.ref, vp.id)}
-                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors text-left"
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--hover)] transition-colors text-left"
                           >
                             <div
-                              className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-colors ${on ? "bg-[#3ecf8e] border-[#3ecf8e]" : "border-white/20 bg-transparent"}`}
+                              className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-colors ${on ? "bg-[#3ecf8e] border-[#3ecf8e]" : "border-border bg-transparent"}`}
                             >
                               {on && (
                                 <svg
@@ -335,7 +335,7 @@ export function ScanAccountsModal({
                                 >
                                   <path
                                     d="M2 5l2.5 2.5L8 2"
-                                    stroke="#000"
+                                    stroke="var(--primary-foreground)"
                                     strokeWidth="1.5"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -343,7 +343,7 @@ export function ScanAccountsModal({
                                 </svg>
                               )}
                             </div>
-                            <span className="text-[13px] text-white/55 font-mono">
+                            <span className="text-[13px] text-muted-foreground font-mono">
                               {sp.name}
                             </span>
                             <svg
@@ -353,11 +353,11 @@ export function ScanAccountsModal({
                               fill="none"
                               stroke="currentColor"
                               strokeWidth="2"
-                              className="text-white/25 flex-shrink-0"
+                              className="text-dim flex-shrink-0"
                             >
                               <path d="M5 12h14M13 6l6 6-6 6" />
                             </svg>
-                            <span className="text-[13px] text-white/55 font-mono">
+                            <span className="text-[13px] text-muted-foreground font-mono">
                               {vp.name}
                             </span>
                             {autoDetected && (
@@ -376,13 +376,13 @@ export function ScanAccountsModal({
               {/* Project name */}
               {totalSelected > 0 && (
                 <div>
-                  <p className="text-[11px] font-mono uppercase tracking-[0.12em] text-white/25 mb-2">
+                  <p className="text-[11px] font-mono lowercase text-dim mb-2">
                     Project Name
                   </p>
                   <input
                     value={workflowName}
                     onChange={(e) => setWorkflowName(e.target.value)}
-                    className="w-full bg-white/[0.05] border border-white/[0.08] rounded-lg px-3 py-2 text-[14px] text-white/80 placeholder-white/25 focus:outline-none focus:border-white/20 transition-colors"
+                    className="w-full bg-[var(--hover)] border border-border rounded-lg px-3 py-2 text-[14px] text-foreground placeholder:text-dim focus:outline-none focus:border-border transition-colors"
                     placeholder="My Project"
                   />
                 </div>
@@ -393,8 +393,8 @@ export function ScanAccountsModal({
 
         {/* Footer */}
         {!loading && (
-          <div className="px-5 py-4 border-t border-white/[0.06] flex items-center justify-between gap-3">
-            <span className="text-[13px] text-white/30">
+          <div className="px-5 py-4 border-t border-border-soft flex items-center justify-between gap-3">
+            <span className="text-[13px] text-dim">
               {totalSelected > 0
                 ? `${totalSelected} project${totalSelected !== 1 ? "s" : ""} selected`
                 : "Select projects to import"}
@@ -402,14 +402,14 @@ export function ScanAccountsModal({
             <div className="flex gap-2">
               <button
                 onClick={onClose}
-                className="px-3 py-1.5 rounded-lg text-[14px] text-white/45 hover:text-white/70 hover:bg-white/[0.05] transition-all"
+                className="px-3 py-1.5 rounded-lg text-[14px] text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleImport}
                 disabled={totalSelected === 0 || creating}
-                className="px-4 py-1.5 rounded-lg text-[14px] font-medium bg-white/[0.09] text-white/80 hover:bg-white/[0.13] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="px-4 py-1.5 rounded-lg text-[14px] font-medium bg-secondary text-foreground hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 {creating ? "Importing…" : "Import"}
               </button>
@@ -446,17 +446,15 @@ function ProjectSection({
         <span style={{ color }} className="opacity-70">
           {icon}
         </span>
-        <p className="text-[11px] font-mono uppercase tracking-[0.12em] text-white/25">
-          {label}
-        </p>
+        <p className="text-[11px] font-mono lowercase text-dim">{label}</p>
         {projects.length > 0 && (
-          <span className="text-[11px] font-mono text-white/20">
+          <span className="text-[11px] font-mono text-dim">
             ({projects.length})
           </span>
         )}
       </div>
       {error ? (
-        <p className="text-[13px] text-white/30 pl-1">
+        <p className="text-[13px] text-dim pl-1">
           {error.includes("No") ||
           error.includes("not found") ||
           error.includes("connection")
@@ -464,7 +462,7 @@ function ProjectSection({
             : error}
         </p>
       ) : projects.length === 0 ? (
-        <p className="text-[13px] text-white/25 pl-1">No projects found</p>
+        <p className="text-[13px] text-dim pl-1">No projects found</p>
       ) : (
         <div className="space-y-0.5 max-h-40 overflow-y-auto">
           {projects.map((p) => {
@@ -473,16 +471,16 @@ function ProjectSection({
               <button
                 key={p.id}
                 onClick={() => onToggle(p.id)}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors text-left"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--hover)] transition-colors text-left"
               >
                 <div
-                  className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-colors ${on ? "border-blue-400/70 bg-blue-500/20" : "border-white/20 bg-transparent"}`}
+                  className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-colors ${on ? "border-foreground/40 bg-secondary" : "border-border bg-transparent"}`}
                 >
                   {on && (
                     <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
                       <path
                         d="M2 5l2.5 2.5L8 2"
-                        stroke="rgb(96,165,250)"
+                        stroke="var(--muted-foreground)"
                         strokeWidth="1.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -491,11 +489,11 @@ function ProjectSection({
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[14px] text-white/70 truncate">{p.name}</p>
+                  <p className="text-[14px] text-foreground truncate">
+                    {p.name}
+                  </p>
                   {p.sub && (
-                    <p className="text-[12px] text-white/30 truncate">
-                      {p.sub}
-                    </p>
+                    <p className="text-[12px] text-dim truncate">{p.sub}</p>
                   )}
                 </div>
               </button>

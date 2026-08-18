@@ -81,12 +81,12 @@ export function EdgeEditor({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 24 }}
       transition={{ duration: 0.18 }}
-      className="absolute top-0 right-0 h-full w-80 bg-surface border-l border-border z-50 flex flex-col shadow-xl"
+      className="absolute top-0 right-0 h-full w-80 bg-background border-l border-border z-50 flex flex-col shadow-xl"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex flex-col min-w-0">
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+          <span className="text-xs text-muted-foreground font-medium lowercase">
             Edge
           </span>
           <span className="text-sm font-semibold text-foreground truncate">
@@ -104,7 +104,7 @@ export function EdgeEditor({
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
         <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground mb-2 lowercase">
             Environment Variables
           </p>
 

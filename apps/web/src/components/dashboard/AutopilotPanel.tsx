@@ -4,6 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 import type { AutopilotLevel, AutopilotAction } from "../../lib/api";
 import { setAutopilotPolicy, decideAutopilotAction } from "../../lib/api";
 import { Panel, EmptyRow } from "./Panel";
+import { Row } from "../console/Rows";
 
 const LEVELS: { key: AutopilotLevel; label: string }[] = [
   { key: "observe", label: "Observe" },
@@ -77,56 +78,63 @@ export function AutopilotPanel({
           <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
         ) : null
       }
+      bodyClassName="p-0"
     >
-      <div className="mb-3 flex items-center gap-1 rounded-md border border-border p-0.5">
-        {LEVELS.map((l) => (
-          <button
-            key={l.key}
-            onClick={() => changeLevel(l.key)}
-            className={`flex-1 rounded px-2 py-1 text-[11px] transition-colors ${
-              level === l.key
-                ? "bg-secondary text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {l.label}
-          </button>
-        ))}
+      {/* The control sizes to its labels rather than stretching: a segmented
+          control spanning a full-width panel reads as four buttons, not as
+          one setting with four positions. */}
+      <div className="border-b border-border-soft p-3">
+        <div className="inline-flex items-center gap-0.5 rounded-full border border-border-soft p-0.5">
+          {LEVELS.map((l) => (
+            <button
+              key={l.key}
+              onClick={() => changeLevel(l.key)}
+              className={`rounded-full px-3 py-1 font-mono text-[10px] lowercase transition-colors ${
+                level === l.key
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {pending.length === 0 ? (
         <EmptyRow>No pending actions</EmptyRow>
       ) : (
-        <ul className="space-y-2">
+        <div>
           {pending.map((a) => (
-            <li
-              key={a.id}
-              className="flex items-center gap-2 rounded border border-border px-3 py-2 text-xs"
-            >
-              <span className="flex-1 font-mono">
+            <Row key={a.id}>
+              <span className="flex-1 truncate font-mono text-[12px] lowercase">
                 {a.action_type.replace(/_/g, " ")}
               </span>
+              {/* No hue on approve/reject: an action is not a state, and the
+                  icons already say which is which (spec D3). */}
               <button
                 onClick={() => decide(a, "approved")}
                 disabled={busy === a.id}
-                className="rounded border border-border p-1 hover:bg-secondary disabled:opacity-50"
+                aria-label="Approve"
+                className="rounded-full border border-border-soft p-1 transition-colors hover:bg-secondary disabled:opacity-50"
               >
                 {busy === a.id ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
-                  <Check className="h-3 w-3 text-emerald-400" />
+                  <Check className="h-3 w-3" />
                 )}
               </button>
               <button
                 onClick={() => decide(a, "rejected")}
                 disabled={busy === a.id}
-                className="rounded border border-border p-1 hover:bg-secondary disabled:opacity-50"
+                aria-label="Reject"
+                className="rounded-full border border-border-soft p-1 transition-colors hover:bg-secondary disabled:opacity-50"
               >
-                <X className="h-3 w-3 text-destructive" />
+                <X className="h-3 w-3" />
               </button>
-            </li>
+            </Row>
           ))}
-        </ul>
+        </div>
       )}
     </Panel>
   );

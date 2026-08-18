@@ -70,8 +70,10 @@ function ActionConfirmCard({
 
   if (state === "done") {
     return createPortal(
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-emerald-400">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        {/* bg-popover, not bg-card: --card is 2% white and this sits over a
+            scrim, so the old card was effectively transparent. */}
+        <div className="rounded-full border border-border bg-popover px-3.5 py-2 text-[13px] font-medium text-ok">
           ✓ Done
         </div>
       </div>,
@@ -80,26 +82,26 @@ function ActionConfirmCard({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-[400px] overflow-hidden rounded-md border border-border bg-card">
-        <div className="flex items-center gap-1.5 border-b border-border px-3 py-[7px] text-[11px] font-bold uppercase tracking-[0.07em] text-yellow-500">
-          ⚡ Confirm: {pending.summary}
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="w-[400px] overflow-hidden rounded-2xl border border-border bg-popover shadow-[var(--raise-lg)]">
+        <div className="flex items-center gap-1.5 border-b border-border-soft px-4 py-2.5 font-mono text-[10px] lowercase tracking-wide text-warn">
+          ⚡ confirm: {pending.summary}
         </div>
         {errorMsg && (
-          <div className="px-3 py-1.5 text-xs text-destructive">{errorMsg}</div>
+          <div className="px-4 py-1.5 text-[13px] text-crit">{errorMsg}</div>
         )}
         <div className="flex gap-2 px-3 py-2">
           <button
             onClick={handleConfirm}
             disabled={state === "loading"}
-            className="flex-1 cursor-pointer rounded border border-border bg-secondary px-3 py-1.5 text-[13px] font-semibold text-foreground disabled:cursor-not-allowed disabled:opacity-60 hover:bg-secondary/80"
+            className="flex-1 cursor-pointer rounded-full bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {state === "loading" ? "Applying…" : "Approve"}
           </button>
           <button
             onClick={onDismiss}
             disabled={state === "loading"}
-            className="flex-1 cursor-pointer rounded border border-border bg-transparent px-3 py-1.5 text-[13px] font-medium text-muted-foreground disabled:cursor-not-allowed hover:bg-secondary hover:text-foreground"
+            className="flex-1 cursor-pointer rounded-full border border-border-soft px-3 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed"
           >
             Cancel
           </button>
@@ -165,12 +167,12 @@ function ConversationItem({
             if (e.key === "Escape") setEditing(false);
           }}
           onClick={(e) => e.stopPropagation()}
-          className="min-w-0 flex-1 rounded border border-border bg-secondary/60 px-1.5 py-0.5 font-[inherit] text-xs text-foreground outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-secondary px-2 py-0.5 font-[inherit] text-[13px] text-foreground outline-none"
         />
       ) : (
         <div
           onClick={onSelect}
-          className={`min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap text-xs ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+          className={`min-w-0 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap text-[13px] ${isActive ? "text-foreground" : "text-muted-foreground"}`}
         >
           {conv.title || "Untitled"}
         </div>
@@ -182,7 +184,7 @@ function ConversationItem({
           setEditTitle(conv.title);
         }}
         title="Rename"
-        className="shrink-0 cursor-pointer rounded border-none bg-transparent px-1 py-0.5 text-[11px] text-muted-foreground opacity-60 hover:opacity-100"
+        className="shrink-0 cursor-pointer rounded-full border-none bg-transparent px-1 py-0.5 text-[11px] text-dim transition-colors hover:text-foreground"
       >
         ✏
       </button>
@@ -192,7 +194,7 @@ function ConversationItem({
           onDelete();
         }}
         title="Delete"
-        className="shrink-0 cursor-pointer rounded border-none bg-transparent px-1 py-0.5 text-[11px] text-muted-foreground opacity-60 hover:opacity-100"
+        className="shrink-0 cursor-pointer rounded-full border-none bg-transparent px-1 py-0.5 text-[11px] text-dim transition-colors hover:text-foreground"
       >
         🗑
       </button>
@@ -553,18 +555,18 @@ export function DashboardAgent({ data, session, onActionDone }: Props) {
       <button
         onClick={() => setOpen((v) => !v)}
         title="Ask your DevOps assistant"
-        className="fixed bottom-[88px] right-6 z-[1000] flex cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-[13px] font-semibold tracking-[0.01em] text-foreground shadow-md transition-colors hover:border-foreground/20 hover:bg-secondary"
+        className="fixed bottom-[88px] right-6 z-[1000] flex cursor-pointer items-center gap-2 rounded-full border border-border bg-popover px-4 py-2.5 text-[13px] font-medium tracking-[0.01em] text-foreground shadow-[var(--raise-lg)] transition-colors hover:border-foreground/20 hover:bg-secondary"
       >
         <span className="text-[15px]">✦</span>
         <span>DevOps AI</span>
-        {open && <span className="ml-0.5 text-[11px] opacity-50">✕</span>}
+        {open && <span className="ml-0.5 text-[11px] text-dim">✕</span>}
       </button>
 
       {/* Backdrop */}
       {open && (
         <div
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-[1001] bg-black/40 backdrop-blur-[2px]"
+          className="fixed inset-0 z-[1001] bg-black/60 backdrop-blur-[2px]"
         />
       )}
 
@@ -580,24 +582,24 @@ export function DashboardAgent({ data, session, onActionDone }: Props) {
           <div
             className={cn(
               "flex items-center justify-between px-4 py-3",
-              !historyOpen && "border-b border-border",
+              !historyOpen && "border-b border-border-soft",
             )}
           >
             <div className="flex items-center gap-2">
               <span className="text-[15px] text-muted-foreground">✦</span>
               <button
                 onClick={() => setHistoryOpen((v) => !v)}
-                className="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 font-[inherit] text-[13px] font-bold uppercase tracking-[0.06em] text-muted-foreground hover:text-foreground"
+                className="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 font-mono text-[10px] lowercase tracking-wide text-dim hover:text-foreground"
               >
                 DevOps Assistant
-                <span className="text-[9px] opacity-60">
+                <span className="text-[9px] text-dim">
                   {historyOpen ? "▲" : "▼"}
                 </span>
               </button>
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="cursor-pointer rounded border-none bg-transparent px-1.5 py-0.5 text-[16px] leading-none text-muted-foreground hover:text-foreground"
+              className="cursor-pointer rounded-full border-none bg-transparent px-1.5 py-0.5 text-[16px] leading-none text-muted-foreground transition-colors hover:text-foreground"
             >
               ✕
             </button>
@@ -605,15 +607,15 @@ export function DashboardAgent({ data, session, onActionDone }: Props) {
 
           {/* History dropdown */}
           {historyOpen && (
-            <div className="max-h-60 overflow-y-auto border-b border-border bg-background">
+            <div className="max-h-60 overflow-y-auto border-b border-border-soft bg-background">
               <button
                 onClick={handleNewConversation}
-                className="w-full cursor-pointer border-none border-b border-border bg-transparent px-4 py-2 text-left font-[inherit] text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+                className="w-full cursor-pointer border-none border-b border-border-soft bg-transparent px-4 py-2 text-left font-[inherit] text-[13px] text-muted-foreground hover:bg-secondary hover:text-foreground"
               >
                 + New conversation
               </button>
               {conversations.length === 0 && (
-                <div className="px-4 py-[10px] text-xs text-muted-foreground opacity-50">
+                <div className="px-4 py-[10px] text-[13px] text-dim">
                   No saved conversations
                 </div>
               )}
@@ -637,12 +639,12 @@ export function DashboardAgent({ data, session, onActionDone }: Props) {
           className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
         >
           {visibleMessages.length === 0 && !loading && (
-            <div className="mt-10 text-center text-[13px] leading-relaxed text-muted-foreground">
-              <div className="mb-3 text-[28px] opacity-40">✦</div>
-              <div className="mb-1.5 font-semibold">
+            <div className="mt-10 text-center text-[13px] leading-relaxed">
+              <div className="mb-3 text-[28px] text-dim">✦</div>
+              <div className="mb-1.5 font-medium text-foreground">
                 Ask about your infrastructure
               </div>
-              <div className="text-xs opacity-50">
+              <div className="text-muted-foreground">
                 Open incidents, drifts, recent deploys,
                 <br />
                 usage — I can help.
@@ -650,9 +652,9 @@ export function DashboardAgent({ data, session, onActionDone }: Props) {
             </div>
           )}
           {visibleMessages.length === 0 && loading && (
-            <div className="mt-10 text-center text-[13px] leading-relaxed text-muted-foreground">
-              <div className="mb-3 text-[28px] opacity-30">✦</div>
-              <div className="text-xs opacity-50">
+            <div className="mt-10 text-center text-[13px] leading-relaxed">
+              <div className="mb-3 text-[28px] text-dim">✦</div>
+              <div className="text-muted-foreground">
                 Analyzing your infrastructure…
               </div>
             </div>
@@ -662,7 +664,7 @@ export function DashboardAgent({ data, session, onActionDone }: Props) {
             <div key={idx}>
               {msg.role === "user" ? (
                 <div className="flex justify-end">
-                  <div className="max-w-[82%] rounded-md border border-border bg-secondary px-3 py-2 text-[13px] leading-[1.5] text-foreground">
+                  <div className="max-w-[82%] rounded-2xl border border-border-soft bg-secondary px-3.5 py-2 text-[13px] leading-[1.5] text-foreground">
                     {msg.content}
                   </div>
                 </div>
@@ -674,9 +676,9 @@ export function DashboardAgent({ data, session, onActionDone }: Props) {
                       onClick={() =>
                         setActiveCard({ pending: msg.pending!, msgIdx: idx })
                       }
-                      className="mt-2 w-full cursor-pointer rounded border border-border bg-secondary px-3 py-1.5 text-left text-[11px] font-bold uppercase tracking-[0.07em] text-yellow-500 transition-colors hover:bg-secondary/80"
+                      className="mt-2 w-full cursor-pointer rounded-xl border border-warn/30 px-3 py-1.5 text-left font-mono text-[10px] lowercase tracking-wide text-warn transition-colors hover:bg-warn/10"
                     >
-                      ⚡ Needs approval: {msg.pending.summary}
+                      ⚡ needs approval: {msg.pending.summary}
                     </button>
                   )}
                 </div>
@@ -685,15 +687,13 @@ export function DashboardAgent({ data, session, onActionDone }: Props) {
           ))}
 
           {loading && (
-            <div className="text-xs italic text-muted-foreground opacity-60">
-              Thinking…
-            </div>
+            <div className="text-[13px] italic text-dim">Thinking…</div>
           )}
         </div>
 
         {/* Quota exceeded */}
         {quotaExceeded && (
-          <div className="mx-4 mb-2.5 shrink-0 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <div className="mx-4 mb-2.5 shrink-0 rounded-xl border border-crit/30 px-3 py-2 text-[13px] text-crit">
             Daily AI limit reached. Try again tomorrow.
           </div>
         )}
@@ -710,7 +710,7 @@ export function DashboardAgent({ data, session, onActionDone }: Props) {
             }
             disabled={loading || quotaExceeded}
             rows={1}
-            className="flex-1 resize-none rounded-md border border-border bg-secondary/40 px-3 py-2 font-[inherit] text-[13px] leading-[1.5] text-foreground outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring disabled:opacity-50"
+            className="flex-1 resize-none rounded-xl border border-border bg-secondary px-3 py-2 font-[inherit] text-[13px] leading-[1.5] text-foreground outline-none placeholder:text-dim focus:ring-1 focus:ring-ring disabled:opacity-50"
             onInput={(e) => {
               const t = e.currentTarget;
               t.style.height = "auto";
@@ -720,7 +720,7 @@ export function DashboardAgent({ data, session, onActionDone }: Props) {
           <button
             onClick={handleSend}
             disabled={!input.trim() || loading || quotaExceeded}
-            className="shrink-0 cursor-pointer whitespace-nowrap rounded-md border border-border bg-secondary px-4 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-secondary/80 disabled:cursor-not-allowed disabled:opacity-50"
+            className="shrink-0 cursor-pointer whitespace-nowrap rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Send
           </button>

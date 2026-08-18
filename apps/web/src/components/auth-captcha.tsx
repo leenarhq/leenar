@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 
 /**
@@ -43,6 +43,18 @@ export function useCaptcha(): Captcha {
   const [failed, setFailed] = useState(false);
   const enabled = Boolean(SITE_KEY);
 
+  /**
+   * The one place in this design where a component has to learn which theme
+   * it is in. Turnstile renders in a cross-origin iframe, so it cannot read
+   * a CSS variable — without this it is a black box sitting on the light
+   * auth page. Read after mount, since the root's theme class is applied in
+   * an effect.
+   */
+  const [light, setLight] = useState(false);
+  useEffect(() => {
+    setLight(document.documentElement.classList.contains("light"));
+  }, []);
+
   const reset = useCallback(() => {
     setToken(null);
     setFailed(false);
@@ -51,7 +63,7 @@ export function useCaptcha(): Captcha {
 
   return {
     widget: enabled ? (
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-2 rounded-lg border border-border-soft p-2">
         <Turnstile
           ref={ref}
           siteKey={SITE_KEY}
@@ -64,7 +76,7 @@ export function useCaptcha(): Captcha {
             setToken(null);
             setFailed(true);
           }}
-          options={{ theme: "dark", size: "flexible" }}
+          options={{ theme: light ? "light" : "dark", size: "flexible" }}
         />
         {/*
           Without this the submit button is simply dead: it is gated on a token,

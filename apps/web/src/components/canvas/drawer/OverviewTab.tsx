@@ -28,9 +28,11 @@ export function OverviewTab({
   return (
     <div className="space-y-4">
       {isProvisioned && (
-        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15 space-y-1.5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-400/60 mb-1">
-            Provisioned Resources
+        // No ok tint on the container or the heading: a section title is not
+        // a state, and the node's own foot line already says `provisioned`.
+        <div className="space-y-1.5 rounded-xl border border-border-soft p-3">
+          <p className="mb-1 font-mono text-[10px] lowercase text-dim">
+            provisioned resources
           </p>
           {localData.provisionedUrl && (
             <>
@@ -41,7 +43,7 @@ export function OverviewTab({
                 href={localData.provisionedUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-emerald-500/12 border border-emerald-500/25 text-emerald-400 text-[13px] font-semibold hover:bg-emerald-500/20 transition-all"
+                className="flex w-full items-center justify-center gap-1.5 rounded-full bg-primary py-1.5 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
               >
                 <IconRenderer iconName="ExternalLink" size={11} />
                 Open App
@@ -49,12 +51,12 @@ export function OverviewTab({
             </>
           )}
           {localData.vercelProjectId && (
-            <p className="text-[11px] font-mono text-white/30">
+            <p className="text-[11px] font-mono text-dim">
               id: {localData.vercelProjectId}
             </p>
           )}
           {localData.supabaseProjectRef && (
-            <p className="text-[11px] font-mono text-white/30">
+            <p className="text-[11px] font-mono text-dim">
               ref: {localData.supabaseProjectRef}
             </p>
           )}
@@ -85,7 +87,7 @@ export function OverviewTab({
               setRedeploying(false);
             }
           }}
-          className="flex items-center gap-1.5 text-[12px] text-white/60 hover:text-white/90 disabled:opacity-40 transition-colors"
+          className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
         >
           {redeploying ? (
             <Loader2 size={12} className="animate-spin" />

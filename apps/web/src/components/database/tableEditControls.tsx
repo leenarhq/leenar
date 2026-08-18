@@ -58,7 +58,7 @@ export function AddColumnForm({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-dashed border-border bg-secondary/10 px-2 py-2">
+    <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-secondary px-2 py-2">
       <Input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -207,7 +207,7 @@ export function ColumnEditRow({
   }
 
   return (
-    <div className="col-span-5 mt-1 space-y-1.5 rounded-md border border-dashed border-border bg-secondary/10 p-2">
+    <div className="col-span-5 mt-1 space-y-1.5 rounded-xl border border-border bg-secondary p-2">
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-[10px] text-muted-foreground w-14 shrink-0">
           rename
@@ -362,7 +362,7 @@ export function AddIndexForm({
   };
 
   return (
-    <div className="space-y-2 rounded-md border border-dashed border-border bg-secondary/10 p-2">
+    <div className="space-y-2 rounded-xl border border-border bg-secondary p-2">
       <div className="flex flex-wrap gap-1.5">
         {columnNames.map((col) => (
           <label
@@ -465,7 +465,7 @@ export function NewTableButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-secondary px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50"
     >
       <Plus size={12} />
       New table

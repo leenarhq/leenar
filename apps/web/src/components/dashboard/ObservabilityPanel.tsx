@@ -7,6 +7,7 @@ import type {
 } from "../../lib/api";
 import { EmptyRow } from "./Panel";
 import { TimeSeriesChart } from "./TimeSeriesChart";
+import { HairGrid, HairCell } from "../console/HairGrid";
 
 function formatMs(ms: number) {
   return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(1)}s`;
@@ -14,9 +15,9 @@ function formatMs(ms: number) {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between text-xs">
+    <div className="flex items-center justify-between text-[13px]">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-mono">{value}</span>
+      <span className="font-mono tabular-nums">{value}</span>
     </div>
   );
 }
@@ -47,43 +48,46 @@ function ProviderCard({
   chart?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col rounded-md border border-border bg-card">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-2.5 text-xs font-medium text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" />
+    <HairCell className="flex flex-col gap-3 p-4">
+      <div className="flex items-center gap-2 font-mono text-[10px] lowercase tracking-wide text-dim">
+        <Icon className="h-3 w-3" />
         {name}
       </div>
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="space-y-1.5">{rows}</div>
-        {chart}
-      </div>
-    </div>
+      <div className="space-y-1.5">{rows}</div>
+      {chart}
+    </HairCell>
   );
 }
 
+/**
+ * No `color` prop. An error-rate line drawn permanently in `crit` is colour
+ * marking a metric, not a state — the threshold is what earns a tone, not
+ * the series (spec D3). Every chart on this surface is ink.
+ */
 function ChartBlock({
   title,
   points,
-  color,
   yFormat,
 }: {
   title: string;
   points: Array<{ x: string; y: number }>;
-  color: string;
   yFormat: (v: number) => string;
 }) {
   return (
     <div className="mt-auto">
-      <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="mb-1 font-mono text-[10px] lowercase tracking-wide text-dim">
         {title}
       </div>
       {points.length >= 2 ? (
-        <TimeSeriesChart
-          height={120}
-          yFormat={yFormat}
-          series={[{ label: title, color, points }]}
-        />
+        <div className="text-dim">
+          <TimeSeriesChart
+            height={120}
+            yFormat={yFormat}
+            series={[{ label: title, color: "currentColor", points }]}
+          />
+        </div>
       ) : (
-        <div className="rounded border border-dashed border-border py-6 text-center text-[11px] text-muted-foreground">
+        <div className="rounded-xl border border-border-soft py-6 text-center text-[11px] text-muted-foreground">
           Not enough history yet
         </div>
       )}
@@ -109,14 +113,14 @@ export function ObservabilityPanel({
 
   if (!hasAny) {
     return (
-      <div className="rounded-md border border-border bg-card">
+      <div className="rounded-2xl border border-border">
         <EmptyRow>No observability data</EmptyRow>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <HairGrid cols={2}>
       {cf && (
         <ProviderCard
           name="Cloudflare"
@@ -138,7 +142,6 @@ export function ObservabilityPanel({
           chart={
             <ChartBlock
               title="Error rate trend (7d)"
-              color="var(--destructive)"
               yFormat={(v) => `${v.toFixed(1)}%`}
               points={trend(history?.cloudflare, "errorRate", 100)}
             />
@@ -163,7 +166,6 @@ export function ObservabilityPanel({
           chart={
             <ChartBlock
               title="Build success trend (7d)"
-              color="var(--primary)"
               yFormat={(v) => `${v.toFixed(0)}%`}
               points={trend(history?.vercel, "successRate7d", 100)}
             />
@@ -197,6 +199,6 @@ export function ObservabilityPanel({
           }
         />
       )}
-    </div>
+    </HairGrid>
   );
 }

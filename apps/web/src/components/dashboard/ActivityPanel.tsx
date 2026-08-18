@@ -1,25 +1,25 @@
 import { Activity } from "lucide-react";
 import type { ActivityItem } from "../../lib/activity";
 import { timeAgo } from "../../lib/utils";
-import { Panel, EmptyRow, StatusDot } from "./Panel";
+import { Panel, EmptyRow } from "./Panel";
+import { Row, Dim } from "../console/Rows";
+import { StateDot, toneFor } from "../console/StateTag";
 
 export function ActivityPanel({ items }: { items: ActivityItem[] }) {
   return (
-    <Panel title="Activity" icon={Activity}>
+    <Panel title="Activity" icon={Activity} bodyClassName="p-0">
       {items.length === 0 ? (
         <EmptyRow>No recent activity</EmptyRow>
       ) : (
-        <ul className="space-y-2.5">
+        <div>
           {items.slice(0, 8).map((it) => (
-            <li key={it.id} className="flex items-center gap-2.5 text-xs">
-              <StatusDot tone={it.tone} />
+            <Row key={it.id}>
+              <StateDot tone={toneFor(it.tone)} />
               <span className="flex-1 truncate">{it.label}</span>
-              <span className="whitespace-nowrap text-muted-foreground">
-                {timeAgo(new Date(it.ts).getTime())}
-              </span>
-            </li>
+              <Dim>{timeAgo(new Date(it.ts).getTime())}</Dim>
+            </Row>
           ))}
-        </ul>
+        </div>
       )}
     </Panel>
   );

@@ -70,10 +70,10 @@ export function EnvSwitcher({
       <button
         onClick={() => !disabled && setOpen((v) => !v)}
         disabled={disabled}
-        className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-semibold uppercase tracking-wide transition-all ${
+        className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] lowercase transition-colors ${
           open
-            ? "bg-primary/10 border-primary/25 text-white"
-            : "bg-white/[0.03] border-white/[0.06] text-white/50 hover:text-white/80 hover:bg-white/[0.05]"
+            ? "bg-secondary border-border text-foreground"
+            : "bg-[var(--hover)] border-border-soft text-muted-foreground hover:text-foreground hover:bg-[var(--hover)]"
         } disabled:opacity-30 disabled:cursor-not-allowed`}
       >
         <GitBranch size={10} />
@@ -86,14 +86,14 @@ export function EnvSwitcher({
 
       {open && (
         <div
-          className="absolute left-0 top-[calc(100%+6px)] min-w-[180px] border border-white/[0.08] rounded-xl shadow-2xl z-50 p-1"
+          className="absolute left-0 top-[calc(100%+6px)] min-w-[180px] border border-border rounded-xl shadow-2xl z-50 p-1"
           style={{
             animation: "dropIn 0.1s ease",
-            background: "var(--app-menu-bg)",
+            background: "var(--popover)",
           }}
         >
           <div className="px-2 py-1 mb-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
+            <span className="text-[10px] lowercase text-muted-foreground">
               Environments
             </span>
           </div>
@@ -107,36 +107,36 @@ export function EnvSwitcher({
               }}
               className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-all ${
                 env.id === currentEnvId
-                  ? "bg-primary/10 text-white/90"
-                  : "text-white/60 hover:text-white/90 hover:bg-white/[0.06]"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               }`}
               style={{ paddingLeft: 8 + depth * 16 }}
             >
               {depth > 0 && (
-                <span className="text-white/30 text-[11px] shrink-0">└</span>
+                <span className="text-dim text-[11px] shrink-0">└</span>
               )}
               <span className="text-[13px] font-medium flex-1 truncate">
                 {env.name}
               </span>
-              <span className="text-[10px] font-mono text-white/35 shrink-0">
+              <span className="text-[10px] font-mono text-dim shrink-0">
                 {env.slug}
               </span>
               {env.is_default && (
-                <span className="text-[9px] font-semibold font-mono text-primary/60 shrink-0 uppercase tracking-wide">
+                <span className="text-[9px] font-mono text-primary/60 shrink-0 lowercase">
                   prod
                 </span>
               )}
             </button>
           ))}
 
-          <div className="h-px bg-white/[0.06] my-1" />
+          <div className="h-px bg-secondary my-1" />
 
           <button
             onClick={() => {
               setOpen(false);
               onManage();
             }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
           >
             <Settings size={11} />
             Manage environments

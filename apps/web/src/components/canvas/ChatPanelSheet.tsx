@@ -48,7 +48,8 @@ export function ChatPanelSheet({
               position: "fixed",
               inset: 0,
               zIndex: 50,
-              background: "rgba(0,0,0,0.6)",
+              background:
+                "color-mix(in srgb, var(--background) 70%, transparent)",
               backdropFilter: "blur(2px)",
             }}
           />
@@ -66,8 +67,8 @@ export function ChatPanelSheet({
               zIndex: 51,
               height: "82vh",
               borderRadius: "18px 18px 0 0",
-              background: "#0c0c0c",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "var(--popover)",
+              border: "1px solid var(--border)",
               borderBottom: "none",
               display: "flex",
               flexDirection: "column",
@@ -81,7 +82,7 @@ export function ChatPanelSheet({
                 alignItems: "center",
                 justifyContent: "center",
                 padding: "12px 16px 10px",
-                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                borderBottom: "1px solid var(--border-soft)",
                 flexShrink: 0,
               }}
             >
@@ -90,7 +91,7 @@ export function ChatPanelSheet({
                   width: 36,
                   height: 4,
                   borderRadius: 2,
-                  background: "rgba(255,255,255,0.15)",
+                  background: "var(--border)",
                 }}
               />
               <button
@@ -106,10 +107,10 @@ export function ChatPanelSheet({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "rgba(255,255,255,0.06)",
+                  background: "var(--hover)",
                   border: "none",
                   cursor: "pointer",
-                  color: "rgba(255,255,255,0.5)",
+                  color: "var(--muted-foreground)",
                 }}
               >
                 <X size={14} />

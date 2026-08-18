@@ -20,7 +20,7 @@ export const Route = createFileRoute("/console/projects/$id/logs")({
 
 function GroupHeading({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <h2 className="mt-2 font-mono text-[10px] lowercase tracking-wide text-dim">
       {children}
     </h2>
   );
@@ -43,8 +43,8 @@ function ProjectObservabilityPage() {
   if (d.error) {
     return (
       <div className="mx-auto max-w-md p-16 text-center">
-        <AlertCircle className="mx-auto h-6 w-6 text-destructive" />
-        <p className="mt-3 text-sm text-destructive">{d.error}</p>
+        <AlertCircle className="mx-auto h-6 w-6 text-crit" />
+        <p className="mt-3 text-[13px] text-crit">{d.error}</p>
       </div>
     );
   }
@@ -92,7 +92,6 @@ function ProjectObservabilityPage() {
                   incidents={d.incidents}
                   session={session}
                   onIncidentsChange={d.setIncidents}
-                  projectId={id}
                 />
               )}
               {d.drifts.length > 0 && (
@@ -105,7 +104,7 @@ function ProjectObservabilityPage() {
             </div>
           )}
           {d.drifts.length === 0 && d.incidents.length === 0 && (
-            <div className="rounded-md border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border py-8 text-center text-[13px] text-muted-foreground">
               No active incidents or drifts detected
             </div>
           )}
@@ -117,13 +116,9 @@ function ProjectObservabilityPage() {
         <>
           {/* Cost & Usage */}
           <GroupHeading>Cost &amp; Usage</GroupHeading>
-          <CostPanel cost={d.cost} incidents={d.incidents} />
+          <CostPanel cost={d.cost} />
           {Object.keys(d.usage).length > 0 && (
-            <UsagePanel
-              usage={d.usage}
-              canvas={canvasLike}
-              deployments={d.deployments}
-            />
+            <UsagePanel usage={d.usage} canvas={canvasLike} />
           )}
         </>
       )}

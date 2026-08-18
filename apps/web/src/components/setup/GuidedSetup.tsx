@@ -120,16 +120,11 @@ export function GuidedSetup() {
               <div className="flex items-center gap-2.5">
                 <span
                   className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[6px] border ${
-                    s.done
-                      ? "border-emerald-500/40 bg-emerald-500/15"
-                      : "border-border bg-muted"
+                    s.done ? "border-ok/40 bg-ok/15" : "border-border bg-muted"
                   }`}
                 >
                   {s.done && (
-                    <Check
-                      className="h-3 w-3 text-emerald-400"
-                      strokeWidth={3}
-                    />
+                    <Check className="h-3 w-3 text-ok" strokeWidth={3} />
                   )}
                 </span>
                 <p
@@ -179,7 +174,11 @@ export function GuidedSetup() {
     return (
       <>
         {createPortal(
-          <aside className="fixed right-0 top-0 bottom-0 z-[9000] flex w-[300px] max-w-[85vw] flex-col overflow-y-auto border-l border-border bg-card shadow-xl">
+          // bg-popover, not bg-card: this variant is a fixed drawer over the
+          // page, and --card is translucent now, so bg-card let the content
+          // behind it show straight through. The in-flow desktop variant
+          // below sits in the layout and keeps bg-card.
+          <aside className="fixed right-0 top-0 bottom-0 z-[9000] flex w-[300px] max-w-[85vw] flex-col overflow-y-auto border-l border-border bg-popover shadow-xl">
             {panelBody}
           </aside>,
           document.body,

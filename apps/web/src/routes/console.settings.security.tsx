@@ -2,6 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { SettingsShell, SettingsHeader } from "../components/settings-shell";
+import {
+  Field,
+  FieldGroup,
+  INPUT,
+  PILL,
+  PILL_QUIET,
+} from "../components/console/Field";
 import { useAuth } from "../context/auth";
 import { supabase } from "../lib/supabase";
 import { PasswordStrength } from "../components/auth-shell";
@@ -86,13 +93,10 @@ function SecurityPage() {
   return (
     <SettingsShell title="Security">
       <div className="max-w-2xl flex-1 p-8">
-        <SettingsHeader
-          title="Security"
-          subtitle="Manage your password and account verification."
-        />
+        <SettingsHeader subtitle="Manage your password and account verification." />
 
         {!isEmailAccount ? (
-          <div className="mt-6 flex items-center gap-3 rounded-md border border-border bg-secondary/20 px-4 py-3 text-sm text-muted-foreground">
+          <div className="mt-6 flex items-center gap-3 rounded-xl border border-border-soft px-4 py-3 text-[13px] text-muted-foreground">
             <ShieldCheck className="h-4 w-4" />
             You signed in via{" "}
             <span className="font-mono text-foreground">{provider}</span>.
@@ -101,57 +105,53 @@ function SecurityPage() {
         ) : (
           <>
             {msg && (
-              <p className="mt-4 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-400">
+              <p className="mt-4 rounded-xl border border-ok/30 px-3 py-2 text-[13px] text-ok">
                 {msg}
               </p>
             )}
             {err && (
-              <p className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="mt-4 rounded-xl border border-crit/30 px-3 py-2 text-[13px] text-crit">
                 {err}
               </p>
             )}
 
-            <form onSubmit={changePassword} className="mt-6 space-y-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                  New password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-                <PasswordStrength strength={strength} />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                  Confirm password
-                </label>
-                <input
-                  type="password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
+            <form onSubmit={changePassword} className="mt-6">
+              <FieldGroup>
+                <Field label="New password">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={INPUT}
+                  />
+                  <PasswordStrength strength={strength} />
+                </Field>
+                <Field label="Confirm password">
+                  <input
+                    type="password"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    className={INPUT}
+                  />
+                </Field>
+              </FieldGroup>
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-md bg-foreground px-3 py-2 text-sm text-background hover:opacity-90 disabled:opacity-50"
+                className={`mt-4 ${PILL}`}
               >
                 {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{" "}
                 Update password
               </button>
             </form>
 
-            <div className="mt-10 border-t border-dashed border-border pt-6">
-              <h2 className="font-serif text-lg">Re-authenticate</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+            <div className="mt-10 border-t border-border-soft pt-6">
+              <h2 className="text-[15px] font-medium">Re-authenticate</h2>
+              <p className="mt-1 text-[13px] text-muted-foreground">
                 Verify a one-time code emailed to you for sensitive changes.
               </p>
               {reauthMsg && (
-                <p className="mt-3 text-sm text-muted-foreground">
+                <p className="mt-3 text-[13px] text-muted-foreground">
                   {reauthMsg}
                 </p>
               )}
@@ -159,7 +159,7 @@ function SecurityPage() {
                 <button
                   onClick={sendReauth}
                   disabled={reauthBusy}
-                  className="mt-3 inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+                  className={`mt-3 ${PILL_QUIET}`}
                 >
                   {reauthBusy && (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -172,13 +172,9 @@ function SecurityPage() {
                     value={reauthCode}
                     onChange={(e) => setReauthCode(e.target.value)}
                     placeholder="6-digit code"
-                    className="w-40 rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    className={`w-40 ${INPUT}`}
                   />
-                  <button
-                    type="submit"
-                    disabled={reauthBusy}
-                    className="inline-flex items-center gap-2 rounded-md bg-foreground px-3 py-2 text-sm text-background hover:opacity-90 disabled:opacity-50"
-                  >
+                  <button type="submit" disabled={reauthBusy} className={PILL}>
                     {reauthBusy && (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     )}{" "}

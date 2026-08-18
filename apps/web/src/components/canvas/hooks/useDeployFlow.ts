@@ -30,6 +30,13 @@ import { nowTime, stepsToNewLogs } from "../workspaceHelpers";
 import { backupKeyFor } from "./useWorkflowPersistence";
 import { createSessionWatcher } from "../../../lib/sessionWatcher";
 
+/** Read a theme token for the one place SVG markers need a literal colour. */
+function read(token: string): string {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(token)
+    .trim();
+}
+
 type IntegrationBanner =
   | { type: "missing"; services: string[] }
   | {
@@ -356,7 +363,7 @@ export function useDeployFlow({
                 },
                 markerEnd: {
                   type: MarkerType.ArrowClosed,
-                  color: "#34d399",
+                  color: read("--ok"),
                 },
               };
             }

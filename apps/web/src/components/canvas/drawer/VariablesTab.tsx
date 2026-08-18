@@ -101,7 +101,7 @@ export function VariablesTab({
           !localData.cloudflareService) && (
           <div className="space-y-2">
             <div className="flex items-center justify-between px-0.5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/25">
+              <p className="font-mono text-[10px] lowercase text-dim">
                 Worker Env Vars
               </p>
               {!isProvisioned && (
@@ -116,7 +116,7 @@ export function VariablesTab({
                       { key: "", value: "" },
                     ]);
                   }}
-                  className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/60 transition-colors"
+                  className="flex items-center gap-1 text-[11px] text-dim hover:text-muted-foreground transition-colors"
                 >
                   <Plus size={10} />
                   Add
@@ -148,7 +148,7 @@ export function VariablesTab({
                     handleUpdate("cfWorkerEnvVars", next);
                   }}
                   disabled={isProvisioned}
-                  className="flex-1 min-w-0 bg-surface-container-low border border-white/[0.07] rounded-lg py-1.5 px-2.5 text-white/85 focus:ring-1 focus:ring-primary/30 outline-none transition-all text-[12px] font-mono"
+                  className="flex-1 min-w-0 bg-secondary border border-border rounded-lg py-1.5 px-2.5 text-foreground focus:border-foreground/30 outline-none transition-all text-[12px] font-mono"
                 />
                 <input
                   type="text"
@@ -167,7 +167,7 @@ export function VariablesTab({
                     handleUpdate("cfWorkerEnvVars", next);
                   }}
                   disabled={isProvisioned}
-                  className="flex-1 min-w-0 bg-surface-container-low border border-white/[0.07] rounded-lg py-1.5 px-2.5 text-white/85 focus:ring-1 focus:ring-primary/30 outline-none transition-all text-[12px] font-mono"
+                  className="flex-1 min-w-0 bg-secondary border border-border rounded-lg py-1.5 px-2.5 text-foreground focus:border-foreground/30 outline-none transition-all text-[12px] font-mono"
                 />
                 {!isProvisioned && (
                   <button
@@ -180,7 +180,7 @@ export function VariablesTab({
                       ).filter((_, i) => i !== idx);
                       handleUpdate("cfWorkerEnvVars", next);
                     }}
-                    className="p-1 text-white/20 hover:text-red-400/70 transition-colors rounded flex-shrink-0"
+                    className="p-1 text-dim hover:text-crit transition-colors rounded flex-shrink-0"
                   >
                     <X size={10} />
                   </button>
@@ -189,7 +189,7 @@ export function VariablesTab({
             ))}
             {(!localData.cfWorkerEnvVars ||
               (localData.cfWorkerEnvVars as []).length === 0) && (
-              <p className="text-[11px] text-white/20 px-0.5">
+              <p className="text-[11px] text-dim px-0.5">
                 Set secrets injected into your Worker runtime (e.g.
                 DATABASE_URL).
               </p>
@@ -201,7 +201,7 @@ export function VariablesTab({
       {provider === "vercel" && (
         <div className="space-y-2">
           <div className="flex items-center justify-between px-0.5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/25">
+            <p className="font-mono text-[10px] lowercase text-dim">
               Custom Env Vars
             </p>
             <button
@@ -213,7 +213,7 @@ export function VariablesTab({
                   { key: "", value: "" },
                 ]);
               }}
-              className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/60 transition-colors"
+              className="flex items-center gap-1 text-[11px] text-dim hover:text-muted-foreground transition-colors"
             >
               <Plus size={10} />
               Add
@@ -241,7 +241,7 @@ export function VariablesTab({
                   };
                   handleUpdate("customEnvVars", next);
                 }}
-                className={`flex-1 min-w-0 bg-surface-container-low border border-white/[0.07] rounded-lg py-1.5 px-2.5 text-white/85 focus:ring-1 focus:ring-primary/30 outline-none transition-all text-[12px] font-mono`}
+                className={`flex-1 min-w-0 bg-secondary border border-border rounded-lg py-1.5 px-2.5 text-foreground focus:border-foreground/30 outline-none transition-all text-[12px] font-mono`}
               />
               <input
                 type="text"
@@ -257,7 +257,7 @@ export function VariablesTab({
                   next[idx] = { ...next[idx], value: e.target.value };
                   handleUpdate("customEnvVars", next);
                 }}
-                className={`flex-1 min-w-0 bg-surface-container-low border border-white/[0.07] rounded-lg py-1.5 px-2.5 text-white/85 focus:ring-1 focus:ring-primary/30 outline-none transition-all text-[12px] font-mono`}
+                className={`flex-1 min-w-0 bg-secondary border border-border rounded-lg py-1.5 px-2.5 text-foreground focus:border-foreground/30 outline-none transition-all text-[12px] font-mono`}
               />
               <button
                 onClick={() => {
@@ -269,7 +269,7 @@ export function VariablesTab({
                   ).filter((_, i) => i !== idx);
                   handleUpdate("customEnvVars", next);
                 }}
-                className="p-1 text-white/20 hover:text-red-400/70 transition-colors rounded flex-shrink-0"
+                className="p-1 text-dim hover:text-crit transition-colors rounded flex-shrink-0"
               >
                 <X size={10} />
               </button>
@@ -277,7 +277,7 @@ export function VariablesTab({
           ))}
           {(!localData.customEnvVars ||
             (localData.customEnvVars as []).length === 0) && (
-            <p className="text-[11px] text-white/20 px-0.5">
+            <p className="text-[11px] text-dim px-0.5">
               Add secrets like STRIPE_SECRET_KEY — injected into Vercel on
               deploy.
             </p>
@@ -292,13 +292,13 @@ export function VariablesTab({
             onClick={() => setEnvSecretsOpen((v) => !v)}
             className="w-full flex items-center gap-2 text-left"
           >
-            <KeyRound size={12} className="text-white/30" />
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-white/30 flex-1">
+            <KeyRound size={12} className="text-dim" />
+            <span className="flex-1 font-mono text-[10px] lowercase text-dim">
               Env Overrides
             </span>
             <ChevronDown
               size={10}
-              className={`text-white/25 transition-transform ${envSecretsOpen ? "rotate-180" : ""}`}
+              className={`text-dim transition-transform ${envSecretsOpen ? "rotate-180" : ""}`}
             />
           </button>
 
@@ -306,15 +306,13 @@ export function VariablesTab({
             <div className="mt-2 space-y-1.5">
               {envSecrets.map((s) => (
                 <div key={s.env_var_key} className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-white/50 flex-1 truncate">
+                  <span className="text-[11px] font-mono text-muted-foreground flex-1 truncate">
                     {s.env_var_key}
                   </span>
-                  <span className="text-[10px] font-mono text-white/20">
-                    ••••
-                  </span>
+                  <span className="text-[10px] font-mono text-dim">••••</span>
                   <button
                     onClick={() => handleDeleteSecret(s.env_var_key)}
-                    className="p-1 rounded text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-all"
+                    className="p-1 rounded text-dim hover:text-crit hover:bg-crit/10 transition-all"
                   >
                     <Trash2 size={10} />
                   </button>
@@ -330,19 +328,19 @@ export function VariablesTab({
                       e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""),
                     )
                   }
-                  className="w-28 bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1 text-[11px] font-mono text-white/70 placeholder-white/20 outline-none focus:border-primary/30"
+                  className="w-28 bg-[var(--hover)] border border-border rounded px-2 py-1 text-[11px] font-mono text-foreground placeholder:text-dim outline-none focus:border-primary/30"
                 />
                 <input
                   placeholder="value"
                   type="password"
                   value={newSecretValue}
                   onChange={(e) => setNewSecretValue(e.target.value)}
-                  className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1 text-[11px] text-white/70 placeholder-white/20 outline-none focus:border-primary/30"
+                  className="flex-1 bg-[var(--hover)] border border-border rounded px-2 py-1 text-[11px] text-foreground placeholder:text-dim outline-none focus:border-primary/30"
                 />
                 <button
                   onClick={handleSaveSecret}
                   disabled={savingSecret || !newSecretKey || !newSecretValue}
-                  className="p-1.5 rounded bg-primary/10 border border-primary/25 text-primary hover:bg-primary/15 transition-all disabled:opacity-40"
+                  className="p-1.5 rounded border border-border text-foreground hover:bg-[var(--hover)] transition-all disabled:opacity-40"
                 >
                   {savingSecret ? (
                     <Loader2 size={10} className="animate-spin" />

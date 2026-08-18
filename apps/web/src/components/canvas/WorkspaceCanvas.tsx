@@ -562,7 +562,11 @@ function ProjectCanvasInner({ projectId, template }: ProjectCanvasInnerProps) {
     try {
       const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(viewportEl, {
-        backgroundColor: "#050505",
+        // The exported PNG follows the theme rather than always being
+        // near-black, which looked wrong for a light-theme user.
+        backgroundColor: getComputedStyle(document.documentElement)
+          .getPropertyValue("--canvas-bg")
+          .trim(),
         width: W,
         height: H,
         style: {
@@ -584,7 +588,9 @@ function ProjectCanvasInner({ projectId, template }: ProjectCanvasInnerProps) {
       const ctx = cvs.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
       ctx.font = "13px -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      ctx.fillStyle = getComputedStyle(document.documentElement)
+        .getPropertyValue("--dim")
+        .trim();
       ctx.fillText("Powered by Leenar", 12, H - 12);
       const a = document.createElement("a");
       a.download = `${workflowNameRef.current.replace(/[^a-z0-9-]/gi, "-").toLowerCase()}-leenar.png`;
@@ -806,41 +812,11 @@ function ProjectCanvasInner({ projectId, template }: ProjectCanvasInnerProps) {
 
   return (
     <div
-      className="app-shell bg-surface text-on-surface flex h-full w-full overflow-hidden font-sans select-none text-[12px]"
+      className="app-shell bg-background text-foreground flex h-full w-full overflow-hidden font-sans select-none text-[12px]"
       onContextMenu={(e) => e.preventDefault()}
       onClick={() => setMenu(null)}
     >
       <div className="flex-1 flex flex-col relative h-full min-w-0 overflow-hidden">
-        <Toolbar
-          workflowId={projectId !== "new" ? projectId : undefined}
-          isRunning={isRunning}
-          hasDeployError={deployError}
-          onRunToggle={
-            isRunning ? handleDeployToggle : () => setShowPreDeploy(true)
-          }
-          workflowName={workflowName}
-          onRename={handleRename}
-          onExport={handleExport}
-          onImport={handleCanvasImport}
-          onToggleTerminal={() => setIsTerminalOpen(!isTerminalOpen)}
-          isTerminalOpen={isTerminalOpen}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          saveState={saveState}
-          onAutoLayout={handleAutoLayout}
-          onShowShortcuts={() => setShowShortcuts(true)}
-          onScreenshot={nodes.length > 0 ? handleScreenshot : undefined}
-          onAddNode={onAddNode}
-          environments={environments}
-          currentEnvId={currentEnvId}
-          onEnvSwitch={handleEnvSwitch}
-          onEnvManage={() => setShowEnvManage(true)}
-          onImportExisting={() => setShowScanModal(true)}
-          showAdvanced={isLive}
-          deployDisabledReason={deployDisabledReason}
-        />
         <ComponentErrorBoundary name="Canvas">
           <div data-tour="canvas" className="flex-1 relative overflow-hidden">
             <ReactFlow
@@ -876,6 +852,9 @@ function ProjectCanvasInner({ projectId, template }: ProjectCanvasInnerProps) {
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
               fitView
+              // The dock floats over the bottom of the canvas now, so the
+              // initial fit has to leave it room.
+              fitViewOptions={{ padding: 0.2 }}
               colorMode={colorMode}
               className="bg-[var(--canvas-bg)]"
               connectOnClick
@@ -885,8 +864,11 @@ function ProjectCanvasInner({ projectId, template }: ProjectCanvasInnerProps) {
               panOnDrag={[1, 2]}
               deleteKeyCode={["Backspace", "Delete"]}
             >
-              <Background color="var(--canvas-dot)" gap={20} size={1} />
-              <Controls className="mb-24 ml-4" />
+              <Background color="var(--dot)" gap={26} size={1} aria-hidden />
+              <Controls
+                className="!bottom-24 !left-6 overflow-hidden !rounded-xl !border !border-border-soft !bg-[var(--glass)] !shadow-[var(--raise-lg)] backdrop-blur-xl [&_button]:!border-0 [&_button]:!border-b [&_button]:!border-border-soft [&_button]:!bg-transparent [&_button]:!fill-current [&_button]:!text-muted-foreground [&_button:hover]:!bg-[var(--hover)] [&_button:hover]:!text-foreground"
+                showInteractive={false}
+              />
 
               <AnimatePresence>
                 {isTerminalOpen && (
@@ -900,6 +882,40 @@ function ProjectCanvasInner({ projectId, template }: ProjectCanvasInnerProps) {
                 )}
               </AnimatePresence>
             </ReactFlow>
+
+            {/* The dock and the top-left project cluster position
+                themselves absolutely, so they sit inside the canvas's
+                relative wrapper rather than reserving 48px above it. */}
+            <Toolbar
+              workflowId={projectId !== "new" ? projectId : undefined}
+              isRunning={isRunning}
+              hasDeployError={deployError}
+              onRunToggle={
+                isRunning ? handleDeployToggle : () => setShowPreDeploy(true)
+              }
+              workflowName={workflowName}
+              onRename={handleRename}
+              onExport={handleExport}
+              onImport={handleCanvasImport}
+              onToggleTerminal={() => setIsTerminalOpen(!isTerminalOpen)}
+              isTerminalOpen={isTerminalOpen}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              saveState={saveState}
+              onAutoLayout={handleAutoLayout}
+              onShowShortcuts={() => setShowShortcuts(true)}
+              onScreenshot={nodes.length > 0 ? handleScreenshot : undefined}
+              onAddNode={onAddNode}
+              environments={environments}
+              currentEnvId={currentEnvId}
+              onEnvSwitch={handleEnvSwitch}
+              onEnvManage={() => setShowEnvManage(true)}
+              onImportExisting={() => setShowScanModal(true)}
+              showAdvanced={isLive}
+              deployDisabledReason={deployDisabledReason}
+            />
 
             {/* AI diagnosis card — shown after deploy failure */}
             <AnimatePresence>

@@ -5,6 +5,12 @@ import type { StackDrift } from "../../lib/api";
 import { ignoreDrift, reconcileDrift } from "../../lib/api";
 import { timeAgo } from "../../lib/format";
 import { Panel, EmptyRow } from "./Panel";
+import { Mono, Dim } from "../console/Rows";
+import { StateTag } from "../console/StateTag";
+
+/** One shape for every row action on this surface. */
+const ACTION =
+  "inline-flex items-center gap-1 rounded-full border border-border-soft px-2 py-0.5 font-mono text-[10px] lowercase transition-colors hover:bg-secondary disabled:opacity-50";
 
 export function DriftPanel({
   drifts,
@@ -40,21 +46,23 @@ export function DriftPanel({
       {drifts.length === 0 ? (
         <EmptyRow>No drift detected</EmptyRow>
       ) : (
-        <div className="divide-y divide-border">
+        <div>
           {drifts.map((d) => (
-            <div key={d.id} className="px-4 py-3 text-xs">
+            <div
+              key={d.id}
+              className="border-b border-border-soft px-4 py-3 text-[13px] last:border-b-0"
+            >
               <div className="flex items-center gap-2">
-                <span className="font-mono uppercase text-yellow-500">
-                  {d.drift_type.replace(/_/g, " ")}
-                </span>
-                <span className="font-mono text-muted-foreground">
-                  {d.service}
-                </span>
-                <span className="ml-auto text-muted-foreground">
-                  {timeAgo(d.detected_at)}
+                {/* `warn` is fixed, not derived: every drift is a drift. The
+                    type names the field that moved, not a severity, so
+                    toneFor("resource_missing") would read idle. */}
+                <StateTag tone="warn" label={d.drift_type.replace(/_/g, " ")} />
+                <Mono>{d.service}</Mono>
+                <span className="ml-auto">
+                  <Dim>{timeAgo(d.detected_at)}</Dim>
                 </span>
               </div>
-              <p className="mt-1 truncate text-muted-foreground">
+              <p className="mt-1.5 truncate text-muted-foreground">
                 <span className="font-mono">{d.field}</span> drifted on{" "}
                 <span className="font-mono">{d.resource_id}</span>
               </p>
@@ -62,21 +70,21 @@ export function DriftPanel({
                 <button
                   onClick={() => act(d, reconcileDrift)}
                   disabled={busy === d.id}
-                  className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-secondary disabled:opacity-50"
+                  className={ACTION}
                 >
                   {busy === d.id ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
                     <Wrench className="h-3 w-3" />
-                  )}{" "}
-                  Reconcile
+                  )}
+                  reconcile
                 </button>
                 <button
                   onClick={() => act(d, ignoreDrift)}
                   disabled={busy === d.id}
-                  className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-secondary disabled:opacity-50"
+                  className={ACTION}
                 >
-                  <EyeOff className="h-3 w-3" /> Ignore
+                  <EyeOff className="h-3 w-3" /> ignore
                 </button>
               </div>
             </div>

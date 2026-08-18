@@ -84,15 +84,15 @@ function ResetPasswordPage() {
       subtitle="Choose a strong password for your account."
     >
       {done ? (
-        <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-secondary/20 px-4 py-8 text-center">
-          <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-secondary/20 px-4 py-8 text-center">
+          <CheckCircle2 className="h-6 w-6 text-ok" />
           <p className="text-sm font-medium">Password updated</p>
           <p className="text-xs text-muted-foreground">
             Redirecting you to sign in…
           </p>
         </div>
       ) : !ready ? (
-        <div className="rounded-md border border-border bg-secondary/20 px-4 py-8 text-center">
+        <div className="rounded-lg border border-border bg-secondary/20 px-4 py-8 text-center">
           {expired ? (
             <>
               <p className="text-sm font-medium text-destructive">
@@ -103,7 +103,7 @@ function ResetPasswordPage() {
               </p>
               <Link
                 to="/login"
-                className="mt-4 inline-block rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90"
+                className="mt-4 inline-block rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90"
               >
                 Request a new link
               </Link>
@@ -117,7 +117,7 @@ function ResetPasswordPage() {
       ) : (
         <>
           {error && (
-            <p className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="mb-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </p>
           )}

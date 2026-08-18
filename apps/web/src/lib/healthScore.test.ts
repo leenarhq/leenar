@@ -180,15 +180,16 @@ describe("computeHealthScore", () => {
 });
 
 describe("healthLabel", () => {
-  it("Healthy for 80", () => {
-    expect(healthLabel(80)).toEqual({ label: "Healthy", color: "#34d399" });
+  it("is ok at 80 and above", () => {
+    expect(healthLabel(80)).toEqual({ label: "Healthy", tone: "ok" });
+    expect(healthLabel(100)).toEqual({ label: "Healthy", tone: "ok" });
   });
 
-  it("Warning for 65", () => {
-    expect(healthLabel(65)).toEqual({ label: "Warning", color: "#fbbf24" });
+  it("is warn between 50 and 79", () => {
+    expect(healthLabel(65)).toEqual({ label: "Warning", tone: "warn" });
   });
 
-  it("Critical for 30", () => {
-    expect(healthLabel(30)).toEqual({ label: "Critical", color: "#f87171" });
+  it("is crit below 50", () => {
+    expect(healthLabel(30)).toEqual({ label: "Critical", tone: "crit" });
   });
 });

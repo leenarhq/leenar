@@ -65,7 +65,7 @@ export function ExtensionsTab({ projectId, nodeId }: ExtensionsTabProps) {
     <div>
       {/* Mutation error banner */}
       {toggleMutation.isError && (
-        <div className="mb-3 flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           {toggleMutation.error instanceof Error
             ? toggleMutation.error.message
@@ -79,7 +79,7 @@ export function ExtensionsTab({ projectId, nodeId }: ExtensionsTabProps) {
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="h-14 animate-pulse rounded-md border border-border bg-secondary/20"
+              className="h-14 animate-pulse rounded-xl border border-border bg-secondary"
             />
           ))}
         </div>
@@ -87,7 +87,7 @@ export function ExtensionsTab({ projectId, nodeId }: ExtensionsTabProps) {
 
       {/* Error state */}
       {extensionsQuery.isError && (
-        <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           Failed to load extensions
           {extensionsQuery.error instanceof Error
@@ -98,7 +98,7 @@ export function ExtensionsTab({ projectId, nodeId }: ExtensionsTabProps) {
 
       {/* Empty state */}
       {extensionsQuery.isSuccess && extensions.length === 0 && (
-        <div className="rounded-md border border-dashed border-border py-24 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border py-24 text-center text-sm text-muted-foreground">
           No extensions available.
         </div>
       )}
@@ -109,7 +109,7 @@ export function ExtensionsTab({ projectId, nodeId }: ExtensionsTabProps) {
           {extensions.map((ext) => (
             <div
               key={ext.name}
-              className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3"
             >
               <div className="flex min-w-0 items-start gap-2.5">
                 <Puzzle
@@ -122,7 +122,7 @@ export function ExtensionsTab({ projectId, nodeId }: ExtensionsTabProps) {
                       {ext.name}
                     </span>
                     {ext.installed && (
-                      <span className="inline-flex rounded-full border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-emerald-400">
+                      <span className="inline-flex rounded-full border border-ok/20 bg-ok/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-ok">
                         {ext.installedVersion
                           ? `v${ext.installedVersion}`
                           : "installed"}

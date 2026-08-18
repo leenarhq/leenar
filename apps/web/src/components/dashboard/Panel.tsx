@@ -1,7 +1,13 @@
 import type { ReactNode } from "react";
 import { cn } from "../../lib/utils";
 
-/** Shared dashboard panel card — dashed-border console aesthetic. */
+/**
+ * The dashboard's card. One hairline container, a mono header that reads
+ * like a RowHead, and a body. The header is lowercase because a panel
+ * title labels machine surface — the same reason the console's counts and
+ * ids are mono. Titles are passed in sentence case and the CSS lowers
+ * them, so no caller has to know.
+ */
 export function Panel({
   title,
   icon: Icon,
@@ -20,65 +26,26 @@ export function Panel({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-md border border-border bg-card",
+        "flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--raise)]",
         className,
       )}
     >
-      <div className="flex items-center justify-between border-b border-border px-5 py-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          {Icon && <Icon className="h-3.5 w-3.5" />}
+      <div className="flex items-center justify-between gap-3 border-b border-border-soft px-4 py-2.5">
+        <div className="flex items-center gap-2 font-mono text-[10px] lowercase tracking-wide text-dim">
+          {Icon && <Icon className="h-3 w-3" />}
           {title}
         </div>
         {action}
       </div>
-      <div className={cn("flex-1 p-5", bodyClassName)}>{children}</div>
+      <div className={cn("flex-1 p-4", bodyClassName)}>{children}</div>
     </div>
   );
 }
 
 export function EmptyRow({ children }: { children: ReactNode }) {
   return (
-    <div className="py-6 text-center text-xs text-muted-foreground">
+    <div className="py-8 text-center text-[13px] text-muted-foreground">
       {children}
     </div>
   );
 }
-
-const toneClass: Record<string, string> = {
-  success: "text-emerald-400",
-  error: "text-destructive",
-  warning: "text-yellow-500",
-  neutral: "text-muted-foreground",
-  up: "text-emerald-400",
-  down: "text-destructive",
-  unknown: "text-muted-foreground",
-};
-
-export function StatusDot({
-  tone,
-  className,
-}: {
-  tone: string;
-  className?: string;
-}) {
-  const bg: Record<string, string> = {
-    success: "bg-emerald-500",
-    error: "bg-destructive",
-    warning: "bg-yellow-500",
-    neutral: "bg-muted-foreground",
-    up: "bg-emerald-500",
-    down: "bg-destructive",
-    unknown: "bg-muted-foreground",
-  };
-  return (
-    <span
-      className={cn(
-        "inline-block h-1.5 w-1.5 rounded-full",
-        bg[tone] ?? "bg-muted-foreground",
-        className,
-      )}
-    />
-  );
-}
-
-export { toneClass };

@@ -84,24 +84,24 @@ function AuthCallbackPage() {
   }, [navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
-      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-10 text-center shadow-xl">
-        <div className="mb-6 flex items-center justify-center gap-2">
-          <LeenarMark />
-          <span className="font-serif text-base">Leenar</span>
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+      <div className="w-full max-w-[376px] text-center">
+        <div className="mb-6 flex items-center justify-center gap-2.5">
+          <LeenarMark className="h-[15px] w-auto" />
+          <span className="text-sm font-medium tracking-[-0.01em]">Leenar</span>
         </div>
         {error ? (
           <>
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-[13.5px] text-crit">{error}</p>
             <button
-              className="mt-4 text-sm text-muted-foreground hover:text-foreground"
+              className="mt-4 font-mono text-[10px] lowercase text-muted-foreground transition-colors hover:text-foreground"
               onClick={() => navigate({ to: "/login" })}
             >
               Back to sign in
             </button>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">Signing you in…</p>
+          <p className="text-[13.5px] text-muted-foreground">Signing you in…</p>
         )}
       </div>
     </div>

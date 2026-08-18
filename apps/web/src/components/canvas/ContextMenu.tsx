@@ -14,14 +14,12 @@ export function ContextMenu({ x, y, onAddNode, onClose }: ContextMenuProps) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="fixed z-[100] w-52 bg-surface-container-highest/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden p-1.5"
+      className="fixed z-[100] w-52 bg-popover backdrop-blur-xl border border-border rounded-xl shadow-2xl overflow-hidden p-1.5"
       style={{ top: y, left: x }}
       onMouseLeave={onClose}
     >
-      <div className="px-3 py-2 border-b border-white/5 mb-1.5 text-center">
-        <span className="text-[11px] font-bold text-primary uppercase tracking-widest">
-          Add Node
-        </span>
+      <div className="px-3 py-2 border-b border-border-soft mb-1.5 text-center">
+        <span className="text-[11px] text-primary lowercase">Add Node</span>
       </div>
 
       <div className="space-y-0.5">
@@ -34,11 +32,11 @@ export function ContextMenu({ x, y, onAddNode, onClose }: ContextMenuProps) {
             });
             onClose();
           }}
-          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-on-surface-variant hover:text-white hover:bg-white/5 rounded-lg transition-all group"
+          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] rounded-lg transition-all group"
         >
           <Box
             size={14}
-            className="group-hover:scale-110 transition-transform text-white/50"
+            className="group-hover:scale-110 transition-transform text-muted-foreground"
           />
           Add GitHub
         </button>
@@ -52,11 +50,11 @@ export function ContextMenu({ x, y, onAddNode, onClose }: ContextMenuProps) {
             });
             onClose();
           }}
-          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-on-surface-variant hover:text-white hover:bg-white/5 rounded-lg transition-all group"
+          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] rounded-lg transition-all group"
         >
           <Box
             size={14}
-            className="group-hover:scale-110 transition-transform text-white/50"
+            className="group-hover:scale-110 transition-transform text-muted-foreground"
           />
           Add Vercel
         </button>
@@ -70,11 +68,11 @@ export function ContextMenu({ x, y, onAddNode, onClose }: ContextMenuProps) {
             });
             onClose();
           }}
-          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-on-surface-variant hover:text-white hover:bg-white/5 rounded-lg transition-all group"
+          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] rounded-lg transition-all group"
         >
           <Box
             size={14}
-            className="group-hover:scale-110 transition-transform text-white/50"
+            className="group-hover:scale-110 transition-transform text-muted-foreground"
           />
           Add Supabase
         </button>
@@ -88,11 +86,11 @@ export function ContextMenu({ x, y, onAddNode, onClose }: ContextMenuProps) {
             });
             onClose();
           }}
-          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-on-surface-variant hover:text-white hover:bg-white/5 rounded-lg transition-all group"
+          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] rounded-lg transition-all group"
         >
           <Box
             size={14}
-            className="group-hover:scale-110 transition-transform text-white/50"
+            className="group-hover:scale-110 transition-transform text-muted-foreground"
           />
           Add Resend
         </button>
@@ -106,11 +104,11 @@ export function ContextMenu({ x, y, onAddNode, onClose }: ContextMenuProps) {
             });
             onClose();
           }}
-          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-on-surface-variant hover:text-white hover:bg-white/5 rounded-lg transition-all group"
+          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] rounded-lg transition-all group"
         >
           <Box
             size={14}
-            className="group-hover:scale-110 transition-transform text-white/50"
+            className="group-hover:scale-110 transition-transform text-muted-foreground"
           />
           Add Cloudflare
         </button>

@@ -43,6 +43,20 @@ import { projectSession, getProvisionedResources } from "../projectEvents";
 import { stripRuntimeFromCanvas } from "../canvasRuntime";
 import { provisioningHooks } from "../hooks/provisioningHooks";
 import { claimDeploySlot } from "../deploy";
+import {
+  CONFIG_CANDIDATES,
+  detectServicesFromDeps,
+  parseEnvKeys,
+  parseSourceEnvKeys,
+  pickEnvFile,
+  type RepoSvcType,
+} from "../repoScan";
+
+// Re-exported, not relocated in the eyes of callers: workflowProvision.test.ts
+// imports this name alongside seven others on one line, and a PR about the
+// repo grid has no business rewriting that import.
+export { detectServicesFromDeps } from "../repoScan";
+export type { RepoSvcType, DetectedServices } from "../repoScan";
 
 const log = createLogger({ route: "workflowProvision" });
 
@@ -3206,87 +3220,6 @@ export function parseGitHubUrl(
   return { owner: match[1], repo: match[2] };
 }
 
-export type RepoSvcType = "github" | "vercel" | "supabase" | "resend";
-
-export interface DetectedServices {
-  services: RepoSvcType[];
-  connections: Array<{ from_type: RepoSvcType; to_type: RepoSvcType }>;
-}
-
-export function detectServicesFromDeps(
-  deps: string[],
-  envKeys: string[] = [],
-  rootFiles: string[] = [],
-): DetectedServices {
-  const SUPABASE_ENV_RE = /^(NEXT_PUBLIC_|VITE_)?SUPABASE_/;
-  const RESEND_ENV_RE = /^RESEND_/;
-
-  // Vercel: explicit signal required — vercel.json in root OR @vercel/* package
-  // (generic frameworks like express/next are NOT Vercel-specific)
-  const hasVercel =
-    rootFiles.includes("vercel.json") ||
-    deps.some((d) => d === "@vercel/node" || d.startsWith("@vercel/")) ||
-    envKeys.some((k) => k === "VERCEL_URL" || k === "VERCEL_TOKEN") ||
-    // Next.js + Supabase combos are almost always Vercel-hosted
-    (deps.includes("next") &&
-      deps.some((d) =>
-        [
-          "@supabase/supabase-js",
-          "@supabase/ssr",
-          "@supabase/auth-helpers-nextjs",
-        ].includes(d),
-      ));
-
-  // Fallback: if there's a deployable frontend framework but no other host signal,
-  // assume Vercel (most common default).
-  // Vite is included because it's almost exclusively used for frontend SPAs.
-  const hasFrontendFramework = deps.some((d) =>
-    [
-      "next",
-      "nuxt",
-      "@remix-run/react",
-      "react-scripts",
-      "gatsby",
-      "@sveltejs/kit",
-      "astro",
-      "vite",
-    ].includes(d),
-  );
-
-  const hasSupabase =
-    deps.some((d) =>
-      [
-        "@supabase/supabase-js",
-        "@supabase/ssr",
-        "@supabase/auth-helpers-nextjs",
-      ].includes(d),
-    ) || envKeys.some((k) => SUPABASE_ENV_RE.test(k));
-
-  const hasResend =
-    deps.some((d) => ["resend", "@resend/node"].includes(d)) ||
-    envKeys.some((k) => RESEND_ENV_RE.test(k));
-
-  // Use Vercel only if explicitly signaled OR if there's a frontend framework with no other host
-  const useVercel = hasVercel || hasFrontendFramework;
-
-  const services: RepoSvcType[] = ["github"];
-  if (hasSupabase) services.push("supabase");
-  if (useVercel) services.push("vercel");
-  if (hasResend) services.push("resend");
-
-  const connections: Array<{ from_type: RepoSvcType; to_type: RepoSvcType }> =
-    [];
-  if (hasSupabase && useVercel)
-    connections.push({ from_type: "supabase", to_type: "vercel" });
-  if (useVercel) connections.push({ from_type: "github", to_type: "vercel" });
-  if (hasResend && useVercel)
-    connections.push({ from_type: "resend", to_type: "vercel" });
-  else if (hasResend && hasSupabase)
-    connections.push({ from_type: "resend", to_type: "supabase" });
-
-  return { services, connections };
-}
-
 export function sanitizeProjectName(
   raw: string | undefined,
   fallback: string,
@@ -3408,22 +3341,9 @@ export async function analyzeRepo(
   }
 
   // ENV_FILE candidates in priority order — pick first that exists in root
-  const ENV_FILE_CANDIDATES = [
-    ".env.example",
-    ".env.sample",
-    ".env.local.example",
-    ".env",
-  ];
-  const envFileToFetch = ENV_FILE_CANDIDATES.find((f) => rootFileSet.has(f));
+  const envFileToFetch = pickEnvFile(rootFiles);
 
   // CONFIG files to scan for process.env.VAR patterns — only fetch ones that exist
-  const CONFIG_CANDIDATES = [
-    "next.config.mjs",
-    "next.config.ts",
-    "next.config.js",
-    "vite.config.ts",
-    "vite.config.js",
-  ];
   const configsToFetch = CONFIG_CANDIDATES.filter((f) => rootFileSet.has(f));
 
   // Fetch package.json + env file + relevant config files — all in parallel
@@ -3442,29 +3362,14 @@ export async function analyzeRepo(
     }
   }
 
-  // Parse env keys from .env-style file (skip comments and blank lines)
-  const envFileKeys = envRaw
-    ? envRaw
-        .split("\n")
-        .slice(0, 200)
-        .map((l) => l.replace(/#.*$/, "").split("=")[0].trim())
-        .filter((k) => /^[A-Z_][A-Z0-9_]{0,63}$/.test(k))
-    : [];
-
-  // Extract env var names from config files via regex
-  const SOURCE_ENV_RE =
-    /(?:process\.env|import\.meta\.env)\.([A-Z_][A-Z0-9_]{0,63})/g;
-  const sourceEnvKeys = new Set<string>();
-  for (const content of configContents) {
-    if (!content) continue;
-    const re = new RegExp(SOURCE_ENV_RE.source, "g");
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(content)) !== null) {
-      sourceEnvKeys.add(m[1]);
-    }
-  }
-
-  const envKeys = [...new Set([...envFileKeys, ...sourceEnvKeys])];
+  // Parse env keys from .env-style file (skip comments and blank lines), plus
+  // the env var names the framework configs read. Both parsers are shared with
+  // summarizeRepo (../repoScan) so the count on the repo grid and the count on
+  // the proposal card cannot disagree.
+  const envFileKeys = envRaw ? parseEnvKeys(envRaw) : [];
+  const envKeys = [
+    ...new Set([...envFileKeys, ...parseSourceEnvKeys(configContents)]),
+  ];
 
   // Collect all declared package names (cap at 500 to prevent DoS)
   let deps = Object.keys({

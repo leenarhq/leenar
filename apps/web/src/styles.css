@@ -46,11 +46,6 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -82,89 +77,71 @@
   --color-pill: var(--pill);
   --color-pill-ink: var(--pill-ink);
   --color-ok: var(--ok);
-
-  /* ── Canvas surface tokens (bg-surface, bg-surface-container-*, text-on-surface) ──
-     Values derive from the existing theme-reactive tokens above, so they invert
-     correctly with .light without a separate hardcoded palette to maintain. */
-  --color-surface: var(--canvas-surface);
-  --color-surface-dim: var(--canvas-surface);
-  --color-surface-bright: var(--canvas-surface-highest);
-  --color-surface-container-lowest: var(--canvas-surface-lowest);
-  --color-surface-container-low: var(--canvas-surface-low);
-  --color-surface-container: var(--canvas-surface-mid);
-  --color-surface-container-high: var(--canvas-surface-high);
-  --color-surface-container-highest: var(--canvas-surface-highest);
-  --color-on-surface: var(--canvas-on-surface);
-  --color-on-surface-variant: var(--canvas-on-surface-variant);
-
-  /* Canvas node-type accent colors — fixed brand hues, same in both themes */
-  --color-tertiary: #22c55e;
-  --color-error: #ef4444;
-  --color-trigger: #22c55e;
-  --color-agent: var(--app-accent);
-  --color-action: #a855f7;
-  --color-logic: #f59e0b;
-  --color-approval: #f97316;
-  --color-canvas-secondary: #06b6d4;
-
-  /* Re-declared as "inline" so .app-shell below can override them at runtime —
-     defaults (:root) match Tailwind's built-in blue/indigo/white so anything
-     outside the canvas keeps its current literal-color appearance. */
-  --color-white: var(--app-text-white);
-  --color-blue-300: var(--app-blue-300);
-  --color-blue-400: var(--app-blue-400);
-  --color-blue-500: var(--app-blue-500);
-  --color-blue-600: var(--app-blue-600);
-  --color-blue-700: var(--app-blue-700);
-  --color-indigo-400: var(--app-indigo-400);
-  --color-indigo-500: var(--app-indigo-500);
-  --color-indigo-600: var(--app-indigo-600);
+  --color-warn: var(--warn);
+  --color-crit: var(--crit);
 }
 
 :root {
-  --radius: 0.625rem;
-  /* Flat/corporate typography: IBM Plex Sans everywhere (body + wordmark +
-     headings), no decorative serif. --font-serif is kept as the historical
-     hook the `.font-serif` utility points at; it now resolves to IBM Plex Sans. */
-  --font-serif: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  /* Landing "clarity system": geometric display for headlines, plex mono for
-     the `$ command` eyebrow lines. Body stays --font-sans (IBM Plex Sans).
-     Swap the display family here to change every headline in one place. */
-  --font-display: "Onest", ui-sans-serif, system-ui, sans-serif;
+  --radius: 0.75rem;
+  /* The whole app shares two families: DM Sans for body, Host Grotesk for
+     the display face, plus IBM Plex Mono as the machine face. --font-serif
+     retired in PR 4 — it never resolved to a serif, and its thirteen
+     consumers were either console surfaces that now use explicit classes or
+     wordmarks that belong in the display face. */
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Host Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-  --background: oklch(0.145 0.005 260);
-  --foreground: oklch(0.94 0.005 260);
-  --card: oklch(0.185 0.006 260);
-  --card-foreground: oklch(0.94 0.005 260);
-  --popover: oklch(0.205 0.006 260);
-  --popover-foreground: oklch(0.94 0.005 260);
-  --primary: oklch(0.62 0.19 300);
-  --primary-foreground: oklch(0.99 0.005 300);
-  --secondary: oklch(0.235 0.006 260);
-  --secondary-foreground: oklch(0.94 0.005 260);
-  --muted: oklch(0.235 0.006 260);
-  --muted-foreground: oklch(0.62 0.008 260);
-  --accent: oklch(0.235 0.006 260);
-  --accent-foreground: oklch(0.94 0.005 260);
-  --destructive: oklch(0.6 0.22 25);
-  --destructive-foreground: oklch(0.98 0.003 260);
-  --border: oklch(0.255 0.006 260);
-  --input: oklch(0.255 0.006 260);
-  --ring: oklch(0.5 0.01 260);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.165 0.005 260);
-  --sidebar-foreground: oklch(0.94 0.005 260);
-  --sidebar-primary: oklch(0.94 0.005 260);
-  --sidebar-primary-foreground: oklch(0.14 0.005 260);
-  --sidebar-accent: oklch(0.22 0.005 260);
-  --sidebar-accent-foreground: oklch(0.94 0.005 260);
-  --sidebar-border: oklch(0.28 0.006 260);
-  --sidebar-ring: oklch(0.5 0.01 260);
+  --background: #0a0a0b;
+  --foreground: #ececea;
+  --card: rgba(255, 255, 255, 0.02);
+  --card-foreground: #ececea;
+  --popover: #101012;
+  --popover-foreground: #ececea;
+  --primary: #efefec;
+  --primary-foreground: #101012;
+  --secondary: rgba(255, 255, 255, 0.04);
+  --secondary-foreground: #ececea;
+  --muted: rgba(255, 255, 255, 0.04);
+  --muted-foreground: rgba(236, 236, 234, 0.6);
+  --accent: rgba(255, 255, 255, 0.04);
+  --accent-foreground: #ececea;
+  --destructive: #e0918f;
+  --destructive-foreground: #101012;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #ececea;
+
+  /* Console state tones. Three, and only three. `ok` is shared with the
+     marketing system; `warn` and `crit` exist because a console has to show
+     degradation and failure, which a landing page never does. All three sit
+     in the same low-saturation key so they can appear on one screen without
+     any of them shouting. See DESIGN.md § Console. */
+  --ok: #8fd9ae;
+  --warn: #d9c48f;
+  --crit: #e0918f;
+  --border-soft: rgba(255, 255, 255, 0.05);
+  --dim: rgba(236, 236, 234, 0.4);
+
+  /* Elevation. In the dark theme a surface rises with LIGHT: an inset
+     highlight along its top edge. The light theme redefines this to a drop
+     shadow, because you cannot put a white highlight on a white panel.
+     Components consume --raise and never learn which theme they are in. */
+  --raise: 0 1px 0 0 rgba(255, 255, 255, 0.045) inset;
+  --raise-lg: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset;
+  --glass: rgba(0, 0, 0, 0.7);
+  --hover: rgba(255, 255, 255, 0.06);
+  --edge: rgba(255, 255, 255, 0.16);
+  --sel: rgba(255, 255, 255, 0.22);
+  --dot: rgba(255, 255, 255, 0.07);
+
+  --sidebar: #0a0a0b;
+  --sidebar-foreground: #ececea;
+  --sidebar-primary: #ececea;
+  --sidebar-primary-foreground: #101012;
+  --sidebar-accent: rgba(255, 255, 255, 0.04);
+  --sidebar-accent-foreground: #ececea;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #ececea;
   /* Canvas --app-* token bridge */
   --app-bg: var(--background);
   --app-card-bg: var(--card);
@@ -176,89 +153,90 @@
   --app-text-muted: oklch(from var(--muted-foreground) l c h / 0.6);
   --app-text-dim: oklch(from var(--muted-foreground) l c h / 0.75);
   --app-text-faint: oklch(from var(--muted-foreground) l c h / 0.4);
-  --app-accent: var(--primary);
-  --app-accent-muted: var(--muted-foreground);
-  --app-surface: oklch(from var(--card) l c h / 0.5);
+  /* Stated literally, not derived from --card. `oklch(from X l c h / 0.5)`
+     discards X's alpha, and --card is now rgba(255,255,255,0.02) — so the
+     derivation resolved to white at 50% and painted a light box on the dark
+     canvas. This is the raised-panel value the canvas actually wants. */
+  --app-surface: rgba(255, 255, 255, 0.03);
   --app-shadow: oklch(0 0 0 / 0.4);
-  --canvas-bg: #111113;
-  --canvas-dot: #1e1e22;
-  --canvas-surface: var(--background);
-  --canvas-surface-lowest: var(--background);
-  --canvas-surface-low: var(--card);
-  --canvas-surface-mid: var(--secondary);
-  --canvas-surface-high: var(--muted);
-  --canvas-surface-highest: var(--accent);
-  --canvas-on-surface: var(--foreground);
-  --canvas-on-surface-variant: var(--muted-foreground);
-  /* Literal Tailwind defaults — only overridden inside .app-shell (canvas UI) */
-  --app-text-white: #ffffff;
-  --app-blue-300: #93c5fd;
-  --app-blue-400: #60a5fa;
-  --app-blue-500: #3b82f6;
-  --app-blue-600: #2563eb;
-  --app-blue-700: #1d4ed8;
-  --app-indigo-400: #818cf8;
-  --app-indigo-500: #6366f1;
-  --app-indigo-600: #4f46e5;
+  --canvas-bg: #0a0a0b;
+  --canvas-dot: rgba(255, 255, 255, 0.07);
   /* Landing page section accents — additive, not read by console */
   --landing-accent-sky: oklch(0.72 0.11 230);
   --landing-accent-amber: oklch(0.78 0.15 80);
   --landing-accent-violet: oklch(0.68 0.13 300);
   --landing-accent-rose: oklch(0.68 0.13 15);
-  /* Provider brand accents (GitHub/Vercel) — light gray in dark mode reads
-     fine against --card, but disappears in light mode. Themed here so
-     ActionNode's PROVIDER_META and console.new.tsx's SVC map both stay
-     legible; supabase/resend/cloudflare keep their fixed brand hex since
-     those already have enough contrast in both themes. */
-  --provider-github: #8b949e;
-  --provider-vercel: #a1a1aa;
 }
 
-/* Scoped to the canvas editor only (WorkspaceCanvas/WorkspaceMobileView root),
-   so text-white/x, bg-blue-x etc. become theme-reactive there without changing
-   their literal-color meaning anywhere else in the app. */
+/* Scoped to the canvas editor only (WorkspaceCanvas/WorkspaceMobileView root).
+   All it does now is hold the canvas's button ink independent of the ambient
+   theme. It used to re-point --color-white and --color-blue-* at neutral
+   tokens so `text-white/82` and `text-blue-400` were theme-reactive inside the
+   canvas and literal everywhere else — which is exactly how MarkdownContent,
+   rendered from both, ended up painting white text on the light dashboard.
+   That layer went with the last file that read it (PR 7). */
 .app-shell {
   --primary: oklch(0.94 0.005 260);
   --primary-foreground: oklch(0.14 0.005 260);
-  --app-text-white: #ffffff;
-  --app-blue-300: var(--app-accent-muted);
-  --app-blue-400: var(--app-accent-muted);
-  --app-blue-500: var(--app-accent);
-  --app-blue-600: var(--app-accent);
-  --app-blue-700: var(--app-accent);
-  --app-indigo-400: var(--app-accent-muted);
-  --app-indigo-500: var(--app-accent);
-  --app-indigo-600: var(--app-accent);
 }
 
 .light {
-  --background: oklch(0.99 0.002 260);
-  --foreground: oklch(0.14 0.005 260);
-  --card: oklch(0.975 0.002 260);
-  --card-foreground: oklch(0.14 0.005 260);
-  --popover: oklch(0.965 0.002 260);
-  --popover-foreground: oklch(0.14 0.005 260);
-  --primary: oklch(0.55 0.2 300);
-  --primary-foreground: oklch(0.99 0.005 300);
-  --secondary: oklch(0.94 0.003 260);
-  --secondary-foreground: oklch(0.14 0.005 260);
-  --muted: oklch(0.94 0.003 260);
-  --muted-foreground: oklch(0.48 0.008 260);
-  --accent: oklch(0.94 0.003 260);
-  --accent-foreground: oklch(0.14 0.005 260);
-  --destructive: oklch(0.6 0.22 25);
-  --destructive-foreground: oklch(0.98 0.003 260);
-  --border: oklch(0.9 0.005 260);
-  --input: oklch(0.9 0.005 260);
-  --ring: oklch(0.7 0.01 260);
-  --sidebar: oklch(0.97 0.002 260);
-  --sidebar-foreground: oklch(0.14 0.005 260);
-  --sidebar-primary: oklch(0.14 0.005 260);
-  --sidebar-primary-foreground: oklch(0.99 0.002 260);
-  --sidebar-accent: oklch(0.94 0.003 260);
-  --sidebar-accent-foreground: oklch(0.14 0.005 260);
-  --sidebar-border: oklch(0.88 0.005 260);
-  --sidebar-ring: oklch(0.7 0.01 260);
+  /* Not pure white. Panels lift toward #fff, so the ground has to sit below
+     it — otherwise the hairline grid's emphasis mechanism has nowhere to go.
+     Same bg -> +2% -> +4% ladder as the dark theme, pointed the other way. */
+  --background: #f2f2f0;
+  --foreground: #16161a;
+  --card: #fafaf9;
+  --card-foreground: #16161a;
+  --popover: #ffffff;
+  --popover-foreground: #16161a;
+  --primary: #16161a;
+  --primary-foreground: #f7f7f5;
+  --secondary: #ffffff;
+  --secondary-foreground: #16161a;
+  --muted: #ffffff;
+  /* 70%, not the dark theme's 60% — 60% does not reach the same contrast on
+     a light ground. The three-weight rule holds; the numbers are computed
+     per theme. */
+  --muted-foreground: rgba(22, 22, 26, 0.7);
+  --accent: #ffffff;
+  --accent-foreground: #16161a;
+  --destructive: #b03e3c;
+  --destructive-foreground: #f7f7f5;
+  --border: rgba(0, 0, 0, 0.11);
+  --input: rgba(0, 0, 0, 0.11);
+  --ring: #16161a;
+  --sidebar: #f2f2f0;
+  --sidebar-foreground: #16161a;
+  --sidebar-primary: #16161a;
+  --sidebar-primary-foreground: #f7f7f5;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #16161a;
+  --sidebar-border: rgba(0, 0, 0, 0.11);
+  --sidebar-ring: #16161a;
+
+  /* Redrawn, not lightened. #8fd9ae measures 1.4:1 on #f2f2f0 — unreadable.
+     Same hues, far darker; all three clear 4.5:1 (measured: ok 4.62, warn
+     4.50, crit 5.20). The spec proposed #2e7d51 for ok, which lands at
+     4.49 — one hundredth under the gate, so it is one step darker here. */
+  --ok: #2d7b4f;
+  --warn: #8a6a1c;
+  --crit: #b03e3c;
+  --border-soft: rgba(0, 0, 0, 0.07);
+  /* 0.5, not the spec's 0.45: at 0.45 this measures 2.88:1, under even the
+     3:1 large-text floor `dim` is allowed to use. 0.5 gives 3.33:1, which
+     matches the dark theme's 3.36 — the same weight in both themes. */
+  --dim: rgba(22, 22, 26, 0.5);
+
+  /* Elevation flips: shadow instead of an inset highlight. */
+  --raise:
+    0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 0 0 rgba(255, 255, 255, 0.9) inset;
+  --raise-lg: 0 2px 10px rgba(0, 0, 0, 0.06), 0 1px 0 0 #ffffff inset;
+  --glass: rgba(255, 255, 255, 0.78);
+  --hover: rgba(0, 0, 0, 0.05);
+  --edge: rgba(0, 0, 0, 0.22);
+  --sel: rgba(0, 0, 0, 0.3);
+  --dot: rgba(0, 0, 0, 0.1);
   /* Canvas --app-* token bridge */
   --app-bg: var(--background);
   --app-card-bg: var(--card);
@@ -270,49 +248,26 @@
   --app-text-muted: oklch(from var(--muted-foreground) l c h / 0.6);
   --app-text-dim: oklch(from var(--muted-foreground) l c h / 0.75);
   --app-text-faint: oklch(from var(--muted-foreground) l c h / 0.4);
-  --app-accent: var(--primary);
-  --app-accent-muted: var(--muted-foreground);
-  --app-surface: oklch(from var(--card) l c h / 0.5);
+  --app-surface: #fafaf9;
   --app-shadow: oklch(0 0 0 / 0.15);
-  --canvas-bg: #efefef;
-  --canvas-dot: #555555;
-  --canvas-surface: var(--background);
-  --canvas-surface-lowest: var(--background);
-  --canvas-surface-low: var(--card);
-  --canvas-surface-mid: var(--secondary);
-  --canvas-surface-high: var(--muted);
-  --canvas-surface-highest: var(--accent);
-  --canvas-on-surface: var(--foreground);
-  --canvas-on-surface-variant: var(--muted-foreground);
+  --canvas-bg: #f2f2f0;
+  --canvas-dot: rgba(0, 0, 0, 0.1);
   /* Landing page section accents — additive, not read by console */
   --landing-accent-sky: oklch(0.55 0.13 235);
   --landing-accent-amber: oklch(0.62 0.15 70);
   --landing-accent-violet: oklch(0.52 0.14 295);
   --landing-accent-rose: oklch(0.55 0.15 10);
-  /* Provider brand accents — darkened for contrast against light --card
-     (oklch(0.97 0.002 260)) and the SVC chip backgrounds in console.new.tsx. */
-  --provider-github: #57606a;
-  --provider-vercel: #111111;
 }
 
 .light .app-shell {
   --primary: oklch(0.14 0.005 260);
   --primary-foreground: oklch(0.99 0.002 260);
-  --app-text-white: var(--foreground);
-  --app-blue-300: var(--app-accent-muted);
-  --app-blue-400: var(--app-accent-muted);
-  --app-blue-500: var(--app-accent);
-  --app-blue-600: var(--app-accent);
-  --app-blue-700: var(--app-accent);
-  --app-indigo-400: var(--app-accent-muted);
-  --app-indigo-500: var(--app-accent);
-  --app-indigo-600: var(--app-accent);
 }
 
 /* ReactFlow's own stylesheet hardcodes light colors for the zoom/fit controls —
    override so they follow the canvas surface tokens instead of staying white. */
 .react-flow__controls {
-  background: var(--canvas-surface-low);
+  background: var(--card);
   border: 1px solid var(--color-border);
   border-radius: 10px;
   box-shadow: none;
@@ -322,11 +277,11 @@
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--color-border);
-  fill: var(--canvas-on-surface-variant);
+  fill: var(--muted-foreground);
 }
 .react-flow__controls-button:hover {
-  background: var(--canvas-surface-mid);
-  fill: var(--canvas-on-surface);
+  background: var(--secondary);
+  fill: var(--foreground);
 }
 .react-flow__controls-button:last-child {
   border-bottom: none;
@@ -342,12 +297,6 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "cv11";
-  }
-
-  .font-serif {
-    font-family: var(--font-serif);
-    font-weight: 500;
-    letter-spacing: -0.01em;
   }
 
   /* Geometric display for landing headlines. */

@@ -1,6 +1,13 @@
 import { ENV_FLOW } from "../../lib/envFlow";
 import { applyAutoLayout } from "./workspaceHelpers";
 
+/** Read a theme token for the one place SVG markers need a literal colour. */
+function read(token: string): string {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(token)
+    .trim();
+}
+
 const TEMPLATE_ICON: Record<string, string> = {
   github: "Github",
   vercel: "Triangle",
@@ -128,11 +135,7 @@ export function buildTemplateCanvas(templateName: string) {
         data: {},
         markerEnd: {
           type: "arrowclosed",
-          color: envVars.length
-            ? "#34d399"
-            : getComputedStyle(document.documentElement)
-                .getPropertyValue("--app-accent")
-                .trim() || "#c8503a",
+          color: read(envVars.length ? "--ok" : "--edge"),
         },
       },
     ];

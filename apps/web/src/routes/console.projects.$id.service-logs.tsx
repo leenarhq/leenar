@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Loader2, AlertCircle, Copy, Check, RefreshCw } from "lucide-react";
 import { useAuth } from "../context/auth";
 import { isCloud } from "../lib/cloud";
+import { StateTag, toneFor, type Tone } from "../components/console/StateTag";
 import {
   fetchProjectLogs,
   fetchBuildLogs,
@@ -21,29 +22,24 @@ export const Route = createFileRoute("/console/projects/$id/service-logs")({
 
 type ServiceTab = "vercel" | "github" | "supabase" | "resend" | "incidents";
 
-const STATE_COLOR: Record<string, string> = {
-  READY: "rgba(52,211,153,0.85)",
-  ERROR: "rgba(248,113,113,0.85)",
-  BUILDING: "rgba(251,191,36,0.85)",
-  CANCELED: "rgba(156,163,175,0.6)",
-};
+/**
+ * Four maps of raw rgba() used to live here — STATE_COLOR, SEVERITY_COLOR,
+ * STATUS_COLOR and LOG_TYPE_COLOR, twelve entries expressing three hues.
+ * They were applied through inline `style`, so the colour guard could never
+ * see them. Everything below goes through the shared vocabulary.
+ */
+const sevTone = (s: string): Tone => (s === "5xx" ? "crit" : toneFor(s));
 
-const SEVERITY_COLOR: Record<string, string> = {
-  "5xx": "rgba(248,113,113,0.85)",
-  error: "rgba(248,113,113,0.85)",
-  warning: "rgba(251,191,36,0.85)",
-};
+/** Build-log line kinds. `command` is the echoed step, not a warning state,
+ *  but it is the one line you scan for, so it keeps a quiet tone. */
+const logTone = (t: string): Tone =>
+  t === "stderr" || t === "exit" ? "crit" : t === "command" ? "warn" : "idle";
 
-const STATUS_COLOR: Record<string, string> = {
-  open: "rgba(248,113,113,0.85)",
-  acknowledged: "rgba(251,191,36,0.85)",
-  resolved: "rgba(52,211,153,0.85)",
-};
-
-const LOG_TYPE_COLOR: Record<string, string> = {
-  command: "rgba(251,191,36,0.85)",
-  stderr: "rgba(248,113,113,0.85)",
-  exit: "rgba(248,113,113,0.85)",
+const TONE_TEXT: Record<Tone, string> = {
+  ok: "text-ok",
+  warn: "text-warn",
+  crit: "text-crit",
+  idle: "text-muted-foreground",
 };
 
 function timeAgoLocal(ts: string | number): string {
@@ -113,7 +109,7 @@ function VercelLogsPanel({
   };
 
   return (
-    <div className="rounded-md border border-border bg-card">
+    <div className="rounded-xl border border-border bg-card">
       <div className="border-b border-border px-4 pt-4">
         <div className="flex gap-4">
           {(["deployments", "build"] as const).map((t) => (
@@ -143,17 +139,11 @@ function VercelLogsPanel({
             {vercel.deployments.map((dep) => (
               <div
                 key={dep.id}
-                className="flex items-center justify-between rounded-md border border-border bg-secondary/40 px-4 py-3"
+                className="flex items-center justify-between rounded-xl border border-border bg-secondary px-4 py-3"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span
-                    className="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-background"
-                    style={{
-                      background:
-                        STATE_COLOR[dep.state] ?? "rgba(156,163,175,0.6)",
-                    }}
-                  >
-                    {dep.state}
+                  <span className="shrink-0">
+                    <StateTag tone={toneFor(dep.state)} label={dep.state} />
                   </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm text-foreground">
@@ -186,7 +176,7 @@ function VercelLogsPanel({
               <select
                 value={selectedDeployId}
                 onChange={(e) => setSelectedDeployId(e.target.value)}
-                className="max-w-full truncate rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground sm:max-w-[20rem]"
+                className="max-w-full truncate rounded-xl border border-border bg-background px-3 py-1.5 text-sm text-foreground sm:max-w-[20rem]"
               >
                 {vercel.deployments.map((dep) => {
                   const label = dep.commitMessage ?? dep.id;
@@ -202,7 +192,7 @@ function VercelLogsPanel({
               <button
                 onClick={handleCopy}
                 disabled={buildLogs.length === 0}
-                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
               >
                 {copied ? (
                   <Check className="h-3 w-3" />
@@ -222,15 +212,10 @@ function VercelLogsPanel({
                 No build logs available.
               </p>
             ) : (
-              <pre className="overflow-auto rounded-md border border-border bg-background p-4 text-xs leading-relaxed">
+              <pre className="overflow-auto rounded-xl border border-border bg-background p-4 text-xs leading-relaxed">
                 {buildLogs.map((line, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      color: LOG_TYPE_COLOR[line.type] ?? "inherit",
-                    }}
-                  >
-                    <span className="mr-2 select-none text-muted-foreground/60">
+                  <span key={i} className={TONE_TEXT[logTone(line.type)]}>
+                    <span className="mr-2 select-none text-dim">
                       {formatLogTime(line.date)}
                     </span>
                     {line.text}
@@ -266,7 +251,7 @@ function IncidentsList({
 
   if (incidents.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+      <div className="rounded-xl border border-border py-12 text-center text-sm text-muted-foreground">
         No incidents found.
       </div>
     );
@@ -334,7 +319,7 @@ function IncidentsList({
   return (
     <div className="space-y-4">
       {Object.entries(grouped).map(([service, items]) => (
-        <div key={service} className="rounded-md border border-border bg-card">
+        <div key={service} className="rounded-xl border border-border bg-card">
           <div className="border-b border-border px-4 py-2.5">
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {service}
@@ -348,15 +333,11 @@ function IncidentsList({
                   onClick={() => toggleExpand(inc.id)}
                 >
                   <div className="flex items-start gap-3 min-w-0">
-                    <span
-                      className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-background"
-                      style={{
-                        background:
-                          SEVERITY_COLOR[inc.severity] ??
-                          "rgba(156,163,175,0.6)",
-                      }}
-                    >
-                      {inc.severity}
+                    <span className="mt-0.5 shrink-0">
+                      <StateTag
+                        tone={sevTone(inc.severity)}
+                        label={inc.severity}
+                      />
                     </span>
                     <div className="min-w-0">
                       <p className="truncate text-sm text-foreground">
@@ -368,21 +349,15 @@ function IncidentsList({
                       </p>
                     </div>
                   </div>
-                  <span
-                    className="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-background"
-                    style={{
-                      background:
-                        STATUS_COLOR[inc.status] ?? "rgba(156,163,175,0.6)",
-                    }}
-                  >
-                    {inc.status}
+                  <span className="shrink-0">
+                    <StateTag tone={toneFor(inc.status)} label={inc.status} />
                   </span>
                 </div>
 
                 {expanded.has(inc.id) && (
                   <div className="mt-3 space-y-3">
                     {inc.log_snippet && (
-                      <pre className="overflow-auto rounded-md border border-border bg-background p-3 text-xs text-muted-foreground">
+                      <pre className="overflow-auto rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
                         {inc.log_snippet}
                       </pre>
                     )}
@@ -394,7 +369,7 @@ function IncidentsList({
                             void handleAcknowledge(inc);
                           }}
                           disabled={acting.has(inc.id)}
-                          className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                          className="rounded-xl border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
                         >
                           {acting.has(inc.id) ? "…" : "Acknowledge"}
                         </button>
@@ -406,7 +381,7 @@ function IncidentsList({
                             void handleResolve(inc);
                           }}
                           disabled={acting.has(inc.id)}
-                          className="rounded-md border border-border bg-foreground px-3 py-1.5 text-xs text-background hover:opacity-90 disabled:opacity-40"
+                          className="rounded-xl border border-border bg-foreground px-3 py-1.5 text-xs text-background hover:opacity-90 disabled:opacity-40"
                         >
                           {acting.has(inc.id) ? "…" : "Mark resolved"}
                         </button>
@@ -508,7 +483,7 @@ function ServiceLogsPage() {
             <button
               onClick={() => void load(true)}
               disabled={refreshing}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`}
@@ -550,7 +525,7 @@ function ServiceLogsPage() {
 
               {/* Tab content */}
               {availableTabs.length === 0 && (
-                <div className="rounded-md border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
+                <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">
                   No service logs available for this project.
                 </div>
               )}
@@ -564,7 +539,7 @@ function ServiceLogsPage() {
               )}
 
               {tab === "github" && logs?.github && (
-                <div className="rounded-md border border-border bg-card">
+                <div className="rounded-xl border border-border bg-card">
                   <div className="border-b border-border px-4 py-3">
                     <p className="text-sm font-medium text-foreground">
                       {logs.github.repoName}
@@ -610,7 +585,7 @@ function ServiceLogsPage() {
               )}
 
               {tab === "supabase" && logs?.supabase && (
-                <div className="rounded-md border border-border bg-card p-4">
+                <div className="rounded-xl border border-border bg-card p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-foreground">
@@ -620,17 +595,14 @@ function ServiceLogsPage() {
                         {logs.supabase.ref}
                       </p>
                     </div>
-                    <span
-                      className="rounded px-2 py-1 text-xs font-medium text-background"
-                      style={{
-                        background:
-                          logs.supabase.status === "ACTIVE_HEALTHY"
-                            ? "rgba(52,211,153,0.85)"
-                            : "rgba(251,191,36,0.85)",
-                      }}
-                    >
-                      {logs.supabase.status}
-                    </span>
+                    <StateTag
+                      tone={
+                        logs.supabase.status === "ACTIVE_HEALTHY"
+                          ? "ok"
+                          : "warn"
+                      }
+                      label={logs.supabase.status}
+                    />
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
                     <div>
@@ -648,7 +620,7 @@ function ServiceLogsPage() {
               )}
 
               {tab === "resend" && logs?.resend && (
-                <div className="rounded-md border border-border bg-card">
+                <div className="rounded-xl border border-border bg-card">
                   <div className="divide-y divide-border">
                     {logs.resend.emails.length === 0 && (
                       <p className="p-4 text-sm text-muted-foreground">
@@ -671,18 +643,17 @@ function ServiceLogsPage() {
                             {timeAgoLocal(email.createdAt)}
                           </p>
                         </div>
-                        <span
-                          className="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-background"
-                          style={{
-                            background:
+                        <span className="shrink-0">
+                          <StateTag
+                            tone={
                               email.lastEvent === "delivered"
-                                ? "rgba(52,211,153,0.85)"
+                                ? "ok"
                                 : email.lastEvent === "bounced"
-                                  ? "rgba(248,113,113,0.85)"
-                                  : "rgba(251,191,36,0.85)",
-                          }}
-                        >
-                          {email.lastEvent}
+                                  ? "crit"
+                                  : "warn"
+                            }
+                            label={email.lastEvent}
+                          />
                         </span>
                       </div>
                     ))}

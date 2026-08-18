@@ -44,8 +44,7 @@ export function NodeDeletionModal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ background: "rgba(5,5,5,0.78)", backdropFilter: "blur(5px)" }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={onCancel}
     >
       <motion.div
@@ -54,25 +53,25 @@ export function NodeDeletionModal({
         exit={{ opacity: 0, scale: 0.95, y: 8 }}
         transition={{ duration: 0.15 }}
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
-        className="w-[400px] rounded-2xl border border-white/[0.08] overflow-hidden"
+        className="w-[400px] overflow-hidden rounded-2xl border border-border-soft"
         style={{
-          background: "var(--app-card-bg)",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
+          background: "var(--popover)",
+          boxShadow: "var(--raise-lg)",
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-soft">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-white/[0.06] border border-white/[0.10] flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-secondary border border-border flex items-center justify-center">
               {isImported ? (
-                <Trash2 size={14} className="text-white/50" />
+                <Trash2 size={14} className="text-muted-foreground" />
               ) : isProvisioned ? (
-                <Cloud size={14} className="text-red-400" />
+                <Cloud size={14} className="text-crit" />
               ) : (
-                <Trash2 size={14} className="text-red-400" />
+                <Trash2 size={14} className="text-crit" />
               )}
             </div>
-            <span className="text-[12px] font-semibold text-white/85">
+            <span className="text-[12px] font-semibold text-foreground">
               {isImported
                 ? "Remove Imported Service"
                 : isProvisioned
@@ -82,7 +81,7 @@ export function NodeDeletionModal({
           </div>
           <button
             onClick={onCancel}
-            className="p-1 hover:bg-white/5 rounded-md text-white/30 hover:text-white/70 transition-colors"
+            className="p-1 hover:bg-[var(--hover)] rounded-md text-dim hover:text-foreground transition-colors"
           >
             <X size={14} />
           </button>
@@ -93,28 +92,28 @@ export function NodeDeletionModal({
           {isImported ? (
             /* IMPORTED — simple remove, no cloud deletion */
             <>
-              <p className="text-[12px] text-white/55 leading-relaxed">
+              <p className="text-[12px] text-muted-foreground leading-relaxed">
                 Remove{" "}
-                <span className="text-white/85 font-semibold">{label}</span>{" "}
+                <span className="text-foreground font-semibold">{label}</span>{" "}
                 from this canvas? The cloud resource will{" "}
-                <span className="text-white/85 font-semibold">not</span> be
+                <span className="text-foreground font-semibold">not</span> be
                 deleted — it was imported from your existing infrastructure.
               </p>
               {url && (
-                <p className="text-[11px] font-mono text-white/30 truncate">
+                <p className="text-[11px] font-mono text-dim truncate">
                   {url.replace(/^https?:\/\//, "")}
                 </p>
               )}
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={onCancel}
-                  className="flex-1 py-2 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/5 text-[11px] font-semibold transition-all"
+                  className="flex-1 py-2 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] text-[11px] font-semibold transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => onConfirm(false)}
-                  className="flex-1 py-2 rounded-xl bg-white/[0.07] border border-white/[0.10] text-white/70 hover:bg-white/[0.12] text-[11px] font-semibold transition-all"
+                  className="flex-1 py-2 rounded-xl bg-secondary border border-border text-foreground hover:bg-secondary text-[11px] font-semibold transition-all"
                 >
                   Remove from Canvas
                 </button>
@@ -123,22 +122,22 @@ export function NodeDeletionModal({
           ) : !isProvisioned ? (
             /* DRAFT — simple confirm */
             <>
-              <p className="text-[12px] text-white/55 leading-relaxed">
+              <p className="text-[12px] text-muted-foreground leading-relaxed">
                 Remove{" "}
-                <span className="text-white/85 font-semibold">{label}</span>{" "}
+                <span className="text-foreground font-semibold">{label}</span>{" "}
                 from the canvas? This node has not been provisioned — no cloud
                 resources will be affected.
               </p>
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={onCancel}
-                  className="flex-1 py-2 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/5 text-[11px] font-semibold transition-all"
+                  className="flex-1 py-2 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] text-[11px] font-semibold transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => onConfirm(false)}
-                  className="flex-1 py-2 rounded-xl bg-red-500/15 border border-red-500/25 text-red-400 hover:bg-red-500/22 text-[11px] font-semibold transition-all"
+                  className="flex-1 py-2 rounded-xl bg-crit/15 border border-crit/30 text-crit hover:bg-crit/15 text-[11px] font-semibold transition-all"
                 >
                   Remove Node
                 </button>
@@ -147,13 +146,13 @@ export function NodeDeletionModal({
           ) : step === 1 ? (
             /* PROVISIONED — Step 1: warning */
             <>
-              <div className="bg-red-500/8 border border-red-500/15 rounded-xl p-3.5 space-y-2.5">
+              <div className="bg-crit/10 border border-crit/20 rounded-xl p-3.5 space-y-2.5">
                 <div className="flex items-center gap-2">
                   <AlertTriangle
                     size={13}
-                    className="text-red-400 flex-shrink-0"
+                    className="text-crit flex-shrink-0"
                   />
-                  <span className="text-[11px] font-bold text-red-400 uppercase tracking-wider">
+                  <span className="text-[11px] text-crit lowercase">
                     This will delete a live cloud resource
                   </span>
                 </div>
@@ -168,12 +167,14 @@ export function NodeDeletionModal({
                   ].map((item, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-2 text-[11px] text-white/50"
+                      className="flex items-start gap-2 text-[11px] text-muted-foreground"
                     >
-                      <span className="mt-1.5 w-1 h-1 rounded-full bg-red-500/50 flex-shrink-0" />
+                      <span className="mt-1.5 w-1 h-1 rounded-full bg-crit flex-shrink-0" />
                       <span
                         className={
-                          i === 1 ? "font-mono text-[10px] text-white/40" : ""
+                          i === 1
+                            ? "font-mono text-[10px] text-muted-foreground"
+                            : ""
                         }
                       >
                         {item}
@@ -185,19 +186,19 @@ export function NodeDeletionModal({
               <div className="flex gap-2">
                 <button
                   onClick={onCancel}
-                  className="flex-1 py-2 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/5 text-[11px] font-semibold transition-all"
+                  className="flex-1 py-2 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] text-[11px] font-semibold transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => setStep("keep-confirm")}
-                  className="flex-1 py-2 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/5 text-[11px] font-semibold transition-all"
+                  className="flex-1 py-2 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] text-[11px] font-semibold transition-all"
                 >
                   Keep Resource
                 </button>
                 <button
                   onClick={() => setStep(2)}
-                  className="flex-1 py-2 rounded-xl bg-red-500/15 border border-red-500/25 text-red-400 hover:bg-red-500/22 text-[11px] font-semibold transition-all"
+                  className="flex-1 py-2 rounded-xl bg-crit/15 border border-crit/30 text-crit hover:bg-crit/15 text-[11px] font-semibold transition-all"
                 >
                   Delete Everything →
                 </button>
@@ -206,7 +207,7 @@ export function NodeDeletionModal({
           ) : step === "keep-confirm" ? (
             /* KEEP RESOURCE — simple confirm, no token, cloud resource untouched */
             <>
-              <p className="text-[12px] text-white/55 leading-relaxed">
+              <p className="text-[12px] text-muted-foreground leading-relaxed">
                 These resources will keep running outside Leenar — no longer
                 tracked for cost or drift, and won't be deleted automatically.
                 You'll need to remove them manually from their provider
@@ -216,14 +217,14 @@ export function NodeDeletionModal({
                 <button
                   onClick={() => setStep(1)}
                   disabled={isDeprovisioning}
-                  className="flex-1 py-2 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/5 text-[11px] font-semibold transition-all"
+                  className="flex-1 py-2 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] text-[11px] font-semibold transition-all"
                 >
                   ← Back
                 </button>
                 <button
                   onClick={() => onConfirm(true)}
                   disabled={isDeprovisioning}
-                  className="flex-1 py-2 rounded-xl bg-white/[0.07] border border-white/[0.10] text-white/70 hover:bg-white/[0.12] text-[11px] font-semibold transition-all disabled:opacity-30"
+                  className="flex-1 py-2 rounded-xl bg-secondary border border-border text-foreground hover:bg-secondary text-[11px] font-semibold transition-all disabled:opacity-30"
                 >
                   Confirm
                 </button>
@@ -232,14 +233,14 @@ export function NodeDeletionModal({
           ) : (
             /* PROVISIONED — Step 2: token */
             <>
-              <p className="text-[11px] text-white/50 leading-relaxed">
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
                 Type the confirmation code to permanently delete this resource:
               </p>
               <div
-                className="rounded-xl border border-white/[0.06] py-3 text-center"
+                className="rounded-xl border border-border-soft py-3 text-center"
                 style={{ background: "var(--app-surface)" }}
               >
-                <code className="text-[22px] font-mono font-bold tracking-[0.35em] text-red-400 select-none">
+                <code className="text-[22px] font-mono font-bold tracking-[0.35em] text-crit select-none">
                   {confirmToken}
                 </code>
               </div>
@@ -256,7 +257,7 @@ export function NodeDeletionModal({
                 }
                 placeholder="Type code here"
                 autoFocus
-                className="w-full bg-transparent border border-white/[0.07] rounded-xl py-2.5 px-3 text-[14px] font-mono font-bold text-center text-white/85 tracking-[0.3em] focus:outline-none focus:border-red-500/30 focus:ring-1 focus:ring-red-500/15 transition-all placeholder:text-white/18 placeholder:tracking-normal placeholder:font-normal placeholder:text-[12px]"
+                className="w-full bg-transparent border border-border rounded-xl py-2.5 px-3 text-[14px] font-mono font-bold text-center text-foreground tracking-[0.3em] focus:outline-none focus:border-crit/30 focus:ring-1 focus:ring-crit/20 transition-all placeholder:text-dim placeholder:tracking-normal placeholder:font-normal placeholder:text-[12px]"
               />
               <div className="flex gap-2">
                 <button
@@ -264,14 +265,14 @@ export function NodeDeletionModal({
                     setStep(1);
                     setInputToken("");
                   }}
-                  className="flex-1 py-2 rounded-xl border border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/5 text-[11px] font-semibold transition-all"
+                  className="flex-1 py-2 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-[var(--hover)] text-[11px] font-semibold transition-all"
                 >
                   ← Back
                 </button>
                 <button
                   onClick={() => onConfirm(false)}
                   disabled={!tokenMatch || isDeprovisioning}
-                  className="flex-1 py-2 rounded-xl bg-red-500/15 border border-red-500/25 text-red-400 hover:bg-red-500/22 text-[11px] font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="flex-1 py-2 rounded-xl bg-crit/15 border border-crit/30 text-crit hover:bg-crit/15 text-[11px] font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   {isDeprovisioning ? "Deleting…" : "Delete Forever"}
                 </button>

@@ -11,6 +11,8 @@ import {
 import type { ReactNode } from "react";
 import { ConsoleTopBar } from "./console";
 import { useIsMobile } from "../hooks/use-mobile";
+import { StateTag } from "../components/console/StateTag";
+import { PILL_QUIET } from "../components/console/Field";
 
 const subNav = {
   monitor: [
@@ -52,14 +54,14 @@ export function ObservabilitySidebar({
         {isMobile ? (
           <MobileNavStrip pathname={pathname} />
         ) : (
-          <aside className="w-56 shrink-0 border-r border-dashed border-border p-3">
+          <aside className="w-56 shrink-0 border-r border-border p-3">
             <Link
               to="/console"
-              className="mb-4 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+              className="mb-4 flex items-center gap-2 rounded-full px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" /> Back
             </Link>
-            <div className="px-3 pb-2 pt-3 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <div className="px-3 pb-2 pt-3 font-mono text-[10px] lowercase tracking-wide text-dim">
               Monitor
             </div>
             <div className="space-y-1">
@@ -70,14 +72,12 @@ export function ObservabilitySidebar({
                   return (
                     <div
                       key={item.label}
-                      className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-muted-foreground/60"
+                      className="flex items-center justify-between rounded-xl px-3 py-2 text-[13px] text-dim"
                     >
                       <span className="flex items-center gap-3">
                         <Icon className="h-4 w-4" /> {item.label}
                       </span>
-                      <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[9px]">
-                        SOON
-                      </span>
+                      <StateTag tone="idle" label="soon" />
                     </div>
                   );
                 }
@@ -85,14 +85,14 @@ export function ObservabilitySidebar({
                   <Link
                     key={item.label}
                     to={item.to}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm ${active ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-colors ${active ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     <Icon className="h-4 w-4" /> {item.label}
                   </Link>
                 );
               })}
             </div>
-            <div className="px-3 pb-2 pt-4 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <div className="px-3 pb-2 pt-4 font-mono text-[10px] lowercase tracking-wide text-dim">
               Manage
             </div>
             <div className="space-y-1">
@@ -101,14 +101,12 @@ export function ObservabilitySidebar({
                 return (
                   <div
                     key={item.label}
-                    className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-muted-foreground/60"
+                    className="flex items-center justify-between rounded-xl px-3 py-2 text-[13px] text-dim"
                   >
                     <span className="flex items-center gap-3">
                       <Icon className="h-4 w-4" /> {item.label}
                     </span>
-                    <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[9px]">
-                      SOON
-                    </span>
+                    <StateTag tone="idle" label="soon" />
                   </div>
                 );
               })}
@@ -127,7 +125,7 @@ export function ObservabilitySidebar({
 function MobileNavStrip({ pathname }: { pathname: string }) {
   const items = [...subNav.monitor, ...subNav.manage];
   return (
-    <nav className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-dashed border-border px-3 py-2">
+    <nav className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border px-3 py-2">
       <Link
         to="/console"
         className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
@@ -140,7 +138,7 @@ function MobileNavStrip({ pathname }: { pathname: string }) {
           return (
             <span
               key={item.label}
-              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground/60"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border-soft px-3 py-1.5 text-xs text-dim"
             >
               <Icon className="h-3.5 w-3.5" /> {item.label}
             </span>
@@ -175,20 +173,17 @@ function LogsPage() {
     <ObservabilitySidebar title="Runtime Logs">
       <div className="flex flex-1 items-center justify-center p-6">
         <div className="max-w-md text-center">
-          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
+          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-border text-muted-foreground">
             <FileText className="h-5 w-5" />
           </div>
-          <div className="text-sm font-medium">
+          <div className="text-[13px] font-medium">
             Logs live inside each project
           </div>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
             Runtime logs, metrics, and alerts stream per app — open a project to
             see its live observability. An all-apps rollup view is on the way.
           </p>
-          <Link
-            to="/console"
-            className="mt-4 inline-flex items-center gap-2 rounded-md border border-border bg-secondary/40 px-3 py-1.5 text-xs hover:bg-secondary"
-          >
+          <Link to="/console" className={`mt-4 ${PILL_QUIET}`}>
             <Layers className="h-3.5 w-3.5" /> Open a project
           </Link>
         </div>

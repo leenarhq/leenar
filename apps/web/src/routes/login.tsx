@@ -178,30 +178,34 @@ function LoginPage() {
     (view === "magic" && magicSent) || (view === "forgot" && forgotSent);
 
   return (
-    <AuthShell title={titles[view]} subtitle={subtitles[view]}>
+    <AuthShell
+      title={titles[view]}
+      subtitle={subtitles[view]}
+      foot="github · vercel · supabase · resend — your accounts, not ours"
+    >
       <div key={view}>
         {view === "signin" && authSurface.oauth && (
           <>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2">
               <button
                 type="button"
                 onClick={() => handleOAuth("github")}
-                className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-secondary"
+                className="flex w-full items-center justify-center gap-2.5 rounded-full border border-border px-4 py-2.5 text-[13.5px] font-medium transition-colors hover:bg-secondary disabled:opacity-50"
               >
                 <GithubIcon /> GitHub
               </button>
               <button
                 type="button"
                 onClick={() => handleOAuth("google")}
-                className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-secondary"
+                className="flex w-full items-center justify-center gap-2.5 rounded-full border border-border px-4 py-2.5 text-[13.5px] font-medium transition-colors hover:bg-secondary disabled:opacity-50"
               >
                 <GoogleIcon /> Google
               </button>
             </div>
             <div className="my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-                or continue with email
+              <span className="font-mono text-[10px] lowercase text-dim">
+                or
               </span>
               <div className="h-px flex-1 bg-border" />
             </div>
@@ -209,19 +213,19 @@ function LoginPage() {
         )}
 
         {isLocked && (
-          <p className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p className="mb-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Too many failed attempts. Try again in {lockSecsLeft}s.
           </p>
         )}
         {!isLocked && error && (
-          <p className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p className="mb-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
           </p>
         )}
 
         {sent ? (
-          <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-secondary/20 px-4 py-8 text-center">
-            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+          <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-secondary/20 px-4 py-8 text-center">
+            <CheckCircle2 className="h-6 w-6 text-ok" />
             <p className="text-sm font-medium">Check your inbox</p>
             <p className="text-xs text-muted-foreground">
               {view === "magic" ? (

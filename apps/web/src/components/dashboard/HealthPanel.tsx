@@ -1,6 +1,8 @@
-import { HeartPulse, CheckCircle2, XCircle } from "lucide-react";
+import { HeartPulse } from "lucide-react";
 import type { StackDrift } from "../../lib/api";
 import { Panel, EmptyRow } from "./Panel";
+import { Row, Mono } from "../console/Rows";
+import { StateDot, StateTag } from "../console/StateTag";
 
 type CanvasLike = {
   nodes?: Array<{ id: string; data?: { label?: string } }>;
@@ -20,38 +22,34 @@ export function HealthPanel({
 
   return (
     <Panel
-      title="Resource Health"
+      title="Resource health"
       icon={HeartPulse}
       action={
         drifts.length > 0 ? (
-          <span className="rounded bg-yellow-500/15 px-1.5 py-0.5 text-[10px] text-yellow-500">
-            {drifts.length} drift{drifts.length > 1 ? "s" : ""}
-          </span>
+          <StateTag
+            tone="warn"
+            label={`${drifts.length} drift${drifts.length > 1 ? "s" : ""}`}
+          />
         ) : null
       }
+      bodyClassName="p-0"
     >
       {health.length === 0 ? (
         <EmptyRow>No resources to monitor</EmptyRow>
       ) : (
-        <ul className="space-y-2">
+        <div>
           {health.map((h) => (
-            <li
-              key={h.nodeId}
-              className="flex items-center justify-between text-xs"
-            >
-              <span className="truncate font-mono">{nodeLabel(h.nodeId)}</span>
-              {h.alive ? (
-                <span className="inline-flex items-center gap-1 text-emerald-400">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Alive
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-destructive">
-                  <XCircle className="h-3.5 w-3.5" /> Unreachable
-                </span>
-              )}
-            </li>
+            // No CheckCircle2/XCircle: the dot is the state marker and the
+            // word says the rest, so a second glyph is decoration.
+            <Row key={h.nodeId}>
+              <StateDot tone={h.alive ? "ok" : "crit"} />
+              <span className="flex-1 truncate font-mono text-[12px]">
+                {nodeLabel(h.nodeId)}
+              </span>
+              <Mono>{h.alive ? "alive" : "unreachable"}</Mono>
+            </Row>
           ))}
-        </ul>
+        </div>
       )}
     </Panel>
   );

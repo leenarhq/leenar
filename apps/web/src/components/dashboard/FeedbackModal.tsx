@@ -40,7 +40,7 @@ export function FeedbackModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-dashed sm:max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Send feedback</DialogTitle>
         </DialogHeader>
@@ -51,12 +51,12 @@ export function FeedbackModal({
           </p>
         ) : status === "error" ? (
           <>
-            <p className="py-4 text-center text-sm text-destructive">
+            <p className="py-4 text-center text-[13px] text-crit">
               Couldn't send feedback. Please try again.
             </p>
             <button
               onClick={() => setStatus("idle")}
-              className="w-full rounded-md border border-border px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-secondary/50"
+              className="w-full rounded-full border border-border-soft px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-secondary"
             >
               Try again
             </button>
@@ -69,16 +69,16 @@ export function FeedbackModal({
               onChange={(e) => setMessage(e.target.value)}
               maxLength={2000}
               autoFocus
-              className="min-h-[120px] resize-none border-dashed"
+              className="min-h-[120px] resize-none"
             />
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] text-muted-foreground">
+              <span className="font-mono text-[10px] tabular-nums text-dim">
                 {message.length}/2000
               </span>
               <button
                 onClick={submit}
                 disabled={!message.trim() || status === "submitting"}
-                className="rounded-md bg-foreground px-3 py-1.5 text-xs text-background transition-opacity hover:opacity-90 disabled:opacity-40"
+                className="rounded-full bg-primary px-3.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {status === "submitting" ? "Sending…" : "Send"}
               </button>

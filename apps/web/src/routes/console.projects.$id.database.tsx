@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import type { Node } from "@xyflow/react";
+import { motion } from "framer-motion";
 import { Database as DatabaseIcon, ChevronDown } from "lucide-react";
 import { useAuth } from "../context/auth";
 import { useProjectDashboard } from "../hooks/useProjectDashboard";
@@ -75,20 +76,15 @@ function DatabasePage() {
     return (
       <div className="flex-1 overflow-auto">
         <div className="mx-auto max-w-4xl p-4 sm:p-6">
-          <h1 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-            Database
-          </h1>
-          <div className="mt-5 rounded-md border border-dashed border-border py-24 text-center text-sm text-muted-foreground">
-            <DatabaseIcon
-              size={20}
-              className="mx-auto mb-3 text-muted-foreground/60"
-            />
+          {/* No <h1>: ProjectContextBar renders `project / Database` above. */}
+          <div className="rounded-2xl border border-border py-24 text-center text-[13px] text-muted-foreground">
+            <DatabaseIcon size={20} className="mx-auto mb-3 text-dim" />
             No Supabase service on this project yet.
             <div className="mt-3">
               <Link
                 to="/console/projects/$id/canvas"
                 params={{ id }}
-                className="text-xs text-foreground underline underline-offset-2 hover:text-foreground/80"
+                className="text-[12px] text-foreground underline underline-offset-2 hover:text-muted-foreground"
               >
                 Add one on the canvas
               </Link>
@@ -108,28 +104,24 @@ function DatabasePage() {
     <div className="flex-1 overflow-auto">
       <div className="mx-auto max-w-4xl p-4 sm:p-6">
         {/* Header + node picker */}
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
-          <h1 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-            Database
-          </h1>
-
+        <div className="mb-5 flex flex-wrap items-center justify-end gap-2">
           {supabaseNodes.length > 1 && (
             <div className="relative">
               <button
                 onClick={() => setPickerOpen((v) => !v)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-3 py-1.5 text-xs text-foreground hover:bg-secondary transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border-soft px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-secondary"
               >
                 <DatabaseIcon size={12} className="text-muted-foreground" />
                 {selectedNode ? nodeLabel(selectedNode) : "Select database"}
                 <ChevronDown size={12} className="text-muted-foreground" />
               </button>
               {pickerOpen && (
-                <div className="absolute right-0 z-10 mt-1 min-w-[180px] rounded-md border border-border bg-card py-1 shadow-lg">
+                <div className="absolute right-0 z-10 mt-1 min-w-[180px] rounded-xl border border-border bg-popover py-1 shadow-[var(--raise-lg)]">
                   {supabaseNodes.map((n) => (
                     <button
                       key={n.id}
                       onClick={() => selectNode(n.id)}
-                      className={`block w-full px-3 py-1.5 text-left text-xs hover:bg-secondary/60 ${
+                      className={`block w-full px-3 py-1.5 text-left text-[13px] hover:bg-secondary ${
                         n.id === selectedNode?.id
                           ? "text-foreground"
                           : "text-muted-foreground"
@@ -145,7 +137,7 @@ function DatabasePage() {
         </div>
 
         {!selectedNode ? (
-          <div className="rounded-md border border-dashed border-border py-24 text-center text-sm text-muted-foreground">
+          <div className="rounded-2xl border border-border py-24 text-center text-[13px] text-muted-foreground">
             Select a database above.
           </div>
         ) : !(selectedNode.data as SupabaseNodeData).supabaseProjectRef ? (
@@ -173,13 +165,27 @@ function DatabasePage() {
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`shrink-0 whitespace-nowrap px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${
+                  className={`relative shrink-0 whitespace-nowrap px-3 py-2 text-[13px] transition-colors ${
                     tab === t.key
-                      ? "border-foreground text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {t.label}
+                  {tab === t.key && (
+                    // One shared layoutId, so the underline slides between
+                    // tabs instead of blinking out and in. 1px, not the
+                    // shadcn default 2px — a hairline is the system's rule.
+                    <motion.span
+                      layoutId="db-tab-underline"
+                      className="absolute inset-x-0 -bottom-px h-px bg-foreground"
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 32,
+                      }}
+                    />
+                  )}
                 </button>
               ))}
             </div>

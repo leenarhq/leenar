@@ -32,42 +32,41 @@ export type PendingDestructive =
 export function RlsBadge({ enabled }: { enabled: boolean }) {
   return (
     <span
-      className={`inline-flex rounded-full border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
+      className={`inline-flex rounded-full border px-2 py-0.5 font-mono text-[10px] lowercase ${
         enabled
-          ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-          : "text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
+          ? "border-ok/30 text-ok"
+          : "border-border-soft text-muted-foreground"
       }`}
     >
-      RLS {enabled ? "enabled" : "disabled"}
+      rls {enabled ? "on" : "off"}
     </span>
   );
 }
+
+/**
+ * PK, Unique and FK used to be amber, sky and purple. A column's key kind is
+ * a category, not a state, and three decorative hues on one row is what made
+ * `ok` unreadable as a signal (spec D3). The glyph carries the distinction.
+ */
+const KEY_BADGE =
+  "gap-1 border-border-soft px-1.5 py-0 font-mono text-[9px] lowercase text-muted-foreground";
 
 function ColumnKeyBadges({ column }: { column: LiveColumn }) {
   return (
     <div className="flex items-center gap-1">
       {column.isPrimaryKey && (
-        <Badge
-          variant="outline"
-          className="gap-1 border-amber-500/30 bg-amber-500/10 px-1.5 py-0 text-[9px] uppercase tracking-wider text-amber-400"
-        >
-          <KeyRound size={9} /> PK
+        <Badge variant="outline" className={KEY_BADGE}>
+          <KeyRound size={9} /> pk
         </Badge>
       )}
       {column.isUnique && (
-        <Badge
-          variant="outline"
-          className="gap-1 border-sky-500/30 bg-sky-500/10 px-1.5 py-0 text-[9px] uppercase tracking-wider text-sky-400"
-        >
-          <Fingerprint size={9} /> Unique
+        <Badge variant="outline" className={KEY_BADGE}>
+          <Fingerprint size={9} /> unique
         </Badge>
       )}
       {column.isForeignKey && (
-        <Badge
-          variant="outline"
-          className="gap-1 border-purple-500/30 bg-purple-500/10 px-1.5 py-0 text-[9px] uppercase tracking-wider text-purple-400"
-        >
-          <Link2 size={9} /> FK
+        <Badge variant="outline" className={KEY_BADGE}>
+          <Link2 size={9} /> fk
         </Badge>
       )}
     </div>

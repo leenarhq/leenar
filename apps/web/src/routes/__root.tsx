@@ -14,6 +14,7 @@ import Lenis from "lenis";
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
 import { initMonitoring } from "../lib/monitoring";
+import { applyStoredTheme } from "../lib/theme";
 import { AuthProvider } from "../context/auth";
 import { OnboardingProvider } from "../context/onboarding";
 import { ConsentBanner } from "../components/ConsentBanner";
@@ -123,9 +124,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         },
         {
           rel: "stylesheet",
-          // Host Grotesk + DM Sans are the marketing surface's display/body
-          // pair (see `.marketing-root` in styles.css); the rest is the console.
-          href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Host+Grotesk:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Onest:wght@500;600;700&display=swap",
+          // Host Grotesk + DM Sans are both surfaces' display/body pair and
+          // IBM Plex Mono is the machine face. Onest left with --font-display
+          // in PR 1; IBM Plex Sans left with --font-serif in PR 4. Three
+          // families, down from five.
+          href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Host+Grotesk:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap",
         },
       ],
     }),
@@ -159,18 +162,7 @@ function RootComponent() {
   }, []);
 
   useEffect(() => {
-    // Apply the stored appearance preference (see console/settings/appearance).
-    const pref =
-      (localStorage.getItem("leenar_theme") as
-        | "light"
-        | "dark"
-        | "system"
-        | null) ?? "dark";
-    const prefersLight = window.matchMedia(
-      "(prefers-color-scheme: light)",
-    ).matches;
-    const light = pref === "light" || (pref === "system" && prefersLight);
-    document.documentElement.classList.toggle("light", light);
+    applyStoredTheme();
   }, []);
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });

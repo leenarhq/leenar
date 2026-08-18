@@ -76,7 +76,7 @@ export function TableEditor({
         return (
           <div
             key={ti}
-            className="rounded-xl border border-white/[0.07] bg-white/[0.02]"
+            className="rounded-xl border border-border-soft bg-secondary"
           >
             <div
               className="flex items-center gap-2 px-3 py-2 cursor-pointer select-none"
@@ -84,7 +84,7 @@ export function TableEditor({
             >
               <ChevronDown
                 size={12}
-                className={`text-white/30 transition-transform flex-shrink-0 ${expanded ? "" : "-rotate-90"}`}
+                className={`text-dim transition-transform flex-shrink-0 ${expanded ? "" : "-rotate-90"}`}
               />
               <input
                 type="text"
@@ -92,14 +92,14 @@ export function TableEditor({
                 value={table.name}
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 onChange={(e) => updateTable(ti, { name: e.target.value })}
-                className={`flex-1 bg-transparent text-[13px] outline-none placeholder:text-white/20 font-mono min-w-0 ${nameErr ? "text-destructive" : "text-white/80"}`}
+                className={`flex-1 bg-transparent text-[13px] outline-none placeholder:text-dim font-mono min-w-0 ${nameErr ? "text-destructive" : "text-foreground"}`}
               />
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   removeTable(ti);
                 }}
-                className="text-white/20 hover:text-red-400/70 transition-colors flex-shrink-0"
+                className="text-dim hover:text-crit/70 transition-colors flex-shrink-0"
               >
                 <Trash2 size={12} />
               </button>
@@ -112,11 +112,13 @@ export function TableEditor({
             )}
 
             {expanded && (
-              <div className="border-t border-white/[0.05] px-3 py-2.5 space-y-2">
+              <div className="border-t border-border-soft px-3 py-2.5 space-y-2">
                 {/* Auto: id */}
                 <div className="flex items-center gap-2 px-1 opacity-30 text-[11px] font-mono py-0.5">
                   <span className="w-[88px] shrink-0">id</span>
-                  <span className="text-white/50">uuid · PK · auto</span>
+                  <span className="text-muted-foreground">
+                    uuid · PK · auto
+                  </span>
                 </div>
 
                 {/* User columns */}
@@ -133,14 +135,14 @@ export function TableEditor({
                           onChange={(e) =>
                             updateColumn(ti, ci, { name: e.target.value })
                           }
-                          className={`w-[88px] shrink-0 bg-surface-container-low border rounded px-2 py-1 text-[11px] font-mono outline-none text-white/80 ${colNameErr || reserved ? "border-destructive/60" : "border-white/[0.07]"}`}
+                          className={`w-[88px] shrink-0 bg-card border rounded px-2 py-1 text-[11px] font-mono outline-none text-foreground ${colNameErr || reserved ? "border-destructive/60" : "border-border-soft"}`}
                         />
                         <select
                           value={col.type}
                           onChange={(e) =>
                             updateColumn(ti, ci, { type: e.target.value })
                           }
-                          className="flex-1 bg-surface-container-low border border-white/[0.07] rounded px-2 py-1 text-[11px] text-white/70 outline-none"
+                          className="flex-1 bg-card border border-border-soft rounded px-2 py-1 text-[11px] text-foreground outline-none"
                         >
                           {COL_TYPES.map((t) => (
                             <option key={t} value={t}>
@@ -150,7 +152,7 @@ export function TableEditor({
                         </select>
                         <button
                           onClick={() => removeColumn(ti, ci)}
-                          className="text-white/20 hover:text-red-400/70 transition-colors shrink-0"
+                          className="text-dim hover:text-crit/70 transition-colors shrink-0"
                         >
                           <Trash2 size={11} />
                         </button>
@@ -166,7 +168,7 @@ export function TableEditor({
                         </p>
                       )}
                       <div className="flex items-center gap-3 px-1 flex-wrap">
-                        <label className="flex items-center gap-1.5 text-[11px] text-white/30 cursor-pointer">
+                        <label className="flex items-center gap-1.5 text-[11px] text-dim cursor-pointer">
                           <input
                             type="checkbox"
                             checked={col.nullable !== false}
@@ -179,7 +181,7 @@ export function TableEditor({
                           />
                           nullable
                         </label>
-                        <label className="flex items-center gap-1.5 text-[11px] text-white/30 cursor-pointer">
+                        <label className="flex items-center gap-1.5 text-[11px] text-dim cursor-pointer">
                           <input
                             type="checkbox"
                             checked={col.unique === true}
@@ -201,7 +203,7 @@ export function TableEditor({
                               default: e.target.value || undefined,
                             })
                           }
-                          className="flex-1 min-w-[80px] bg-surface-container-low border border-white/[0.07] rounded px-2 py-1 text-[11px] font-mono text-white/70 outline-none placeholder:text-white/20"
+                          className="flex-1 min-w-[80px] bg-card border border-border-soft rounded px-2 py-1 text-[11px] font-mono text-foreground outline-none placeholder:text-dim"
                         />
                       </div>
                     </div>
@@ -211,12 +213,14 @@ export function TableEditor({
                 {/* Auto: created_at */}
                 <div className="flex items-center gap-2 px-1 opacity-30 text-[11px] font-mono py-0.5">
                   <span className="w-[88px] shrink-0">created_at</span>
-                  <span className="text-white/50">timestamptz · auto</span>
+                  <span className="text-muted-foreground">
+                    timestamptz · auto
+                  </span>
                 </div>
 
                 <button
                   onClick={() => addColumn(ti)}
-                  className="flex items-center gap-1.5 text-[11px] text-white/30 hover:text-white/60 transition-colors px-1 py-0.5 mt-1"
+                  className="flex items-center gap-1.5 text-[11px] text-dim hover:text-foreground transition-colors px-1 py-0.5 mt-1"
                 >
                   <Plus size={11} />
                   Add column
@@ -229,7 +233,7 @@ export function TableEditor({
 
       <button
         onClick={addTable}
-        className="flex items-center gap-1.5 w-full px-3 py-2 rounded-xl border border-dashed border-white/[0.07] text-[12px] text-white/25 hover:text-white/50 hover:border-white/[0.12] transition-all"
+        className="flex items-center gap-1.5 w-full px-3 py-2 rounded-xl border border-border-soft text-[12px] text-dim hover:text-muted-foreground hover:border-border transition-all"
       >
         <Plus size={12} />
         Add table

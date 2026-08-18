@@ -1,15 +1,13 @@
 import { RefreshCw, X, Loader2 } from "lucide-react";
 import type { ProjectSummary } from "../../lib/workflows";
 import { timeAgo } from "../../lib/utils";
-import { StatusDot } from "./Panel";
-import { statusLabel } from "../../lib/labels";
 
-const statusTone: Record<string, string> = {
-  active: "success",
-  draft: "neutral",
-  error: "error",
-};
-
+/**
+ * The project's name and status are NOT repeated here: ProjectContextBar
+ * renders both in the PageBar directly above this row, as a
+ * `project / section` crumb with a StateTag. What is left is the deploy
+ * metadata and the single action the screen offers.
+ */
 export function OverviewHeader({
   summary,
   activeSession,
@@ -27,50 +25,39 @@ export function OverviewHeader({
 }) {
   if (!summary) return null;
   return (
-    <div className="flex items-center justify-between rounded-md border border-border bg-card px-5 py-4">
-      <div>
-        <div className="flex items-center gap-2">
-          <StatusDot tone={statusTone[summary.status] ?? "neutral"} />
-          <h1 className="text-2xl font-semibold">{summary.name}</h1>
-          <span className="rounded border border-border px-1.5 py-0.5 text-xs text-muted-foreground">
-            {statusLabel(summary.status)}
-          </span>
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {summary.last_deployed_at
-            ? `Last deployed ${timeAgo(new Date(summary.last_deployed_at).getTime())} · ${summary.deploy_count} deploys`
-            : "Never deployed"}
-        </p>
-      </div>
-      <div className="flex items-center gap-2">
-        {activeSession ? (
-          <button
-            onClick={onCancel}
-            disabled={cancelling}
-            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
-          >
-            {cancelling ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <X className="h-3.5 w-3.5" />
-            )}{" "}
-            Cancel
-          </button>
-        ) : (
-          <button
-            onClick={onRedeploy}
-            disabled={redeploying}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
-          >
-            {redeploying ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}{" "}
-            Redeploy
-          </button>
-        )}
-      </div>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="font-mono text-[11px] lowercase tabular-nums text-muted-foreground">
+        {summary.last_deployed_at
+          ? `deployed ${timeAgo(new Date(summary.last_deployed_at).getTime())} · ${summary.deploy_count} deploys`
+          : "never deployed"}
+      </p>
+      {activeSession ? (
+        <button
+          onClick={onCancel}
+          disabled={cancelling}
+          className="inline-flex items-center gap-1.5 rounded-full border border-crit/30 px-3.5 py-1.5 text-[13px] text-crit transition-colors hover:bg-crit/10 disabled:opacity-50"
+        >
+          {cancelling ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <X className="h-3.5 w-3.5" />
+          )}
+          Cancel
+        </button>
+      ) : (
+        <button
+          onClick={onRedeploy}
+          disabled={redeploying}
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {redeploying ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
+          Redeploy
+        </button>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { Activity } from "lucide-react";
 import type { NodeUsageData } from "../../lib/api";
 import { formatBytes } from "../../lib/utils";
 import { Panel, EmptyRow } from "./Panel";
+import { Row, Mono, Dim } from "../console/Rows";
 
 type CanvasLike = {
   nodes?: Array<{ id: string; data?: { label?: string; provider?: string } }>;
@@ -13,7 +14,6 @@ export function UsagePanel({
 }: {
   usage: Record<string, NodeUsageData>;
   canvas: CanvasLike;
-  deployments: unknown[];
 }) {
   const entries = Object.entries(usage);
   const nodeLabel = (id: string) =>
@@ -24,21 +24,16 @@ export function UsagePanel({
       {entries.length === 0 ? (
         <EmptyRow>No usage metrics</EmptyRow>
       ) : (
-        <div className="divide-y divide-border">
+        <div>
           {entries.map(([nodeId, u]) => (
-            <div
-              key={nodeId}
-              className="flex items-center justify-between px-4 py-2.5 text-xs"
-            >
-              <span className="truncate font-mono">{nodeLabel(nodeId)}</span>
-              <div className="flex items-center gap-4 text-muted-foreground">
-                {u.db_size != null && <span>DB {formatBytes(u.db_size)}</span>}
-                {u.mau != null && <span>{u.mau} MAU</span>}
-                {u.lastDeploy?.state && (
-                  <span className="capitalize">{u.lastDeploy.state}</span>
-                )}
-              </div>
-            </div>
+            <Row key={nodeId}>
+              <span className="flex-1 truncate font-mono text-[12px]">
+                {nodeLabel(nodeId)}
+              </span>
+              {u.db_size != null && <Mono>db {formatBytes(u.db_size)}</Mono>}
+              {u.mau != null && <Mono>{u.mau} mau</Mono>}
+              {u.lastDeploy?.state && <Dim>{u.lastDeploy.state}</Dim>}
+            </Row>
           ))}
         </div>
       )}

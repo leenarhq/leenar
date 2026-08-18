@@ -37,6 +37,12 @@ import { useAuth } from "../context/auth";
 import { useIsMobile } from "../hooks/use-mobile";
 import { getNotificationCount } from "../lib/api";
 import { isTabHidden } from "../lib/visibility";
+import {
+  readThemePref,
+  setTheme as setStoredTheme,
+  applyStoredTheme,
+  type ThemePref,
+} from "../lib/theme";
 import { getChats, deleteChat, getProjects, type Chat } from "../lib/workflows";
 import { FeedbackModal } from "../components/dashboard/FeedbackModal";
 import { LeenarMark } from "../components/auth-shell";
@@ -55,7 +61,8 @@ import {
   TooltipProvider,
 } from "../components/ui/tooltip";
 import { projectRailItems, isRailItemActive } from "../lib/projectRail";
-import { StatusDot } from "../components/dashboard/Panel";
+import { PageBar } from "../components/console/PageBar";
+import { StateTag, toneFor } from "../components/console/StateTag";
 import { statusLabel } from "../lib/labels";
 import { isCloud } from "../lib/cloud";
 import { GuidedSetup } from "../components/setup/GuidedSetup";
@@ -142,21 +149,10 @@ function useConsoleShell() {
 }
 
 function useTheme() {
-  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
-    if (typeof window === "undefined") return "dark";
-    return (
-      (localStorage.getItem("leenar_theme") as "light" | "dark" | "system") ??
-      "dark"
-    );
-  });
+  const [theme, setTheme] = useState<ThemePref>(() => readThemePref());
 
-  const applyTheme = (t: "light" | "dark" | "system") => {
-    const prefersLight = window.matchMedia(
-      "(prefers-color-scheme: light)",
-    ).matches;
-    const light = t === "light" || (t === "system" && prefersLight);
-    document.documentElement.classList.toggle("light", light);
-    localStorage.setItem("leenar_theme", t);
+  const applyTheme = (t: ThemePref) => {
+    setStoredTheme(t);
     setTheme(t);
   };
 
@@ -298,7 +294,7 @@ function Sidebar() {
   if (activeProjectId) {
     const railItems = projectRailItems(!!isLive);
     return (
-      <aside className="flex w-14 shrink-0 flex-col items-center border-r border-dashed border-border bg-background py-3">
+      <aside className="flex w-14 shrink-0 flex-col items-center border-r border-border bg-background py-3">
         <Link
           to="/"
           title="Leenar"
@@ -312,7 +308,7 @@ function Sidebar() {
               <TooltipTrigger asChild>
                 <Link
                   to="/console"
-                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Link>
@@ -332,7 +328,7 @@ function Sidebar() {
                     <Link
                       to={item.to}
                       params={{ id: activeProjectId }}
-                      className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                      className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
                         active
                           ? "bg-secondary text-foreground"
                           : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
@@ -371,11 +367,13 @@ function Sidebar() {
   }
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-dashed border-border bg-background">
-      <div className="flex h-[57px] items-center gap-2 border-b border-dashed border-border px-4">
+    <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-background">
+      <div className="flex h-[57px] items-center gap-2 border-b border-border px-4">
         <Link to="/console" className="flex items-center gap-2">
           <LeenarMark className="h-4 w-auto" />
-          <span className="font-serif text-base">Leenar</span>
+          <span className="text-base font-medium tracking-[-0.01em]">
+            Leenar
+          </span>
           <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             CONSOLE
           </span>
@@ -388,7 +386,7 @@ function Sidebar() {
             return (
               <div
                 key={item.label}
-                className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground/60"
+                className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground/60"
               >
                 <Icon className="h-4 w-4" />
                 {item.label}
@@ -402,7 +400,7 @@ function Sidebar() {
             <Link
               key={item.label}
               to={item.to}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                 active
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
@@ -420,7 +418,7 @@ function Sidebar() {
             href="https://leenar.net/blog"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
           >
             <Rss className="h-4 w-4" />
             Blog
@@ -428,7 +426,7 @@ function Sidebar() {
         )}
       </nav>
       {!isMobile && chats.length > 0 && (
-        <div className="border-t border-dashed border-border p-2">
+        <div className="border-t border-border p-2">
           <span className="block px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
             Recent
           </span>
@@ -441,7 +439,7 @@ function Sidebar() {
                     to="/console/new"
                     search={{ chatId: chat.id }}
                     title={chat.name}
-                    className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs transition-colors ${
+                    className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors ${
                       isActive
                         ? "bg-secondary text-foreground"
                         : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
@@ -471,11 +469,11 @@ function Sidebar() {
           </div>
         </div>
       )}
-      <div className="flex items-center gap-1 border-t border-dashed border-border px-3 pt-2">
+      <div className="flex items-center gap-1 border-t border-border px-3 pt-2">
         <button
           onClick={() => setFeedbackOpen(true)}
           title="Feedback"
-          className="inline-flex items-center gap-1.5 rounded-md bg-secondary/50 px-2 py-1 text-xs text-foreground transition-colors hover:bg-secondary"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-secondary/50 px-2 py-1 text-xs text-foreground transition-colors hover:bg-secondary"
         >
           <MessageSquare className="h-3.5 w-3.5" />
           Feedback
@@ -484,7 +482,7 @@ function Sidebar() {
           <button
             onClick={() => navigate({ to: "/console" })}
             title={`${notifCount} open issue${notifCount !== 1 ? "s" : ""}`}
-            className="relative ml-auto inline-flex items-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+            className="relative ml-auto inline-flex items-center rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
           >
             <Bell className="h-3.5 w-3.5" />
             <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-destructive" />
@@ -493,7 +491,7 @@ function Sidebar() {
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex w-full items-center gap-2 border-t border-dashed border-border p-3 text-left hover:bg-secondary/40">
+          <button className="flex w-full items-center gap-2 border-t border-border p-3 text-left hover:bg-secondary/40">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
               {initial}
             </div>
@@ -542,7 +540,7 @@ function MobileNavContent({
   onLogout: () => void;
 }) {
   const navLinkClass = (active: boolean) =>
-    `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
       active
         ? "bg-secondary text-foreground"
         : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
@@ -550,9 +548,9 @@ function MobileNavContent({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-[57px] shrink-0 items-center gap-2 border-b border-dashed border-border px-4">
+      <div className="flex h-[57px] shrink-0 items-center gap-2 border-b border-border px-4">
         <LeenarMark className="h-4 w-auto" />
-        <span className="font-serif text-base">Leenar</span>
+        <span className="text-base font-medium tracking-[-0.01em]">Leenar</span>
         <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
           CONSOLE
         </span>
@@ -629,7 +627,7 @@ function MobileNavContent({
       </nav>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex w-full shrink-0 items-center gap-2 border-t border-dashed border-border p-3 text-left hover:bg-secondary/40">
+          <button className="flex w-full shrink-0 items-center gap-2 border-t border-border p-3 text-left hover:bg-secondary/40">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
               {initial}
             </div>
@@ -659,7 +657,7 @@ function TopBarActionsMobile() {
       <DropdownMenuTrigger asChild>
         <button
           aria-label="More"
-          className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+          className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
@@ -703,17 +701,17 @@ export function TopBarActions() {
     <>
       <a
         href="#"
-        className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <BookOpen className="h-3.5 w-3.5" /> Docs
       </a>
       <a
         href="#"
-        className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <LifeBuoy className="h-3.5 w-3.5" /> Support
       </a>
-      <div className="ml-2 flex items-center gap-1 rounded-md border border-border p-0.5">
+      <div className="ml-2 flex items-center gap-1 rounded-lg border border-border p-0.5">
         <button
           onClick={() => applyTheme("light")}
           className={`rounded p-1 transition-colors ${theme === "light" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`}
@@ -747,36 +745,35 @@ export function ConsoleTopBar({
   const isMobile = useIsMobile();
   const { openMobileNav } = useConsoleShell();
   return (
-    <header className="flex h-[57px] items-center justify-between border-b border-dashed border-border px-3 sm:px-6">
-      <div className="flex items-center gap-3">
-        {isMobile && (
-          <button
-            aria-label="Open navigation"
-            onClick={openMobileNav}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <PanelLeft className="h-4 w-4" />
-          </button>
-        )}
-        <span className="truncate text-sm">{title}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        {right}
-        <TopBarActions />
-      </div>
-    </header>
+    <PageBar
+      title={
+        <span className="flex min-w-0 items-center gap-3">
+          {isMobile && (
+            <button
+              aria-label="Open navigation"
+              onClick={openMobileNav}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+          )}
+          <span className="truncate">{title}</span>
+        </span>
+      }
+      actions={
+        <>
+          {right}
+          <TopBarActions />
+        </>
+      }
+    />
   );
 }
-
-const projectStatusTone: Record<string, string> = {
-  active: "success",
-  draft: "neutral",
-  error: "error",
-};
 
 export function ProjectContextBar({ projectId }: { projectId: string }) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { openMobileNav } = useConsoleShell();
   const { data: projects } = useQuery({
     queryKey: ["projects"],
@@ -785,52 +782,59 @@ export function ProjectContextBar({ projectId }: { projectId: string }) {
   });
   const project = projects?.find((p) => p.id === projectId);
   const status = project?.status ?? "draft";
+  // The section name comes from the rail rather than a separate tab strip:
+  // inside a project, the collapsed icon rail *is* the section navigation.
+  const section =
+    projectRailItems(status === "active").find((item) =>
+      isRailItemActive(pathname, projectId, item.key),
+    )?.label ?? "Canvas";
   return (
-    <header className="flex h-[57px] items-center justify-between border-b border-dashed border-border px-3 sm:px-6">
-      <div className="flex min-w-0 items-center gap-1 sm:gap-3">
-        {isMobile && (
-          <button
-            aria-label="Open navigation"
-            onClick={openMobileNav}
-            className="shrink-0 p-1.5 text-muted-foreground hover:text-foreground"
-          >
-            <PanelLeft className="h-4 w-4" />
-          </button>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-secondary/50">
-              <span className="truncate font-medium">
-                {project?.name ?? projectId}
-              </span>
-              <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+    <PageBar
+      title={
+        <span className="flex min-w-0 items-center gap-2.5">
+          {isMobile && (
+            <button
+              aria-label="Open navigation"
+              onClick={openMobileNav}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <PanelLeft className="h-4 w-4" />
             </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            {(projects ?? []).map((p) => (
-              <DropdownMenuItem
-                key={p.id}
-                onClick={() =>
-                  navigate({
-                    to: "/console/projects/$id/canvas",
-                    params: { id: p.id },
-                  })
-                }
-              >
-                <span className="truncate">{p.name}</span>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <span className="hidden shrink-0 items-center gap-1.5 rounded border border-border px-2 py-0.5 text-xs text-muted-foreground sm:inline-flex">
-          <StatusDot tone={projectStatusTone[status] ?? "neutral"} />
-          {statusLabel(status)}
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex min-w-0 items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground">
+                <span className="truncate">{project?.name ?? projectId}</span>
+                <ChevronsUpDown className="h-3.5 w-3.5 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              {(projects ?? []).map((p) => (
+                <DropdownMenuItem
+                  key={p.id}
+                  onClick={() =>
+                    navigate({
+                      to: "/console/projects/$id/canvas",
+                      params: { id: p.id },
+                    })
+                  }
+                >
+                  <span className="truncate">{p.name}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <span className="text-dim">/</span>
+          <span className="truncate">{section}</span>
         </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <TopBarActions />
-      </div>
-    </header>
+      }
+      meta={
+        <span className="hidden sm:inline-flex">
+          <StateTag tone={toneFor(status)} label={statusLabel(status)} dot />
+        </span>
+      }
+      actions={<TopBarActions />}
+    />
   );
 }
 
@@ -843,19 +847,10 @@ function ConsoleLayout() {
     if (!loading && !session) navigate({ to: "/login" });
   }, [loading, session, navigate]);
 
-  // Re-apply correct theme on every console mount — overrides .light set by landing page
+  // Re-apply the correct theme on every console mount — the landing page may
+  // have left `.light` on the root.
   useEffect(() => {
-    const pref =
-      (localStorage.getItem("leenar_theme") as
-        | "light"
-        | "dark"
-        | "system"
-        | null) ?? "dark";
-    const prefersLight = window.matchMedia(
-      "(prefers-color-scheme: light)",
-    ).matches;
-    const light = pref === "light" || (pref === "system" && prefersLight);
-    document.documentElement.classList.toggle("light", light);
+    applyStoredTheme();
   }, []);
 
   // While auth is resolving (or redirecting), avoid flashing the console shell.

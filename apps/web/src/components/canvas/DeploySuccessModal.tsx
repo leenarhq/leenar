@@ -112,14 +112,15 @@ export function DeploySuccessModal({
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    // A successful deploy is the one `ok` moment the console has, so the
+    // confetti reads in the ok tone against the foreground — not the old
+    // six-hue party, which was the loudest colour on any screen.
+    const read = (v: string) =>
+      getComputedStyle(document.documentElement).getPropertyValue(v).trim();
     const colors = [
-      "#34d399",
-      "#c8503a",
-      "#f472b6",
-      "#fbbf24",
-      "#a78bfa",
-      "#fb7185",
-      "#ffffff",
+      read("--ok"),
+      read("--foreground"),
+      read("--muted-foreground"),
     ];
     const particles = Array.from({ length: 110 }, () => ({
       x: Math.random() * canvas.width,
@@ -202,25 +203,24 @@ export function DeploySuccessModal({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
         transition={{ duration: 0.18 }}
-        style={{ background: "rgba(5,5,5,0.82)", backdropFilter: "blur(6px)" }}
-        className="fixed inset-0 z-[200] flex items-center justify-center"
+        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       >
         <div
           onClick={(e) => e.stopPropagation()}
-          className="w-[400px] rounded-2xl border border-white/[0.08] bg-surface-container-low p-6 flex flex-col gap-5 shadow-2xl"
+          className="flex w-[400px] flex-col gap-5 rounded-2xl border border-border-soft bg-popover p-6 shadow-[var(--raise-lg)]"
         >
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/12 border border-emerald-500/25 flex items-center justify-center flex-shrink-0">
-                <Check size={17} className="text-emerald-400" />
+              <div className="w-9 h-9 rounded-xl bg-ok/10 border border-ok/30 flex items-center justify-center flex-shrink-0">
+                <Check size={17} className="text-ok" />
               </div>
               <div>
-                <h3 className="text-[14px] font-semibold text-white/92 leading-tight">
+                <h3 className="text-[14px] font-semibold text-foreground leading-tight">
                   {isFirstDeploy ? "First deploy!" : "Stack deployed"}
                 </h3>
-                <p className="text-[11px] text-white/35 mt-0.5">
+                <p className="text-[11px] text-dim mt-0.5">
                   {isFirstDeploy
                     ? "Welcome to the club — you're live 🎉"
                     : "All services are live and running"}
@@ -229,7 +229,7 @@ export function DeploySuccessModal({
             </div>
             <button
               onClick={onClose}
-              className="p-1 text-white/25 hover:text-white/60 transition-colors rounded-md hover:bg-white/5"
+              className="p-1 text-dim hover:text-muted-foreground transition-colors rounded-md hover:bg-[var(--hover)]"
             >
               <X size={15} />
             </button>
@@ -237,7 +237,7 @@ export function DeploySuccessModal({
 
           {/* Service list */}
           {services.length > 0 && (
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] divide-y divide-white/[0.05]">
+            <div className="rounded-xl bg-[var(--hover)] border border-border-soft divide-y divide-border-soft">
               {services.map((svc) => {
                 const ui: BuildUi = svc.deploymentId
                   ? (buildUi[svc.name] ?? "building")
@@ -250,24 +250,24 @@ export function DeploySuccessModal({
                       <div
                         className={`w-1.5 h-1.5 rounded-full ${
                           building
-                            ? "bg-amber-400/80 animate-pulse"
+                            ? "bg-warn animate-pulse"
                             : errored
-                              ? "bg-red-400/80"
-                              : "bg-emerald-400/70"
+                              ? "bg-crit"
+                              : "bg-ok"
                         }`}
                       />
-                      <span className="text-[12px] font-medium text-white/70">
+                      <span className="text-[12px] font-medium text-foreground">
                         {svc.name}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-white/30 group-hover:text-white/60 transition-colors">
+                    <div className="flex items-center gap-1.5 text-dim group-hover:text-muted-foreground transition-colors">
                       {building ? (
-                        <span className="flex items-center gap-1 text-[10px] text-amber-300/70">
+                        <span className="flex items-center gap-1 text-[10px] text-warn">
                           <Loader2 size={10} className="animate-spin" />
                           building on Vercel… (~1-3 min)
                         </span>
                       ) : errored ? (
-                        <span className="flex items-center gap-1 text-[10px] text-red-300/70">
+                        <span className="flex items-center gap-1 text-[10px] text-crit">
                           <AlertTriangle size={10} />
                           build failed
                         </span>
@@ -302,7 +302,7 @@ export function DeploySuccessModal({
                     href={svc.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`${rowClass} hover:bg-white/[0.04]`}
+                    className={`${rowClass} hover:bg-[var(--hover)]`}
                   >
                     {Row}
                   </a>
@@ -315,7 +315,7 @@ export function DeploySuccessModal({
           <div className="flex gap-2.5">
             <button
               onClick={handleDashboard}
-              className="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-lg border border-white/[0.07] text-[11px] font-semibold text-white/40 hover:bg-white/5 hover:text-white/60 transition-all"
+              className="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-lg border border-border text-[11px] font-semibold text-muted-foreground hover:bg-[var(--hover)] hover:text-muted-foreground transition-all"
             >
               <LayoutDashboard size={12} />
               Dashboard
@@ -329,7 +329,7 @@ export function DeploySuccessModal({
                     params: { id: workflowId },
                   });
                 }}
-                className="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-lg border border-white/[0.07] text-[11px] font-semibold text-white/40 hover:bg-white/5 hover:text-white/60 transition-all"
+                className="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-lg border border-border text-[11px] font-semibold text-muted-foreground hover:bg-[var(--hover)] hover:text-muted-foreground transition-all"
               >
                 <ScrollText size={12} />
                 View Logs
@@ -339,7 +339,7 @@ export function DeploySuccessModal({
               href={tweetUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-lg border border-white/[0.07] text-[11px] font-semibold text-white/40 hover:bg-white/5 hover:text-white/60 transition-all"
+              className="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-lg border border-border text-[11px] font-semibold text-muted-foreground hover:bg-[var(--hover)] hover:text-muted-foreground transition-all"
             >
               <Share2 size={11} />
               Share
@@ -349,7 +349,7 @@ export function DeploySuccessModal({
                 href={appUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-lg bg-emerald-500/12 border border-emerald-500/25 text-emerald-400 text-[11px] font-semibold hover:bg-emerald-500/20 transition-all"
+                className="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-lg bg-ok/10 border border-ok/30 text-ok text-[11px] font-semibold hover:bg-ok/15 transition-all"
               >
                 Open App
                 <ExternalLink size={11} />

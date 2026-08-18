@@ -285,7 +285,7 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
 
       {/* No PK hint */}
       {activeTable && !hasPk && (
-        <div className="mb-3 flex items-center gap-2 rounded-md border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-500">
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-warn/20 bg-warn/10 px-4 py-3 text-sm text-warn">
           <AlertCircle size={14} className="shrink-0" />
           This table has no primary key — row editing and deleting is
           unavailable.
@@ -294,7 +294,7 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
 
       {/* Mutation error banners */}
       {insertMutation.isError && (
-        <div className="mb-3 flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           {insertMutation.error instanceof Error
             ? insertMutation.error.message
@@ -302,7 +302,7 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
         </div>
       )}
       {updateMutation.isError && (
-        <div className="mb-3 flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           {updateMutation.error instanceof Error
             ? updateMutation.error.message
@@ -310,7 +310,7 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
         </div>
       )}
       {deleteMutation.isError && (
-        <div className="mb-3 flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           {deleteMutation.error instanceof Error
             ? deleteMutation.error.message
@@ -320,7 +320,7 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
 
       {/* No table selected */}
       {!selectedTable && (
-        <div className="rounded-md border border-dashed border-border py-24 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border py-24 text-center text-sm text-muted-foreground">
           {schemaQuery.isLoading
             ? "Loading tables…"
             : tables.length === 0
@@ -331,7 +331,7 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
 
       {/* Add row form */}
       {selectedTable && addingRow && (
-        <div className="mb-4 rounded-md border border-dashed border-border bg-secondary/10 p-3">
+        <div className="mb-4 rounded-xl border border-border bg-secondary p-3">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             New row
           </p>
@@ -385,7 +385,7 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="h-10 animate-pulse rounded-md border border-border bg-secondary/20"
+              className="h-10 animate-pulse rounded-xl border border-border bg-secondary"
             />
           ))}
         </div>
@@ -393,7 +393,7 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
 
       {/* Error state */}
       {selectedTable && rowsQuery.isError && (
-        <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           Failed to load rows
           {rowsQuery.error instanceof Error
@@ -407,16 +407,16 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
         rowsQuery.isSuccess &&
         columns.length > 0 &&
         rows.length === 0 && (
-          <div className="rounded-md border border-dashed border-border py-24 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border py-24 text-center text-sm text-muted-foreground">
             No rows in this table{offset > 0 ? " on this page" : ""}.
           </div>
         )}
 
       {/* Grid */}
       {selectedTable && rowsQuery.isSuccess && columns.length > 0 && (
-        <div className="rounded-md border border-border bg-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
           {rowsQuery.data?.truncated && (
-            <div className="border-b border-border bg-yellow-500/10 px-4 py-1.5 text-[11px] text-yellow-500">
+            <div className="border-b border-border bg-warn/10 px-4 py-1.5 text-[11px] text-warn">
               Results truncated.
             </div>
           )}
@@ -532,7 +532,7 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
               <button
                 onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
                 disabled={offset === 0 || rowsQuery.isFetching}
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary/40 px-2.5 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-xl border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-40"
               >
                 <ChevronLeft size={12} />
                 Prev
@@ -540,7 +540,7 @@ export function DataTab({ projectId, nodeId }: DataTabProps) {
               <button
                 onClick={() => setOffset((o) => o + PAGE_SIZE)}
                 disabled={rows.length < PAGE_SIZE || rowsQuery.isFetching}
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary/40 px-2.5 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-xl border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-40"
               >
                 Next
                 <ChevronRight size={12} />

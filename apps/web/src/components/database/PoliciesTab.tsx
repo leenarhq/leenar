@@ -196,7 +196,7 @@ export function PoliciesTab({ projectId, nodeId }: PoliciesTabProps) {
             })
           }
           disabled={schemaQuery.isFetching}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-secondary px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50"
         >
           {schemaQuery.isFetching ? (
             <Loader2 size={12} className="animate-spin" />
@@ -209,7 +209,7 @@ export function PoliciesTab({ projectId, nodeId }: PoliciesTabProps) {
 
       {/* Mutation error banner */}
       {runMutation.isError && (
-        <div className="mb-3 flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           {runMutation.error instanceof Error
             ? runMutation.error.message
@@ -223,7 +223,7 @@ export function PoliciesTab({ projectId, nodeId }: PoliciesTabProps) {
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="h-14 animate-pulse rounded-md border border-border bg-secondary/20"
+              className="h-14 animate-pulse rounded-xl border border-border bg-secondary"
             />
           ))}
         </div>
@@ -231,7 +231,7 @@ export function PoliciesTab({ projectId, nodeId }: PoliciesTabProps) {
 
       {/* Error state */}
       {schemaQuery.isError && (
-        <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           Failed to load schema
           {schemaQuery.error instanceof Error
@@ -242,7 +242,7 @@ export function PoliciesTab({ projectId, nodeId }: PoliciesTabProps) {
 
       {/* Empty state */}
       {schemaQuery.isSuccess && tables.length === 0 && (
-        <div className="rounded-md border border-dashed border-border py-24 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border py-24 text-center text-sm text-muted-foreground">
           No tables found in this database.
         </div>
       )}
@@ -253,7 +253,7 @@ export function PoliciesTab({ projectId, nodeId }: PoliciesTabProps) {
           {tables.map((table: LiveTable) => (
             <div
               key={table.name}
-              className="rounded-md border border-border bg-card overflow-hidden"
+              className="rounded-xl border border-border bg-card overflow-hidden"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                 <span className="font-mono text-xs text-foreground">
@@ -279,24 +279,21 @@ export function PoliciesTab({ projectId, nodeId }: PoliciesTabProps) {
                     {table.policies.map((policy: LivePolicy) => (
                       <li
                         key={policy.name}
-                        className="rounded-md border border-border bg-secondary/10 px-3 py-2"
+                        className="rounded-xl border border-border bg-secondary px-3 py-2"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="font-mono text-xs text-foreground truncate">
                               {policy.name}
                             </span>
-                            <span className="inline-flex rounded-full border border-border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+                            <span className="inline-flex rounded-full border border-border-soft px-2 py-0.5 font-mono text-[9px] lowercase text-muted-foreground">
                               {policy.command}
                             </span>
-                            <span
-                              className={`inline-flex rounded-full border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
-                                policy.permissive
-                                  ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                                  : "text-orange-400 bg-orange-500/10 border-orange-500/20"
-                              }`}
-                            >
-                              {policy.permissive ? "Permissive" : "Restrictive"}
+                            {/* Neither kind is better than the other, so
+                                neither gets a tone — permissive/restrictive
+                                is a category (spec D3). */}
+                            <span className="inline-flex rounded-full border border-border-soft px-2 py-0.5 font-mono text-[9px] lowercase text-muted-foreground">
+                              {policy.permissive ? "permissive" : "restrictive"}
                             </span>
                           </div>
                           <button
@@ -339,7 +336,7 @@ export function PoliciesTab({ projectId, nodeId }: PoliciesTabProps) {
 
                 {/* Create form */}
                 {addingTable === table.name && (
-                  <div className="mt-3 space-y-2 rounded-md border border-dashed border-border bg-secondary/10 p-3">
+                  <div className="mt-3 space-y-2 rounded-xl border border-border bg-secondary p-3">
                     <div className="flex flex-wrap gap-1.5">
                       {PRESET_OPTIONS.map((opt) => (
                         <button

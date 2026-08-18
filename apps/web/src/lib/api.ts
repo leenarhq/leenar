@@ -287,12 +287,42 @@ export async function checkVercelGitHub(session: Session): Promise<{
   return res.json();
 }
 
+export interface ConnectionRow {
+  service: string;
+  expires_at: string | null;
+  connected_at: string;
+}
+
+/**
+ * The raw rows. GET /oauth/connections has always returned expires_at and
+ * connected_at (workers/api/src/routes/oauth.ts listConnections); the client
+ * just mapped them away. Surfacing the expiry is not new data.
+ */
+export async function listConnectionRows(
+  session: Session,
+): Promise<ConnectionRow[]> {
+  const res = await apiFetch("/api/oauth/connections", session);
+  const rows = (await res.json()) as ConnectionRow[];
+  return Array.isArray(rows) ? rows : [];
+}
+
 export async function getConnectedServices(
   session: Session,
 ): Promise<string[]> {
-  const res = await apiFetch("/api/oauth/connections", session);
-  const rows = (await res.json()) as Array<{ service: string }>;
-  return rows.map((r) => r.service);
+  return (await listConnectionRows(session)).map((r) => r.service);
+}
+
+/**
+ * Whole days until `iso`, or null when the token never expires.
+ *
+ * ceil, not floor: a countdown reads down to the moment it lapses, so
+ * "9 days and 23 hours" is 10 days left, not 9. Flooring also made the
+ * value depend on how many milliseconds passed between computing the
+ * deadline and reading the clock.
+ */
+export function daysUntil(iso: string | null): number | null {
+  if (!iso) return null;
+  return Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000);
 }
 
 export interface ProvisionResult {
@@ -593,6 +623,19 @@ export async function deleteResendDomain(
   });
 }
 
+/**
+ * The subset of GitHub's repo object this app reads.
+ *
+ * `pushed_at`, `default_branch`, `fork` and `archived` were always on the
+ * wire and were never declared: workers/api/src/connectors/github.ts's
+ * listRepos types the response with `res.json<GitHubRepo[]>()` — a cast, not
+ * a filter — and routes/github.ts hands the array straight to `c.json`. Same
+ * shape as the connection `expires_at` PR 4 surfaced.
+ *
+ * They are optional anyway. GitHub has deprecated fields before, and a repo
+ * cell that renders "pushed Invalid Date · undefined" is worse than one that
+ * quietly falls back.
+ */
 export interface GitHubRepo {
   id: number;
   full_name: string;
@@ -601,11 +644,51 @@ export interface GitHubRepo {
   html_url: string;
   description: string | null;
   updated_at: string;
+  pushed_at?: string;
+  default_branch?: string;
+  fork?: boolean;
+  archived?: boolean;
 }
 
 export async function getGitHubRepos(session: Session): Promise<GitHubRepo[]> {
   const res = await apiFetch("/api/github/repos", session);
   return res.json();
+}
+
+/**
+ * What a grid cell knows about a repo beyond its name.
+ *
+ * `envKeys` is a count and never the names — the cell only renders the
+ * number, and the names are the half worth protecting.
+ */
+export interface RepoSummary {
+  full_name: string;
+  hasApp: boolean;
+  envKeys: number;
+  services: Array<"github" | "vercel" | "supabase" | "resend">;
+}
+
+/**
+ * Capped at 20 names per call server-side (workers/api/src/routes/github.ts);
+ * callers with more repos than that must batch.
+ *
+ * Repos GitHub would not answer for come back ABSENT rather than
+ * present-and-empty, and the difference is the whole contract: a cell with no
+ * summary renders plain and stays clickable, and only a cell whose summary
+ * says `hasApp: false` is dimmed and refused.
+ */
+export async function getRepoSummaries(
+  repos: string[],
+  session: Session,
+): Promise<Record<string, RepoSummary>> {
+  const res = await apiFetch("/api/github/repos/summary", session, {
+    method: "POST",
+    body: JSON.stringify({ repos }),
+  });
+  const { summaries } = (await res.json()) as {
+    summaries: Record<string, RepoSummary>;
+  };
+  return summaries;
 }
 
 export interface GitHubBranch {

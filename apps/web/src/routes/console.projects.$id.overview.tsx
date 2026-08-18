@@ -19,7 +19,10 @@ import { StatCards } from "../components/dashboard/StatCards";
 import { DashboardBriefing } from "../components/dashboard/DashboardBriefing";
 import { RecentDeployments } from "../components/dashboard/RecentDeployments";
 import { ActivityPanel } from "../components/dashboard/ActivityPanel";
-import { HealthOverview } from "../components/dashboard/HealthOverview";
+import {
+  HealthOverview,
+  type CanvasLike,
+} from "../components/dashboard/HealthOverview";
 import { EnvironmentsPanel } from "../components/dashboard/EnvironmentsPanel";
 import { AutopilotPanel } from "../components/dashboard/AutopilotPanel";
 import { DashboardAgent } from "../components/dashboard/DashboardAgent";
@@ -27,6 +30,28 @@ import { DashboardAgent } from "../components/dashboard/DashboardAgent";
 export const Route = createFileRoute("/console/projects/$id/overview")({
   component: ProjectOverview,
 });
+
+/**
+ * One box per real block, not five: StatCards is a single hairline strip
+ * now, and a skeleton that does not match the shape it stands in is a
+ * layout shift on every load.
+ */
+function OverviewSkeleton() {
+  return (
+    <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-4 sm:p-6">
+      <div className="h-16 animate-pulse rounded-2xl border border-border bg-card" />
+      <div className="h-24 animate-pulse rounded-2xl border border-border bg-card" />
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-48 animate-pulse rounded-2xl border border-border bg-card"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function ProjectOverview() {
   const { session } = useAuth();
@@ -113,61 +138,17 @@ function ProjectOverview() {
     }
   };
 
-  if (d.loading) {
-    return (
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-4 sm:p-6">
-        <div className="h-16 animate-pulse rounded-md border border-border bg-card" />
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-24 animate-pulse rounded-md border border-border bg-card"
-            />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-48 animate-pulse rounded-md border border-border bg-card"
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  if (d.loading) return <OverviewSkeleton />;
 
   // Not-yet-deployed projects are redirected to Build by the effect above;
   // return the same loading UI here to avoid flashing the dashboard for a frame.
-  if (d.summary && d.summary.status !== "active") {
-    return (
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-4 sm:p-6">
-        <div className="h-16 animate-pulse rounded-md border border-border bg-card" />
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-24 animate-pulse rounded-md border border-border bg-card"
-            />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-48 animate-pulse rounded-md border border-border bg-card"
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  if (d.summary && d.summary.status !== "active") return <OverviewSkeleton />;
 
   if (d.error) {
     return (
       <div className="mx-auto max-w-md p-16 text-center">
-        <AlertCircle className="mx-auto h-6 w-6 text-destructive" />
-        <p className="mt-3 text-sm text-destructive">{d.error}</p>
+        <AlertCircle className="mx-auto h-6 w-6 text-crit" />
+        <p className="mt-3 text-[13px] text-crit">{d.error}</p>
       </div>
     );
   }
@@ -182,13 +163,15 @@ function ProjectOverview() {
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-4 sm:p-6">
       {d.activeSession && (
-        <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/30 px-4 py-2.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 rounded-xl border border-border-soft bg-card px-4 py-2.5 text-[13px] text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Deployment in
           progress…
         </div>
       )}
+      {/* crit border and crit text, never a crit fill — the same rule the
+          spec states for the settings danger zone. */}
       {actionError && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2.5 text-xs text-destructive">
+        <div className="rounded-xl border border-crit/30 px-4 py-2.5 text-[13px] text-crit">
           {actionError}
         </div>
       )}
@@ -210,6 +193,7 @@ function ProjectOverview() {
           drifts={d.drifts}
           uptime={d.uptime}
           observability={d.observability}
+          canvas={d.canvas as CanvasLike}
         />
       )}
 
@@ -223,14 +207,13 @@ function ProjectOverview() {
 
       <RecentDeployments
         deployments={deploymentHistory.slice(0, 6)}
-        projectId={id}
         onRollback={handleRollback}
       />
 
       <ActivityPanel items={activity} />
 
       {d.environments.length > 0 && (
-        <EnvironmentsPanel environments={d.environments} projectId={id} />
+        <EnvironmentsPanel environments={d.environments} />
       )}
 
       {isCloud && (

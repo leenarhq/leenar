@@ -9,13 +9,15 @@ import {
 } from "../../lib/api";
 import { timeAgo } from "../../lib/format";
 import { Panel, EmptyRow } from "./Panel";
+import { Mono, Dim } from "../console/Rows";
+import { StateTag, toneFor } from "../console/StateTag";
 
-const sevColor: Record<string, string> = {
-  "5xx": "text-destructive",
-  error: "text-destructive",
-  warning: "text-yellow-500",
-  down: "text-destructive",
-};
+/** `5xx` is not a word toneFor can read; every other severity is. */
+const sevTone = (s: string) => (s === "5xx" ? "crit" : toneFor(s));
+
+/** One shape for every row action on this surface. */
+const ACTION =
+  "inline-flex items-center gap-1 rounded-full border border-border-soft px-2 py-0.5 font-mono text-[10px] lowercase transition-colors hover:bg-secondary disabled:opacity-50";
 
 export function IncidentsPanel({
   incidents,
@@ -25,7 +27,6 @@ export function IncidentsPanel({
   incidents: Incident[];
   session: Session | null;
   onIncidentsChange: (updater: (prev: Incident[]) => Incident[]) => void;
-  projectId: string;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [diag, setDiag] = useState<Record<string, string>>({});
@@ -70,29 +71,26 @@ export function IncidentsPanel({
       {incidents.length === 0 ? (
         <EmptyRow>No open incidents</EmptyRow>
       ) : (
-        <div className="divide-y divide-border">
+        <div>
           {incidents.map((inc) => (
-            <div key={inc.id} className="px-4 py-3 text-xs">
+            <div
+              key={inc.id}
+              className="border-b border-border-soft px-4 py-3 text-[13px] last:border-b-0"
+            >
               <div className="flex items-center gap-2">
-                <span
-                  className={`font-mono uppercase ${sevColor[inc.severity] ?? "text-muted-foreground"}`}
-                >
-                  {inc.severity}
-                </span>
-                <span className="font-mono text-muted-foreground">
-                  {inc.service}
-                </span>
+                <StateTag tone={sevTone(inc.severity)} label={inc.severity} />
+                <Mono>{inc.service}</Mono>
                 {inc.status === "acknowledged" && (
-                  <span className="rounded bg-secondary px-1.5 text-[9px]">
-                    ACK
+                  <span className="rounded-full border border-border-soft px-2 py-0.5 font-mono text-[10px] lowercase text-dim">
+                    ack
                   </span>
                 )}
-                <span className="ml-auto text-muted-foreground">
-                  {timeAgo(inc.last_seen_at)}
+                <span className="ml-auto">
+                  <Dim>{timeAgo(inc.last_seen_at)}</Dim>
                 </span>
               </div>
               {inc.log_snippet && (
-                <p className="mt-1 truncate text-muted-foreground">
+                <p className="mt-1.5 truncate text-muted-foreground">
                   {inc.log_snippet}
                 </p>
               )}
@@ -103,33 +101,33 @@ export function IncidentsPanel({
                       act(inc, acknowledgeIncident, "acknowledged")
                     }
                     disabled={busy === inc.id}
-                    className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-secondary disabled:opacity-50"
+                    className={ACTION}
                   >
                     {busy === inc.id ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
                       <Check className="h-3 w-3" />
-                    )}{" "}
-                    Ack
+                    )}
+                    ack
                   </button>
                 )}
                 <button
                   onClick={() => act(inc, resolveIncident, "resolved")}
                   disabled={busy === inc.id}
-                  className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-secondary disabled:opacity-50"
+                  className={ACTION}
                 >
-                  <X className="h-3 w-3" /> Resolve
+                  <X className="h-3 w-3" /> resolve
                 </button>
                 <button
                   onClick={() => diagnose(inc)}
                   disabled={busy === inc.id}
-                  className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-secondary disabled:opacity-50"
+                  className={ACTION}
                 >
-                  <Stethoscope className="h-3 w-3" /> Diagnose
+                  <Stethoscope className="h-3 w-3" /> diagnose
                 </button>
               </div>
               {diag[inc.id] && (
-                <p className="mt-2 whitespace-pre-line rounded border border-border bg-secondary/30 p-2 text-[11px] leading-relaxed text-muted-foreground">
+                <p className="mt-2 whitespace-pre-line rounded-xl border border-border-soft bg-secondary px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
                   {diag[inc.id]}
                 </p>
               )}

@@ -2,7 +2,12 @@ import { useId, useState } from "react";
 
 export interface Series {
   label: string;
-  color: string; // CSS color (e.g. "var(--primary)" or a tailwind-derived hex)
+  /**
+   * A CSS colour. Pass `"currentColor"` and let the wrapper's text colour
+   * carry it — the console's charts are a single ink ramp, and a hue here
+   * is only correct when it marks a threshold (spec D3).
+   */
+  color: string;
   points: Array<{ x: string; y: number }>;
 }
 
@@ -38,7 +43,7 @@ export function TimeSeriesChart({
   const maxLen = Math.max(0, ...series.map((s) => s.points.length));
   if (maxLen < 2) {
     return (
-      <div className="py-6 text-center text-xs text-muted-foreground">
+      <div className="py-8 text-center text-[13px] text-muted-foreground">
         Not enough data yet
       </div>
     );

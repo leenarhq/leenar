@@ -122,7 +122,7 @@ export function SetupSpotlight() {
         />
       </svg>
       <div
-        className="rounded-xl border border-border bg-card p-3 shadow-xl"
+        className="rounded-xl border border-border bg-popover p-3 shadow-xl"
         style={{
           position: "absolute",
           width: TOOLTIP_W,

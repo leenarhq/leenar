@@ -101,15 +101,16 @@ function OpenSignup() {
       backLabel="Sign in instead"
       title="Create your account"
       subtitle="Describe a stack and Leenar wires it into your own cloud accounts."
+      foot="no credit card · you keep every account"
     >
       {error && (
-        <p className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="mb-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </p>
       )}
       {done ? (
-        <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-secondary/20 px-4 py-8 text-center">
-          <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-secondary/20 px-4 py-8 text-center">
+          <CheckCircle2 className="h-6 w-6 text-ok" />
           {needsConfirmation ? (
             <>
               <p className="text-sm font-medium">Confirm your email</p>

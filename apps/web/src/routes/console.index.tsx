@@ -2,15 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Search,
-  Plus,
-  MoreHorizontal,
-  GitBranch,
-  Boxes,
-  CloudUpload,
-  Loader2,
-} from "lucide-react";
+import { Search, MoreHorizontal, Loader2, ChevronDown } from "lucide-react";
 import { ConsoleTopBar } from "./console";
 import { useAuth } from "../context/auth";
 import {
@@ -27,7 +19,7 @@ import {
 } from "../lib/api";
 import { timeAgo } from "../lib/utils";
 import { hasPendingPrompt } from "../lib/pendingPrompt";
-import { NOUNS, statusLabel, statusTone } from "../lib/labels";
+import { NOUNS, statusLabel } from "../lib/labels";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +27,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../components/ui/dialog";
+import { HairGrid, HairCell } from "../components/console/HairGrid";
+import { StateDot, toneFor, type Tone } from "../components/console/StateTag";
 import { ScanAccountsModal } from "../components/canvas/ScanAccountsModal";
 import { DeleteProjectDialog } from "../components/console/DeleteProjectDialog";
 
@@ -46,14 +47,20 @@ export const Route = createFileRoute("/console/")({
 type SortKey = "updated" | "created" | "name" | "deploys";
 type StatusFilter = "all" | ProjectStatus;
 
-const toneMeta: Record<
-  ReturnType<typeof statusTone>,
-  { dot: string; text: string }
-> = {
-  positive: { dot: "bg-emerald-500", text: "text-emerald-400" },
-  neutral: { dot: "bg-muted-foreground", text: "text-muted-foreground" },
-  warning: { dot: "bg-destructive", text: "text-destructive" },
+const SORT_LABELS: Record<SortKey, string> = {
+  updated: "Last updated",
+  created: "Newest first",
+  name: "Name A–Z",
+  deploys: "Most deployed",
 };
+
+/** One dot per project. Health outranks status: a live project with a
+ *  critical drift is not "live" as far as the eye is concerned. */
+function projectTone(p: ProjectSummary, h?: ProjectHealthSnapshot): Tone {
+  if (h && (h.critical_incidents > 0 || h.critical_drifts > 0)) return "crit";
+  if (h && (h.total_incidents > 0 || h.total_drifts > 0)) return "warn";
+  return toneFor(p.status);
+}
 
 function ProjectsPage() {
   const { session } = useAuth();
@@ -102,6 +109,7 @@ function ProjectsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
   });
   const [deleteTarget, setDeleteTarget] = useState<ProjectSummary | null>(null);
+  const [renameTarget, setRenameTarget] = useState<ProjectSummary | null>(null);
 
   const projects = projectsQuery.data ?? [];
   const health: Record<string, ProjectHealthSnapshot> = healthQuery.data ?? {};
@@ -144,132 +152,137 @@ function ProjectsPage() {
 
   return (
     <>
-      <ConsoleTopBar title="Projects" />
+      <ConsoleTopBar
+        title={
+          <span className="flex items-center gap-2.5">
+            Projects
+            <span className="font-mono text-[10px] tabular-nums text-dim">
+              {projects.length}
+            </span>
+          </span>
+        }
+        right={
+          <>
+            {/* Hidden on the narrowest widths: the bar carries the title,
+                both of these and TopBarActions, and at 390px that overflows.
+                Mobile is deferred, but it still has to work — so the
+                secondary action is the one that goes. */}
+            <button
+              onClick={() => setShowScanModal(true)}
+              className="hidden items-center gap-2 rounded-full border border-border px-4 py-2 text-[13px] font-medium transition-colors hover:bg-secondary sm:inline-flex"
+            >
+              Import existing
+            </button>
+            <button
+              onClick={() => createMut.mutate("New Project")}
+              disabled={createMut.isPending}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {createMut.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              New project
+            </button>
+          </>
+        }
+      />
 
-      <div className="flex items-center justify-between gap-4 border-b border-dashed border-border px-6 py-3">
-        <div className="relative w-[360px]">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+      <div className="flex items-center justify-between gap-4 border-b border-border px-7 py-3">
+        <div className="relative w-[320px]">
+          <Search className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search projects..."
-            className="w-full rounded-md border border-border bg-secondary/30 py-1.5 pl-9 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="Search projects…"
+            className="w-full rounded-full border border-border-soft bg-card py-2 pl-10 pr-4 text-[13px] placeholder:text-dim focus:border-foreground/25 focus:outline-none"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-md border border-border p-0.5">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setStatus(f.key)}
-                className={`rounded px-2.5 py-1 text-xs transition-colors ${
-                  status === f.key
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {f.label}{" "}
-                <span className="text-muted-foreground">{f.count}</span>
-              </button>
-            ))}
-          </div>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded-md border border-border bg-secondary/40 px-2.5 py-1.5 text-xs focus:outline-none"
-          >
-            <option value="updated">Last updated</option>
-            <option value="created">Newest first</option>
-            <option value="name">Name A–Z</option>
-            <option value="deploys">Most deployed</option>
-          </select>
-          <button
-            onClick={() => setShowScanModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-3 py-1.5 text-xs hover:bg-secondary"
-          >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        <div className="flex items-center gap-1">
+          {filters.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setStatus(f.key)}
+              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[12.5px] transition-colors ${
+                status === f.key
+                  ? "border-border-soft bg-secondary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            Import existing
-          </button>
-          <button
-            onClick={() => createMut.mutate("New Project")}
-            disabled={createMut.isPending}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
-          >
-            {createMut.isPending ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Plus className="h-3 w-3" />
-            )}{" "}
-            Add New
-          </button>
+              {f.label}
+              <span className="font-mono text-[11px] tabular-nums text-dim">
+                {f.count}
+              </span>
+            </button>
+          ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-border-soft px-3.5 py-1.5 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground">
+                {SORT_LABELS[sort]}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+                <DropdownMenuItem key={key} onClick={() => setSort(key)}>
+                  {SORT_LABELS[key]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-7">
         {projectsQuery.isLoading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-40 animate-pulse rounded-md border border-border bg-card"
-              />
+          <HairGrid cols={3}>
+            {Array.from({ length: 9 }).map((_, i) => (
+              <HairCell key={i} className="h-[148px] animate-pulse bg-card" />
             ))}
-          </div>
+          </HairGrid>
         ) : projectsQuery.isError ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-8 text-center text-sm text-destructive">
+          <div className="rounded-2xl border border-crit/40 bg-crit/10 p-8 text-center text-sm text-crit">
             Failed to load projects. {(projectsQuery.error as Error)?.message}
           </div>
         ) : visible.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-border py-24 text-center">
-            <Boxes className="h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 text-sm">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-border py-24 text-center">
+            <p className="text-[14.5px]">
               {search || status !== "all"
                 ? "No matching projects"
                 : "No projects yet"}
             </p>
-            <button
-              onClick={() => createMut.mutate("New Project")}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background hover:opacity-90"
-            >
-              <Plus className="h-3 w-3" /> Create your first project
-            </button>
+            <p className="mt-1.5 font-mono text-[11px] lowercase text-dim">
+              {search || status !== "all"
+                ? "try a different filter"
+                : "bring a repo, or describe what you want to build"}
+            </p>
+            {!search && status === "all" && (
+              <button
+                onClick={() => createMut.mutate("New Project")}
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Create your first project
+              </button>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <HairGrid cols={3}>
             {visible.map((p) => (
-              <ProjectCard
+              <ProjectCell
                 key={p.id}
                 project={p}
-                healthDot={healthDot(health[p.id])}
+                tone={projectTone(p, health[p.id])}
                 onOpen={() =>
                   navigate({
                     to: "/console/projects/$id",
                     params: { id: p.id },
                   })
                 }
-                onRename={() => {
-                  const name = window.prompt("Rename project", p.name);
-                  if (name && name !== p.name)
-                    renameMut.mutate({ id: p.id, name });
-                }}
+                onRename={() => setRenameTarget(p)}
                 onDuplicate={() => duplicateMut.mutate(p.id)}
                 onDelete={() => setDeleteTarget(p)}
               />
             ))}
-          </div>
+          </HairGrid>
         )}
       </div>
       <AnimatePresence>
@@ -287,6 +300,16 @@ function ProjectsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      {renameTarget && (
+        <RenameProjectDialog
+          project={renameTarget}
+          onClose={() => setRenameTarget(null)}
+          onRename={(name) => {
+            renameMut.mutate({ id: renameTarget.id, name });
+            setRenameTarget(null);
+          }}
+        />
+      )}
       {deleteTarget && session && (
         <DeleteProjectDialog
           project={deleteTarget}
@@ -305,59 +328,100 @@ function ProjectsPage() {
   );
 }
 
-type HealthTone = "ok" | "warn" | "crit";
-function healthDot(h?: {
-  critical_incidents: number;
-  total_incidents: number;
-  critical_drifts: number;
-  total_drifts: number;
-}): HealthTone {
-  if (!h) return "ok";
-  if (h.critical_incidents > 0 || h.critical_drifts > 0) return "crit";
-  if (h.total_incidents > 0 || h.total_drifts > 0) return "warn";
-  return "ok";
+/** Replaces window.prompt, which was the last browser-chrome control on a
+ *  screen where everything else is ours. */
+function RenameProjectDialog({
+  project,
+  onClose,
+  onRename,
+}: {
+  project: ProjectSummary;
+  onClose: () => void;
+  onRename: (name: string) => void;
+}) {
+  const [name, setName] = useState(project.name);
+  const submit = () => {
+    const next = name.trim();
+    if (next && next !== project.name) onRename(next);
+    else onClose();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-[380px]">
+        <DialogHeader>
+          <DialogTitle className="text-[15px] font-medium">
+            Rename project
+          </DialogTitle>
+        </DialogHeader>
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+          }}
+          className="w-full rounded-lg border border-border-soft bg-card px-3.5 py-2.5 text-[13.5px] focus:border-foreground/30 focus:outline-none"
+        />
+        <DialogFooter>
+          <button
+            onClick={onClose}
+            className="rounded-full border border-border px-4 py-2 text-[13px] transition-colors hover:bg-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={submit}
+            className="rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            Rename
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
-const healthToneClass: Record<HealthTone, string> = {
-  ok: "bg-emerald-500",
-  warn: "bg-yellow-500",
-  crit: "bg-destructive",
-};
 
-function ProjectCard({
+/**
+ * No provider chips. The approved mockup shows a `github` `vercel` `supabase`
+ * row on each cell, but ProjectSummary has no such field — getProjects reads
+ * the `project_summary` Postgres view, so shipping them means altering a view
+ * and its migration. That is backend work and it is recorded as a follow-up;
+ * it is not faked from node_count here.
+ */
+function ProjectCell({
   project: p,
-  healthDot,
+  tone,
   onOpen,
   onRename,
   onDuplicate,
   onDelete,
 }: {
   project: ProjectSummary;
-  healthDot: HealthTone;
+  tone: Tone;
   onOpen: () => void;
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
-  const tone = toneMeta[statusTone(p.status)];
-  const label = statusLabel(p.status);
   return (
-    <div
+    <HairCell
       onClick={onOpen}
-      className="group cursor-pointer rounded-md border border-border bg-card p-4 transition-colors hover:border-foreground/20 hover:bg-secondary/20"
+      className="group flex min-h-[148px] cursor-pointer flex-col"
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            className={`h-2 w-2 rounded-full ${healthToneClass[healthDot]}`}
-            title={`health: ${healthDot}`}
-          />
-          <span className="truncate text-sm font-medium">{p.name}</span>
-        </div>
+      <div className="flex items-center gap-2.5">
+        <StateDot tone={tone} />
+        <span className="truncate text-[14.5px] font-medium tracking-[-0.01em]">
+          {p.name}
+        </span>
+        <span className="ml-auto shrink-0 whitespace-nowrap font-mono text-[10.5px] lowercase text-muted-foreground">
+          {statusLabel(p.status)}
+        </span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
-              className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-secondary hover:text-foreground group-hover:opacity-100"
+              aria-label={`Actions for ${p.name}`}
+              className="rounded-lg p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-secondary hover:text-foreground group-hover:opacity-100"
             >
               <MoreHorizontal className="h-4 w-4" />
             </button>
@@ -368,7 +432,7 @@ function ProjectCard({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={onDelete}
-              className="text-destructive focus:text-destructive"
+              className="text-crit focus:text-crit"
             >
               Delete
             </DropdownMenuItem>
@@ -376,31 +440,15 @@ function ProjectCard({
         </DropdownMenu>
       </div>
 
-      <div className="mt-3 flex items-center gap-1.5 text-xs">
-        <span className={`inline-flex items-center gap-1 ${tone.text}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} /> {label}
-        </span>
-        <span className="text-muted-foreground">
-          ·{" "}
-          {p.last_deployed_at
-            ? `deployed ${timeAgo(new Date(p.last_deployed_at).getTime())}`
-            : "never deployed"}
-        </span>
+      <div className="mt-auto pt-4 font-mono text-[10.5px] lowercase tabular-nums text-dim">
+        {p.node_count} {NOUNS.service.toLowerCase()}s · {p.edge_count}{" "}
+        {NOUNS.connection.toLowerCase()}s · {p.deploy_count} deploys
       </div>
-
-      <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1">
-          <Boxes className="h-3 w-3" /> {p.node_count}{" "}
-          {NOUNS.service.toLowerCase()}s
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <GitBranch className="h-3 w-3" /> {p.edge_count}{" "}
-          {NOUNS.connection.toLowerCase()}s
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <CloudUpload className="h-3 w-3" /> {p.deploy_count} deploys
-        </span>
+      <div className="mt-2 font-mono text-[10.5px] lowercase text-dim">
+        {p.last_deployed_at
+          ? `deployed ${timeAgo(new Date(p.last_deployed_at).getTime())}`
+          : "never deployed"}
       </div>
-    </div>
+    </HairCell>
   );
 }

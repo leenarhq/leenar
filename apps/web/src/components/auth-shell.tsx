@@ -1,31 +1,22 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
+import { LogoMark } from "./console/LogoMark";
 
-/** The Leenar brand mark, traced from leenarnewlogo.svg. Inherits color via currentColor. */
-export function LeenarMark({
-  className = "h-4 w-auto",
-}: {
-  className?: string;
-}) {
-  return (
-    <svg
-      className={className}
-      viewBox="16 16 576 726"
-      fill="currentColor"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <g transform="translate(0,978) scale(0.1,-0.1)">
-        <path d="M3015 9548 c-38 -17 -135 -60 -215 -95 -146 -66 -282 -126 -575 -255 -88 -39 -187 -83 -220 -98 -33 -15 -134 -60 -225 -100 -91 -40 -179 -84 -196 -96 -69 -53 -53 7 -385 -1364 -55 -228 -125 -516 -155 -640 -30 -124 -71 -295 -90 -380 -19 -85 -77 -328 -129 -540 -227 -922 -275 -1123 -275 -1141 0 -10 -33 -155 -74 -321 -41 -167 -115 -471 -165 -675 -98 -399 -114 -504 -101 -640 30 -297 170 -527 396 -651 533 -292 1501 -149 2115 313 86 64 80 64 193 25 519 -175 1352 -199 1985 -56 533 121 710 270 797 673 30 144 131 603 143 658 111 486 -13 843 -389 1119 -288 212 -816 293 -1238 191 -410 -100 -840 -367 -1146 -714 -117 -132 -294 -362 -443 -574 -69 -97 -128 -179 -132 -181 -20 -13 -551 246 -551 269 0 1 16 63 34 136 19 74 58 249 86 389 28 140 57 280 65 310 8 30 55 235 105 455 50 220 102 448 116 508 29 120 -15 50 374 602 151 215 776 1114 888 1278 40 59 87 137 104 173 54 115 47 133 -262 759 -117 237 -241 490 -276 563 -35 74 -69 132 -76 131 -7 -1 -44 -15 -83 -31z m1406 -4958 c83 -96 184 -213 223 -260 39 -47 102 -121 140 -165 39 -44 76 -88 84 -97 14 -16 9 -20 -54 -49 -317 -142 -884 -254 -1202 -237 l-62 3 92 135 c237 345 607 852 618 848 4 -2 77 -82 161 -178z m-3243 -793 c156 -133 277 -218 563 -400 75 -48 143 -89 153 -93 27 -10 19 -22 -36 -54 -267 -153 -668 -176 -806 -47 -62 57 -101 199 -82 298 10 52 111 369 118 369 2 0 43 -33 90 -73z" />
-      </g>
-    </svg>
-  );
-}
+/**
+ * The mark lives in components/console/ now; this re-export keeps the eight
+ * files that import `LeenarMark` from here working unchanged.
+ */
+export const LeenarMark = LogoMark;
 
 /**
  * Shared shell for the auth pages (login / signup / reset).
- * Dark, dashed-border aesthetic consistent with the console + landing page.
+ *
+ * A 376px column on the plain ground. What used to be here: a radial-gradient
+ * glow (a gradient mesh blob, which the design system rules out), a shadow-xl card
+ * with a gradient hairline across its top, and the last dashed border in the
+ * app. A card floating in a void is the most templated auth layout there is,
+ * and shadow-xl is not in the elevation system.
  */
 export function AuthShell({
   children,
@@ -33,55 +24,55 @@ export function AuthShell({
   backLabel = "Back to home",
   title,
   subtitle,
+  foot,
 }: {
   children: ReactNode;
   backTo?: "/" | "/login";
   backLabel?: string;
   title: string;
   subtitle?: string;
+  foot?: string;
 }) {
   return (
-    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
-      {/* subtle radial glow backdrop */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          background:
-            "radial-gradient(600px circle at 50% -10%, oklch(0.3 0.02 260 / 0.5), transparent 70%)",
-        }}
-      />
-      <nav className="relative z-10 flex h-[57px] items-center border-b border-dashed border-border px-6">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <nav className="px-6 py-5">
         <Link
           to={backTo}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-2 font-mono text-[10px] lowercase text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4" /> {backLabel}
+          <ArrowLeft className="h-3.5 w-3.5" /> {backLabel}
         </Link>
       </nav>
 
-      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="overflow-hidden rounded-lg border border-border bg-card shadow-xl">
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-foreground/30 to-transparent" />
-            <div className="p-8">
-              <div className="mb-6">
-                <div className="mb-5 flex items-center gap-2">
-                  <LeenarMark />
-                  <span className="font-serif text-base">Leenar</span>
-                </div>
-                <h1 className="font-serif text-2xl">{title}</h1>
-                {subtitle && (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-              {children}
-            </div>
+      <main
+        id="content"
+        tabIndex={-1}
+        className="flex flex-1 items-center justify-center px-6 py-8"
+      >
+        <div className="w-full max-w-[376px]">
+          <div className="flex items-center gap-2.5">
+            <LeenarMark className="h-[15px] w-auto" />
+            <span className="text-sm font-medium tracking-[-0.01em]">
+              Leenar
+            </span>
           </div>
+          <h1 className="mt-5 font-display text-2xl font-light tracking-[-0.02em]">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="mt-2 text-[13.5px] text-muted-foreground">
+              {subtitle}
+            </p>
+          )}
+          <div className="mt-6">{children}</div>
         </div>
       </main>
+
+      {foot && (
+        <div className="px-6 pb-6 text-center font-mono text-[10px] lowercase text-dim">
+          {foot}
+        </div>
+      )}
     </div>
   );
 }
@@ -98,11 +89,11 @@ export function AuthField({
   labelRight?: ReactNode;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
         <label
           htmlFor={id}
-          className="text-xs font-medium text-muted-foreground"
+          className="font-mono text-[10px] lowercase text-dim"
         >
           {label}
         </label>
@@ -110,7 +101,7 @@ export function AuthField({
       </div>
       <input
         id={id}
-        className="w-full rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus:border-foreground/30 focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60"
+        className="w-full rounded-lg border border-border-soft bg-card px-3.5 py-2.5 text-[13.5px] shadow-[var(--raise)] placeholder:text-dim focus:border-foreground/30 focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60"
         {...props}
       />
     </div>
@@ -124,7 +115,7 @@ export function AuthSubmit({
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+      className="w-full rounded-full bg-primary px-4 py-2.5 text-[13.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
       {...props}
     >
       {children}
@@ -132,19 +123,32 @@ export function AuthSubmit({
   );
 }
 
-/** A 3-segment password strength meter. `strength` is 0–3. */
+const STRENGTH_LABELS = ["weak", "fair", "strong"];
+
+/**
+ * A 3-segment password strength meter. `strength` is 0–3.
+ *
+ * No colour. It used to run destructive -> yellow -> emerald, but a weak
+ * password is not an *error* — red says the wrong thing about a field the
+ * user has not finished filling in. Colour marks state, and "not yet strong"
+ * is progress. The strength is stated in a word instead.
+ */
 export function PasswordStrength({ strength }: { strength: number }) {
-  const colors = ["bg-destructive", "bg-yellow-500", "bg-emerald-500"];
   return (
-    <div className="mt-2 flex gap-1.5">
-      {[1, 2, 3].map((seg) => (
-        <div
-          key={seg}
-          className={`h-1 flex-1 rounded-full transition-colors ${
-            strength >= seg ? colors[seg - 1] : "bg-secondary"
-          }`}
-        />
-      ))}
+    <div className="mt-2">
+      <div className="flex gap-1.5">
+        {[1, 2, 3].map((seg) => (
+          <div
+            key={seg}
+            className={`h-0.5 flex-1 rounded-full transition-colors ${
+              strength >= seg ? "bg-foreground" : "bg-border"
+            }`}
+          />
+        ))}
+      </div>
+      <p className="mt-1.5 font-mono text-[10px] lowercase text-dim">
+        {strength > 0 ? STRENGTH_LABELS[strength - 1] : "enter a password"}
+      </p>
     </div>
   );
 }

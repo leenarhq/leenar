@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { SettingsShell, SettingsHeader } from "../components/settings-shell";
+import { INPUT } from "../components/console/Field";
 import { useAuth } from "../context/auth";
 import { supabase } from "../lib/supabase";
 
@@ -37,21 +38,21 @@ function DangerPage() {
   return (
     <SettingsShell title="Danger Zone">
       <div className="max-w-2xl flex-1 p-8">
-        <SettingsHeader
-          title="Danger Zone"
-          subtitle="Irreversible and destructive actions."
-        />
+        <SettingsHeader subtitle="Irreversible and destructive actions." />
 
-        <div className="mt-6 rounded-md border border-destructive/40 bg-destructive/5 p-5">
-          <div className="flex items-center gap-2 text-sm text-destructive">
+        {/* crit border and crit text, never a crit fill — the spec is
+            explicit, and a filled panel takes over a page whose whole job is
+            to be reachable but not inviting. */}
+        <div className="mt-6 rounded-2xl border border-crit/30 p-5">
+          <div className="flex items-center gap-2 text-[13px] text-crit">
             <AlertTriangle className="h-4 w-4" /> Delete account
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-[13px] text-muted-foreground">
             Permanently removes your account, all projects, and integrations.
             This cannot be undone.
           </p>
-          {err && <p className="mt-3 text-sm text-destructive">{err}</p>}
-          <p className="mt-4 text-xs text-muted-foreground">
+          {err && <p className="mt-3 text-[13px] text-crit">{err}</p>}
+          <p className="mt-4 text-[12px] text-muted-foreground">
             Type{" "}
             <span className="font-mono text-foreground">{CONFIRM_PHRASE}</span>{" "}
             to confirm.
@@ -61,12 +62,12 @@ function DangerPage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder={CONFIRM_PHRASE}
-              className="flex-1 rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className={INPUT}
             />
             <button
               onClick={deleteAccount}
               disabled={busy || confirm !== CONFIRM_PHRASE}
-              className="inline-flex items-center gap-2 rounded-md bg-destructive px-3 py-2 text-sm text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-crit/40 px-3.5 py-2 text-[13px] text-crit transition-colors hover:bg-crit/10 disabled:opacity-50"
             >
               {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Delete
             </button>

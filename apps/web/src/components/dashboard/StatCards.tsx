@@ -2,8 +2,10 @@ import type { ProjectSummary } from "../../lib/workflows";
 import type { Incident, StackDrift, NodeUsageData } from "../../lib/api";
 import { computeHealthScore, healthLabel } from "../../lib/healthScore";
 import { NOUNS, statusLabel } from "../../lib/labels";
+import { HairGrid, HairCell } from "../console/HairGrid";
+import { StateTag } from "../console/StateTag";
 
-function Card({
+function Cell({
   label,
   value,
   sub,
@@ -13,11 +15,13 @@ function Card({
   sub?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-md border border-border bg-card p-4">
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="mt-2 text-2xl">{value}</div>
-      {sub && <div className="mt-1 text-xs text-muted-foreground">{sub}</div>}
-    </div>
+    <HairCell className="p-4">
+      <div className="font-mono text-[10px] lowercase tracking-wide text-dim">
+        {label}
+      </div>
+      <div className="mt-2 text-[22px] leading-none tabular-nums">{value}</div>
+      {sub && <div className="mt-2 text-[11px]">{sub}</div>}
+    </HairCell>
   );
 }
 
@@ -45,39 +49,51 @@ export function StatCards({
   const openIncidents = incidents.filter((i) => i.status === "open").length;
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-      <Card
-        label="Status"
+    <HairGrid cols={5}>
+      <Cell
+        label="status"
         value={summary ? statusLabel(summary.status) : "—"}
         sub={
-          summary?.last_deploy_status
-            ? `last: ${summary.last_deploy_status}`
-            : undefined
+          summary?.last_deploy_status ? (
+            <span className="font-mono lowercase text-muted-foreground">
+              last: {summary.last_deploy_status}
+            </span>
+          ) : undefined
         }
       />
-      <Card
-        label="Deployments"
+      <Cell
+        label="deployments"
         value={String(summary?.deploy_count ?? 0)}
-        sub={summary?.last_deploy_status ?? undefined}
+        sub={
+          summary?.last_deploy_status ? (
+            <span className="font-mono lowercase text-muted-foreground">
+              {summary.last_deploy_status}
+            </span>
+          ) : undefined
+        }
       />
-      <Card
-        label={`${NOUNS.service}s`}
+      <Cell
+        label={`${NOUNS.service}s`.toLowerCase()}
         value={String(summary?.node_count ?? 0)}
       />
-      <Card
-        label={`${NOUNS.connection}s`}
+      <Cell
+        label={`${NOUNS.connection}s`.toLowerCase()}
         value={String(summary?.edge_count ?? 0)}
       />
-      <Card
-        label="Health"
+      <Cell
+        label="health"
         value={String(score)}
         sub={
-          <span style={{ color: label.color }}>
-            {label.label}
-            {openIncidents > 0 ? ` · ${openIncidents} open` : ""}
-          </span>
+          <StateTag
+            tone={label.tone}
+            label={
+              openIncidents > 0
+                ? `${label.label} · ${openIncidents} open`
+                : label.label
+            }
+          />
         }
       />
-    </div>
+    </HairGrid>
   );
 }

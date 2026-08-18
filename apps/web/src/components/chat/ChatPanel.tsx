@@ -73,14 +73,6 @@ interface ChatPanelProps {
   environments?: Array<{ name: string; slug: string; is_default: boolean }>;
 }
 
-const NODE_TYPE_COLORS: Record<string, string> = {
-  trigger: "text-green-400  bg-green-400/10  border-green-400/20",
-  agent: "text-blue-400   bg-blue-400/10   border-blue-400/20",
-  action: "text-purple-400 bg-purple-400/10 border-purple-400/20",
-  logic: "text-amber-400  bg-amber-400/10  border-amber-400/20",
-  approval: "text-orange-400 bg-orange-400/10 border-orange-400/20",
-};
-
 function CanvasUpdateCard({
   update,
   onApply,
@@ -91,9 +83,9 @@ function CanvasUpdateCard({
   applied: boolean;
 }) {
   return (
-    <div className="mt-1.5 rounded-xl border border-border/70 bg-secondary/30 overflow-hidden">
+    <div className="mt-1.5 rounded-xl border border-border bg-secondary overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border-soft">
         <GitBranch size={11} className="text-primary/60 flex-shrink-0" />
         <span className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">
           {update.description ??
@@ -105,20 +97,24 @@ function CanvasUpdateCard({
       <div className="px-3 py-2 flex flex-col gap-1">
         {update.nodes.map((n, i) => (
           <div key={i} className="flex items-center gap-2">
-            <span
-              className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded border ${NODE_TYPE_COLORS[n.type] ?? "text-muted-foreground bg-secondary/40 border-border"}`}
-            >
+            {/* D3: node type is carried by the word, not by a hue. The five
+                colours this used to switch on — green trigger, blue agent,
+                purple action, amber logic, orange approval — are the exact
+                set the spec deletes, and `blue` was already neutralised by
+                the --app-blue bridge, so the map had been showing four
+                colours where it promised five ever since. */}
+            <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded border text-muted-foreground bg-secondary border-border-soft">
               {n.type}
             </span>
-            <span className="text-[13px] text-foreground/65 truncate">
+            <span className="text-[13px] text-muted-foreground truncate">
               {String(n.data?.label ?? n.type)}
             </span>
           </div>
         ))}
         {update.edges.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-0.5 pt-1.5 border-t border-border/40">
-            <Zap size={9} className="text-muted-foreground/60 flex-shrink-0" />
-            <span className="text-[11px] text-muted-foreground/70 font-mono">
+          <div className="flex items-center gap-1.5 mt-0.5 pt-1.5 border-t border-border-soft">
+            <Zap size={9} className="text-dim flex-shrink-0" />
+            <span className="text-[11px] text-dim font-mono">
               {update.edges.length} connection
               {update.edges.length !== 1 ? "s" : ""}
             </span>
@@ -133,7 +129,7 @@ function CanvasUpdateCard({
           disabled={applied}
           className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all ${
             applied
-              ? "bg-green-500/10 border border-green-500/20 text-green-400/60 cursor-default"
+              ? "bg-ok/10 border border-ok/20 text-ok cursor-default"
               : "bg-primary/15 border border-primary/25 text-primary hover:bg-primary/25 hover:border-primary/40 active:scale-[0.98]"
           }`}
         >
@@ -181,14 +177,16 @@ function ConfirmCard({
   const isDone = applied || cancelled;
   if (isDone) {
     return (
-      <div className="mt-1.5 flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-secondary/30 border border-border/50">
+      <div className="mt-1.5 flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-secondary border border-border-soft">
+        {/* `applied` here means a destructive change went through, which is a
+            warn, not an ok. `cancelled` is not a state at all. */}
         <span
-          className={`text-[12px] font-semibold ${applied ? "text-amber-400/60" : "text-muted-foreground/70"}`}
+          className={`text-[12px] font-semibold ${applied ? "text-warn" : "text-dim"}`}
         >
           {applied ? "✓ Applied" : "✕ Cancelled"}
         </span>
         {update.description && (
-          <span className="text-[12px] text-muted-foreground/60 truncate">
+          <span className="text-[12px] text-dim truncate">
             — {update.description}
           </span>
         )}
@@ -200,30 +198,38 @@ function ConfirmCard({
   const disconnCount = update.disconnect?.length ?? 0;
 
   return (
-    <div className="mt-1.5 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-amber-500/10">
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+    <div className="mt-1.5 rounded-xl border border-warn/20 bg-warn/[0.04] overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-warn/10">
+        {/* currentColor, not #f59e0b: `npm run lint` cannot see an SVG stroke,
+            and a literal amber here survives every theme flip. */}
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 16 16"
+          fill="none"
+          className="text-warn"
+        >
           <path
             d="M8 2L14.928 14H1.072L8 2Z"
-            stroke="#f59e0b"
+            stroke="currentColor"
             strokeWidth="1.5"
             strokeLinejoin="round"
           />
           <path
             d="M8 6V9"
-            stroke="#f59e0b"
+            stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"
           />
-          <circle cx="8" cy="11.5" r="0.75" fill="#f59e0b" />
+          <circle cx="8" cy="11.5" r="0.75" fill="currentColor" />
         </svg>
-        <span className="text-[12px] font-semibold text-amber-400/80 uppercase tracking-wider">
+        <span className="text-[12px] font-semibold text-warn uppercase tracking-wider">
           Confirmation required
         </span>
       </div>
       <div className="px-3 py-2 flex flex-col gap-0.5">
         {update.description && (
-          <p className="text-[13px] text-foreground/60 mb-1">
+          <p className="text-[13px] text-muted-foreground mb-1">
             {update.description}
           </p>
         )}
@@ -241,13 +247,19 @@ function ConfirmCard({
       <div className="px-3 pb-3 flex gap-2">
         <button
           onClick={onApply}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[13px] font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-400 hover:bg-amber-500/25 hover:border-amber-500/50 active:scale-[0.98] transition-all"
+          // Solid, not a warn-tinted ghost. `text-warn` over `bg-warn/15`
+          // measured 3.75:1 in the light theme — the fill lightens the ground
+          // under ink that only clears 4.5:1 against the page. A solid tone
+          // with background-coloured ink flips correctly in both themes, and
+          // it is the shape the console already uses to confirm a destructive
+          // action (DeleteProjectDialog's Button variant="destructive").
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[13px] font-semibold bg-warn text-background hover:opacity-90 active:scale-[0.98] transition-all"
         >
           Apply
         </button>
         <button
           onClick={onCancel}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[13px] font-semibold border border-border/70 text-muted-foreground/80 hover:text-foreground/50 hover:bg-secondary/40 active:scale-[0.98] transition-all"
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[13px] font-semibold border border-border text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-all"
         >
           Cancel
         </button>
@@ -764,20 +776,24 @@ export function ChatPanel({
       }}
     >
       {/* Copilot header */}
-      <div className="flex-shrink-0 border-b border-border/50">
-        <div className="h-px bg-gradient-to-r from-transparent via-[var(--app-accent)]/25 to-transparent" />
+      <div className="flex-shrink-0 border-b border-border-soft">
+        {/* via-border, not via-primary/25: --app-accent is var(--primary), so
+            the mechanical translation would be a 25%-white line — three times
+            brighter than every other divider on this surface. The console's
+            divider vocabulary is border / border-soft. */}
+        <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         <div className="px-4 pt-3.5 pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="relative w-7 h-7 rounded-lg bg-[var(--app-accent)]/[0.12] border border-[var(--app-accent)]/20 flex items-center justify-center">
-                <Sparkles size={13} className="text-[var(--app-accent)]/80" />
-                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400/80 border-[1.5px] border-black/30" />
+              <div className="relative w-7 h-7 rounded-lg bg-primary/[0.12] border border-primary/20 flex items-center justify-center">
+                <Sparkles size={13} className="text-primary" />
+                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-ok border-[1.5px] border-background" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-foreground/85 tracking-tight leading-none">
+                <p className="text-[13px] font-semibold text-foreground tracking-tight leading-none">
                   AI Copilot
                 </p>
-                <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                <p className="text-[11px] text-muted-foreground mt-0.5">
                   Describe it, I&apos;ll build it
                 </p>
               </div>
@@ -789,10 +805,10 @@ export function ChatPanel({
                 <span
                   className={`text-[10.5px] font-mono px-1.5 py-0.5 rounded border ${
                     aiUsage.remaining === 0
-                      ? "text-amber-400/70 bg-amber-400/10 border-amber-400/20"
+                      ? "text-warn bg-warn/10 border-warn/20"
                       : aiUsage.remaining <= 5
-                        ? "text-amber-400/50 bg-amber-400/[0.06] border-amber-400/15"
-                        : "text-muted-foreground/60 bg-secondary/40 border-border/50"
+                        ? "text-warn bg-warn/[0.06] border-warn/15"
+                        : "text-muted-foreground bg-secondary border-border-soft"
                   }`}
                 >
                   {aiUsage.messages}/{aiUsage.limit}
@@ -802,21 +818,21 @@ export function ChatPanel({
                 <>
                   <button
                     onClick={() => setSearchOpen((v) => !v)}
-                    className={`p-1 rounded-md transition-colors ${searchOpen ? "bg-white/10 text-foreground/55" : "text-muted-foreground/60 hover:text-white/45 hover:bg-secondary/40"}`}
+                    className={`p-1 rounded-md transition-colors ${searchOpen ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
                     title="Search"
                   >
                     <Search size={11} />
                   </button>
                   <button
                     onClick={handleExport}
-                    className="p-1 rounded-md text-muted-foreground/60 hover:text-white/45 hover:bg-secondary/40 transition-colors"
+                    className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                     title="Export"
                   >
                     <Download size={11} />
                   </button>
                   <button
                     onClick={handleClear}
-                    className="p-1 rounded-md text-muted-foreground/60 hover:text-white/45 hover:bg-secondary/40 transition-colors"
+                    className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                     title="Clear"
                   >
                     <RotateCcw size={11} />
@@ -827,18 +843,18 @@ export function ChatPanel({
           </div>
           {searchOpen && (
             <div className="flex items-center gap-1.5 mt-2 px-0">
-              <Search size={10} className="text-white/28 flex-shrink-0" />
+              <Search size={10} className="text-dim flex-shrink-0" />
               <input
                 ref={searchInputRef}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search messages…"
-                className="flex-1 bg-transparent text-[12.5px] text-foreground/65 placeholder-white/22 outline-none"
+                className="flex-1 bg-transparent text-[12.5px] text-foreground placeholder:text-dim outline-none"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="p-0.5 text-muted-foreground/60 hover:text-white/45"
+                  className="p-0.5 text-muted-foreground hover:text-foreground"
                 >
                   <X size={10} />
                 </button>
@@ -852,10 +868,10 @@ export function ChatPanel({
       <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 min-h-0">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
-            <div className="w-10 h-10 rounded-full bg-[var(--app-accent)]/[0.07] border border-[var(--app-accent)]/[0.12] flex items-center justify-center">
-              <Sparkles size={16} className="text-[var(--app-accent)]/40" />
+            <div className="w-10 h-10 rounded-full bg-primary/[0.07] border border-primary/[0.12] flex items-center justify-center">
+              <Sparkles size={16} className="text-muted-foreground" />
             </div>
-            <p className="text-[12px] text-white/28 text-center leading-relaxed px-4">
+            <p className="text-[12px] text-dim text-center leading-relaxed px-4">
               Describe what you want to build.
             </p>
           </div>
@@ -875,19 +891,16 @@ export function ChatPanel({
                 >
                   {msg.content &&
                     (msg.role === "user" ? (
-                      <div className="max-w-[88%] bg-[var(--app-accent)]/[0.14] text-white/82 rounded-2xl rounded-br-md px-3 py-2.5 text-[13px] leading-relaxed border border-[var(--app-accent)]/[0.18] shadow-sm">
+                      <div className="max-w-[88%] bg-primary/[0.14] text-foreground rounded-2xl rounded-br-md px-3 py-2.5 text-[13px] leading-relaxed border border-primary/[0.18] shadow-sm">
                         {msg.content}
                       </div>
                     ) : (
                       <div className="max-w-[97%] w-full">
                         <div className="flex items-start gap-2">
-                          <div className="w-5 h-5 rounded-md bg-[var(--app-accent)]/15 border border-[var(--app-accent)]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Sparkles
-                              size={9}
-                              className="text-[var(--app-accent)]/75"
-                            />
+                          <div className="w-5 h-5 rounded-md bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Sparkles size={9} className="text-primary" />
                           </div>
-                          <div className="text-[13px] leading-relaxed text-white/72 flex-1 min-w-0">
+                          <div className="text-[13px] leading-relaxed text-foreground flex-1 min-w-0">
                             <MarkdownContent text={msg.content} />
                           </div>
                         </div>
@@ -930,18 +943,15 @@ export function ChatPanel({
               ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="flex items-center gap-2.5 py-2 px-3 rounded-2xl bg-secondary/30 border border-border/50">
-                  <div className="w-5 h-5 rounded-md bg-[var(--app-accent)]/15 border border-[var(--app-accent)]/20 flex items-center justify-center flex-shrink-0">
-                    <Sparkles
-                      size={9}
-                      className="text-[var(--app-accent)]/70"
-                    />
+                <div className="flex items-center gap-2.5 py-2 px-3 rounded-2xl bg-secondary border border-border-soft">
+                  <div className="w-5 h-5 rounded-md bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                    <Sparkles size={9} className="text-primary" />
                   </div>
                   <div className="flex gap-1 items-center">
                     {[0, 1, 2].map((i) => (
                       <div
                         key={i}
-                        className="w-1 h-1 rounded-full bg-white/30"
+                        className="w-1 h-1 rounded-full bg-dim"
                         style={{
                           animation: `bounce 1.2s ${i * 0.2}s infinite`,
                         }}
@@ -956,7 +966,7 @@ export function ChatPanel({
         )}
       </div>
 
-      <div className="flex-shrink-0 px-3 pt-2 pb-3 border-t border-border/50">
+      <div className="flex-shrink-0 px-3 pt-2 pb-3 border-t border-border-soft">
         {/* Suggestion chips */}
         {messages.length === 0 && !quotaBlocked && (
           <div className="flex flex-wrap gap-1.5 mb-2.5">
@@ -971,7 +981,7 @@ export function ChatPanel({
                   setInput(hint);
                   textareaRef.current?.focus();
                 }}
-                className="text-[11.5px] text-muted-foreground hover:text-foreground/60 bg-secondary/30 hover:bg-secondary/50 border border-border/60 hover:border-border rounded-full px-2.5 py-1 transition-colors"
+                className="text-[11.5px] text-muted-foreground hover:text-foreground bg-secondary border border-border-soft hover:border-border rounded-full px-2.5 py-1 transition-colors"
               >
                 {hint}
               </button>
@@ -979,11 +989,11 @@ export function ChatPanel({
           </div>
         )}
         {quotaBlocked && (
-          <div className="mb-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[12px] text-amber-400/75 text-center">
+          <div className="mb-2 px-3 py-2 rounded-lg bg-warn/10 border border-warn/20 text-[12px] text-warn text-center">
             Daily limit reached — resets at midnight UTC
           </div>
         )}
-        <div className="flex gap-2 items-end bg-secondary/30 border border-border/70 rounded-xl p-1.5 focus-within:border-white/[0.13] focus-within:bg-secondary/40 transition-all">
+        <div className="flex gap-2 items-end bg-secondary border border-border-soft rounded-xl p-1.5 focus-within:border-border transition-all">
           <textarea
             ref={textareaRef}
             value={input}
@@ -999,12 +1009,19 @@ export function ChatPanel({
             }
             rows={1}
             disabled={loading || quotaBlocked}
-            className="flex-1 bg-transparent py-1.5 px-2 text-[13px] text-foreground/85 focus:outline-none resize-none leading-relaxed placeholder:text-muted-foreground/70 disabled:opacity-50"
+            className="flex-1 bg-transparent py-1.5 px-2 text-[13px] text-foreground focus:outline-none resize-none leading-relaxed placeholder:text-dim disabled:opacity-50"
           />
           <button
             onClick={send}
             disabled={!input.trim() || loading || quotaBlocked}
-            className="flex-shrink-0 p-2 bg-[var(--app-accent)] hover:opacity-90 rounded-lg text-[var(--app-text-white)] transition-all shadow-md shadow-[var(--app-accent)]/20 disabled:opacity-25 disabled:shadow-none active:scale-95"
+            // bg-primary + text-primary-foreground: the two are defined
+            // against each other in .app-shell, so they cannot go invisible.
+            // The old pair could and did — --app-accent resolved at :root
+            // (custom-property substitution happens where the property is
+            // DECLARED, so .app-shell's --primary never reached it) while
+            // --app-text-white was #ffffff in dark and var(--foreground) in
+            // light. Measured: 1.15:1 dark, 1.00:1 light.
+            className="flex-shrink-0 p-2 bg-primary hover:opacity-90 rounded-lg text-primary-foreground transition-all shadow-md shadow-primary/20 disabled:opacity-25 disabled:shadow-none active:scale-95"
           >
             <Send size={13} />
           </button>

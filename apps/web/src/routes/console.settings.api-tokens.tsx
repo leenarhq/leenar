@@ -3,6 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Plus, Trash2, Copy, Loader2, Check } from "lucide-react";
 import { SettingsShell, SettingsHeader } from "../components/settings-shell";
+import { Rows, Row, RowHead, Mono, Dim } from "../components/console/Rows";
+import { StateTag } from "../components/console/StateTag";
+import { INPUT, PILL } from "../components/console/Field";
 import { useAuth } from "../context/auth";
 import {
   listApiKeys,
@@ -51,22 +54,19 @@ function ApiTokensPage() {
   return (
     <SettingsShell title="API Tokens">
       <div className="flex-1 p-8">
-        <SettingsHeader
-          title="API tokens"
-          subtitle="Create tokens that grant access to the Leenar API on behalf of this account."
-        />
+        <SettingsHeader subtitle="Create tokens that grant access to the Leenar API on behalf of this account." />
 
         <div className="mt-6 flex items-center gap-2">
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Token name (e.g. CI pipeline)"
-            className="flex-1 rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className={`flex-1 ${INPUT}`}
           />
           <select
             value={scope}
             onChange={(e) => setScope(e.target.value as "read" | "write")}
-            className="rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className={INPUT}
           >
             <option value="read">Read-only</option>
             <option value="write">Read &amp; write</option>
@@ -77,7 +77,7 @@ function ApiTokensPage() {
               createMut.mutate({ name: newName.trim(), scope })
             }
             disabled={createMut.isPending || !newName.trim()}
-            className="inline-flex items-center gap-2 rounded-md bg-foreground px-3 py-2 text-sm text-background hover:opacity-90 disabled:opacity-50"
+            className={PILL}
           >
             {createMut.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -93,8 +93,8 @@ function ApiTokensPage() {
         </p>
 
         {created && (
-          <div className="mt-4 rounded-md border border-emerald-500/40 bg-emerald-500/10 p-4">
-            <p className="text-xs text-emerald-400">
+          <div className="mt-4 rounded-xl border border-ok/30 p-4">
+            <p className="text-[12px] text-ok">
               Copy this token now — it won't be shown again.
             </p>
             <div className="mt-2 flex items-center gap-2">
@@ -107,7 +107,7 @@ function ApiTokensPage() {
                   setCopied(true);
                   setTimeout(() => setCopied(false), 1500);
                 }}
-                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs hover:bg-secondary"
+                className="inline-flex items-center gap-1 rounded-full border border-border-soft px-2.5 py-1.5 text-[12px] transition-colors hover:bg-secondary"
               >
                 {copied ? (
                   <Check className="h-3.5 w-3.5" />
@@ -120,60 +120,58 @@ function ApiTokensPage() {
           </div>
         )}
 
-        <div className="mt-6 rounded-md border border-border">
-          <div className="grid grid-cols-[2fr_1fr_1.5fr_1.5fr_auto] gap-4 border-b border-border bg-secondary/20 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            <div>Name</div>
-            <div>Scope</div>
-            <div>Prefix</div>
-            <div>Last used</div>
-            <div></div>
-          </div>
-          {keysQuery.isLoading ? (
-            <div className="px-4 py-12 text-center text-sm text-muted-foreground">
-              Loading…
-            </div>
-          ) : keys.length === 0 ? (
-            <div className="px-4 py-16 text-center text-sm text-muted-foreground">
-              No API tokens yet.
-            </div>
-          ) : (
-            keys.map((k) => (
-              <div
-                key={k.id}
-                className="grid grid-cols-[2fr_1fr_1.5fr_1.5fr_auto] items-center gap-4 border-b border-border px-4 py-3 text-sm last:border-b-0"
-              >
-                <div className="truncate">{k.name}</div>
-                <div>
-                  <span
-                    className={`inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider ${
-                      k.scope === "write"
-                        ? "bg-amber-500/15 text-amber-500"
-                        : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {k.scope === "write" ? "write" : "read"}
-                  </span>
-                </div>
-                <div className="font-mono text-xs text-muted-foreground">
-                  {k.key_prefix}…
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {k.last_used_at
-                    ? timeAgo(new Date(k.last_used_at).getTime())
-                    : "never"}
-                </div>
-                <button
-                  onClick={() =>
-                    window.confirm(`Revoke "${k.name}"?`) &&
-                    revokeMut.mutate(k.id)
-                  }
-                  className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+        <div className="mt-6">
+          <Rows>
+            <RowHead>
+              <div className="grid w-full grid-cols-[2fr_1fr_1.5fr_1.5fr_auto] gap-4">
+                <div>name</div>
+                <div>scope</div>
+                <div>prefix</div>
+                <div>last used</div>
+                <div />
               </div>
-            ))
-          )}
+            </RowHead>
+            {keysQuery.isLoading ? (
+              <div className="px-4 py-12 text-center text-[13px] text-muted-foreground">
+                Loading…
+              </div>
+            ) : keys.length === 0 ? (
+              <div className="px-4 py-16 text-center text-[13px] text-muted-foreground">
+                No API tokens yet.
+              </div>
+            ) : (
+              keys.map((k) => (
+                <Row key={k.id}>
+                  <div className="grid w-full grid-cols-[2fr_1fr_1.5fr_1.5fr_auto] items-center gap-4">
+                    <div className="truncate">{k.name}</div>
+                    {/* A scope is a category, not a state — no hue (spec D3). */}
+                    <div>
+                      <StateTag
+                        tone="idle"
+                        label={k.scope === "write" ? "write" : "read"}
+                      />
+                    </div>
+                    <Mono>{k.key_prefix}…</Mono>
+                    <Dim>
+                      {k.last_used_at
+                        ? timeAgo(new Date(k.last_used_at).getTime())
+                        : "never"}
+                    </Dim>
+                    <button
+                      onClick={() =>
+                        window.confirm(`Revoke "${k.name}"?`) &&
+                        revokeMut.mutate(k.id)
+                      }
+                      aria-label={`Revoke ${k.name}`}
+                      className="justify-self-end rounded-full p-1.5 text-muted-foreground transition-colors hover:text-crit"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </Row>
+              ))
+            )}
+          </Rows>
         </div>
       </div>
     </SettingsShell>

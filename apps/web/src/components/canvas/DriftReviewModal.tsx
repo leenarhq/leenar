@@ -28,10 +28,10 @@ const DRIFT_LABEL: Record<StackDrift["drift_type"], string> = {
 };
 
 const DRIFT_COLOR: Record<StackDrift["drift_type"], string> = {
-  resource_missing: "text-red-400",
-  env_removed: "text-amber-400",
-  domain_removed: "text-amber-400",
-  paused: "text-amber-400",
+  resource_missing: "text-crit",
+  env_removed: "text-warn",
+  domain_removed: "text-warn",
+  paused: "text-warn",
 };
 
 export function DriftReviewModal({
@@ -177,10 +177,10 @@ export function DriftReviewModal({
           maxHeight: "70vh",
           display: "flex",
           flexDirection: "column",
-          background: "#0c0c0c",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "var(--popover)",
+          border: "1px solid var(--border)",
           borderRadius: 16,
-          boxShadow: "0 32px 80px rgba(0,0,0,0.8)",
+          boxShadow: "var(--raise-lg)",
         }}
         onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
       >
@@ -188,7 +188,7 @@ export function DriftReviewModal({
         <div
           style={{
             padding: "16px 20px 14px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            borderBottom: "1px solid var(--border-soft)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -196,15 +196,12 @@ export function DriftReviewModal({
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <AlertTriangle
-              size={14}
-              style={{ color: "rgba(251,191,36,0.8)" }}
-            />
+            <AlertTriangle size={14} style={{ color: "var(--warn)" }} />
             <span
               style={{
                 fontSize: 13.5,
                 fontWeight: 600,
-                color: "rgba(255,255,255,0.88)",
+                color: "var(--foreground)",
                 letterSpacing: "-0.015em",
               }}
             >
@@ -215,9 +212,11 @@ export function DriftReviewModal({
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "rgba(251,191,36,0.7)",
-                  background: "rgba(251,191,36,0.08)",
-                  border: "1px solid rgba(251,191,36,0.18)",
+                  color: "var(--warn)",
+                  background:
+                    "color-mix(in srgb, var(--warn) 10%, transparent)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--warn) 30%, transparent)",
                   borderRadius: 999,
                   padding: "1px 7px",
                 }}
@@ -231,7 +230,7 @@ export function DriftReviewModal({
             style={{
               background: "none",
               border: "none",
-              color: "rgba(255,255,255,0.25)",
+              color: "var(--dim)",
               cursor: "pointer",
               padding: 4,
               lineHeight: 0,
@@ -255,7 +254,7 @@ export function DriftReviewModal({
               <Loader2
                 size={18}
                 style={{
-                  color: "rgba(255,255,255,0.2)",
+                  color: "var(--dim)",
                   animation: "spin 1s linear infinite",
                 }}
               />
@@ -270,14 +269,11 @@ export function DriftReviewModal({
                 gap: 8,
               }}
             >
-              <CheckCircle2
-                size={22}
-                style={{ color: "rgba(52,211,153,0.5)" }}
-              />
+              <CheckCircle2 size={22} style={{ color: "var(--ok)" }} />
               <p
                 style={{
                   fontSize: 12.5,
-                  color: "rgba(255,255,255,0.3)",
+                  color: "var(--dim)",
                   margin: 0,
                 }}
               >
@@ -293,7 +289,7 @@ export function DriftReviewModal({
                   alignItems: "flex-start",
                   justifyContent: "space-between",
                   padding: "9px 20px",
-                  borderBottom: "1px solid rgba(255,255,255,0.03)",
+                  borderBottom: "1px solid var(--border-soft)",
                   gap: 12,
                 }}
               >
@@ -310,12 +306,12 @@ export function DriftReviewModal({
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        textTransform: "uppercase",
+                        textTransform: "lowercase",
                         letterSpacing: "0.06em",
                         color:
                           drift.drift_type === "resource_missing"
-                            ? "rgba(248,113,113,0.8)"
-                            : "rgba(251,191,36,0.7)",
+                            ? "var(--crit)"
+                            : "var(--warn)",
                       }}
                     >
                       {DRIFT_LABEL[drift.drift_type]}
@@ -323,9 +319,9 @@ export function DriftReviewModal({
                     <span
                       style={{
                         fontSize: 10,
-                        color: "rgba(255,255,255,0.2)",
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.06)",
+                        color: "var(--dim)",
+                        background: "var(--hover)",
+                        border: "1px solid var(--border-soft)",
                         borderRadius: 4,
                         padding: "1px 5px",
                       }}
@@ -336,7 +332,7 @@ export function DriftReviewModal({
                   <p
                     style={{
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.55)",
+                      color: "var(--muted-foreground)",
                       margin: 0,
                       fontFamily: "monospace",
                       overflow: "hidden",
@@ -351,7 +347,7 @@ export function DriftReviewModal({
                   <p
                     style={{
                       fontSize: 10.5,
-                      color: "rgba(255,255,255,0.2)",
+                      color: "var(--dim)",
                       margin: "2px 0 0",
                     }}
                   >
@@ -376,7 +372,7 @@ export function DriftReviewModal({
                     <span
                       style={{
                         fontSize: 10.5,
-                        color: "rgba(248,113,113,0.9)",
+                        color: "var(--crit)",
                         lineHeight: 1.3,
                       }}
                     >
@@ -387,10 +383,12 @@ export function DriftReviewModal({
                       <button
                         onClick={() => void runReprovision(drift, true)}
                         style={{
-                          background: "rgba(248,113,113,0.12)",
-                          border: "1px solid rgba(248,113,113,0.35)",
+                          background:
+                            "color-mix(in srgb, var(--crit) 12%, transparent)",
+                          border:
+                            "1px solid color-mix(in srgb, var(--crit) 40%, transparent)",
                           borderRadius: 7,
-                          color: "rgba(248,113,113,0.95)",
+                          color: "var(--crit)",
                           fontSize: 11,
                           fontWeight: 600,
                           padding: "4px 10px",
@@ -403,10 +401,10 @@ export function DriftReviewModal({
                       <button
                         onClick={() => setConfirmingReprovision(null)}
                         style={{
-                          background: "rgba(255,255,255,0.04)",
-                          border: "1px solid rgba(255,255,255,0.07)",
+                          background: "var(--hover)",
+                          border: "1px solid var(--border)",
                           borderRadius: 7,
-                          color: "rgba(255,255,255,0.4)",
+                          color: "var(--muted-foreground)",
                           fontSize: 11,
                           fontWeight: 600,
                           padding: "4px 10px",
@@ -430,11 +428,11 @@ export function DriftReviewModal({
                         }
                         style={{
                           background:
-                            "color-mix(in srgb, var(--app-accent) 12%, transparent)",
+                            "color-mix(in srgb, var(--primary) 12%, transparent)",
                           border:
-                            "1px solid color-mix(in srgb, var(--app-accent) 25%, transparent)",
+                            "1px solid color-mix(in srgb, var(--primary) 25%, transparent)",
                           borderRadius: 7,
-                          color: "rgba(96,165,250,0.9)",
+                          color: "var(--foreground)",
                           fontSize: 11,
                           fontWeight: 600,
                           padding: "4px 10px",
@@ -460,17 +458,17 @@ export function DriftReviewModal({
                         style={{
                           background:
                             drift.drift_type === "resource_missing"
-                              ? "rgba(255,255,255,0.05)"
-                              : "color-mix(in srgb, var(--app-accent) 12%, transparent)",
+                              ? "var(--border-soft)"
+                              : "color-mix(in srgb, var(--primary) 12%, transparent)",
                           border:
                             drift.drift_type === "resource_missing"
-                              ? "1px solid rgba(255,255,255,0.08)"
-                              : "1px solid color-mix(in srgb, var(--app-accent) 25%, transparent)",
+                              ? "1px solid var(--border)"
+                              : "1px solid color-mix(in srgb, var(--primary) 25%, transparent)",
                           borderRadius: 7,
                           color:
                             drift.drift_type === "resource_missing"
-                              ? "rgba(255,255,255,0.4)"
-                              : "rgba(96,165,250,0.9)",
+                              ? "var(--muted-foreground)"
+                              : "var(--foreground)",
                           fontSize: 11,
                           fontWeight: 600,
                           padding: "4px 10px",
@@ -495,10 +493,10 @@ export function DriftReviewModal({
                         reprovisioning.has(drift.id)
                       }
                       style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.07)",
+                        background: "var(--hover)",
+                        border: "1px solid var(--border)",
                         borderRadius: 7,
-                        color: "rgba(255,255,255,0.25)",
+                        color: "var(--dim)",
                         fontSize: 11,
                         fontWeight: 600,
                         padding: "4px 10px",
@@ -521,14 +519,14 @@ export function DriftReviewModal({
         <div
           style={{
             padding: "10px 20px",
-            borderTop: "1px solid rgba(255,255,255,0.05)",
+            borderTop: "1px solid var(--border-soft)",
             flexShrink: 0,
           }}
         >
           <p
             style={{
               fontSize: 10.5,
-              color: "rgba(255,255,255,0.18)",
+              color: "var(--border)",
               margin: 0,
             }}
           >

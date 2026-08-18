@@ -64,8 +64,18 @@ export function computeHealthScore(data: {
   return Math.max(0, score);
 }
 
-export function healthLabel(score: number): { label: string; color: string } {
-  if (score >= 80) return { label: "Healthy", color: "#34d399" };
-  if (score >= 50) return { label: "Warning", color: "#fbbf24" };
-  return { label: "Critical", color: "#f87171" };
+/**
+ * The label and the tone that carries it. The tone is spelled out as a
+ * literal union rather than imported from components/console/StateTag so
+ * that lib/ keeps no dependency on a component directory; it is
+ * structurally assignable to `Tone`. `computeHealthScore` above is
+ * untouched — only the presentation half of this module moves.
+ */
+export function healthLabel(score: number): {
+  label: string;
+  tone: "ok" | "warn" | "crit";
+} {
+  if (score >= 80) return { label: "Healthy", tone: "ok" };
+  if (score >= 50) return { label: "Warning", tone: "warn" };
+  return { label: "Critical", tone: "crit" };
 }

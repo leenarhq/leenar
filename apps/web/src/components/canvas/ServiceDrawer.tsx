@@ -8,6 +8,8 @@ import type {
   VercelDomain,
 } from "../../lib/api";
 import { IconRenderer } from "./Sidebar";
+import { providerIcon } from "./nodes/providerMeta";
+import { StateTag } from "../console/StateTag";
 import {
   serviceDrawerTabs,
   TAB_LABELS,
@@ -142,19 +144,6 @@ export function ServiceDrawer(props: ServiceDrawerProps) {
   const provider = localData.provider ?? "";
   const isProvisioned = localData.status === "provisioned";
 
-  const accentMap: Record<string, string> = {
-    trigger: "text-tertiary",
-    service: "text-action",
-    logic: "text-logic",
-    department: "text-canvas-secondary",
-  };
-  const bgMap: Record<string, string> = {
-    trigger: "bg-tertiary/10",
-    service: "bg-action/10",
-    logic: "bg-logic/10",
-    department: "bg-canvas-secondary/10",
-  };
-
   const tabs = serviceDrawerTabs(provider, isProvisioned);
 
   return (
@@ -163,39 +152,42 @@ export function ServiceDrawer(props: ServiceDrawerProps) {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 24, opacity: 0 }}
       transition={{ type: "spring", stiffness: 400, damping: 34 }}
-      className="pointer-events-auto absolute right-3 top-3 bottom-3 z-[60] flex w-[400px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low shadow-2xl"
+      // bg-popover, not bg-card or a translucent glass: the drawer sits over
+      // the canvas and has to be opaque, or the nodes read straight through it.
+      className="pointer-events-auto absolute right-3 top-3 bottom-3 z-[60] flex w-[400px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border-soft bg-popover shadow-[var(--raise-lg)]"
     >
-      <header className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div
-            className={`p-1.5 rounded-lg ${bgMap[node.type] ?? "bg-white/5"}`}
-          >
-            <IconRenderer
-              iconName={
-                localData.iconName || (node.type === "trigger" ? "Zap" : "Box")
-              }
-              className={accentMap[node.type] ?? "text-white/50"}
-            />
-          </div>
+      <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-lg border border-border text-foreground">
+            {provider ? (
+              providerIcon(provider)
+            ) : (
+              <IconRenderer
+                iconName={
+                  localData.iconName ||
+                  (node.type === "trigger" ? "Zap" : "Box")
+                }
+                size={15}
+              />
+            )}
+          </span>
           <div className="min-w-0">
-            <h3 className="font-semibold text-white/90 leading-tight truncate">
+            <h3 className="truncate text-[13.5px] font-medium leading-tight tracking-[-0.01em]">
               {localData.label}
             </h3>
-            <p className="text-[11px] text-white/30 uppercase tracking-widest">
+            <p className="mt-px truncate font-mono text-[10.5px] lowercase text-muted-foreground">
               {provider || node.type}
             </p>
           </div>
           {isProvisioned && (
-            <div className="ml-auto flex items-center gap-1 bg-emerald-500/12 border border-emerald-500/25 rounded-full px-2 py-0.5 flex-shrink-0">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                Live
-              </span>
-            </div>
+            <span className="ml-auto shrink-0">
+              <StateTag tone="ok" label="live" dot />
+            </span>
           )}
         </div>
         <button
           onClick={onClose}
-          className="rounded-md p-1 text-white/40 hover:text-white/90 hover:bg-white/5"
+          className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-[var(--hover)] hover:text-foreground"
           aria-label="Close"
         >
           <X size={16} />
@@ -203,15 +195,15 @@ export function ServiceDrawer(props: ServiceDrawerProps) {
       </header>
 
       {/* Tab bar */}
-      <div className="flex gap-4 border-b border-white/10 px-4 pt-2.5">
+      <div className="flex gap-4 border-b border-border px-4 pt-2.5">
         {tabs.map((t) => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
-            className={`pb-2 text-[12px] font-medium transition-colors ${
+            className={`-mb-px border-b pb-2 text-[12px] transition-colors ${
               activeTab === t
-                ? "border-b-2 border-white/80 text-white/90"
-                : "text-white/35 hover:text-white/60"
+                ? "border-foreground text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {TAB_LABELS[t]}
@@ -294,7 +286,7 @@ export function LivePreview({ url }: { url: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg bg-white/3 border border-white/8 hover:bg-white/5 hover:border-white/12 transition-all group"
+      className="group flex w-full items-center gap-2.5 rounded-lg border border-border-soft px-3 py-2 transition-colors hover:border-border hover:bg-[var(--hover)]"
     >
       {/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(hostname) && (
         <img
@@ -308,13 +300,13 @@ export function LivePreview({ url }: { url: string }) {
           }}
         />
       )}
-      <span className="text-[12px] font-mono text-white/40 group-hover:text-white/60 transition-colors truncate flex-1">
+      <span className="flex-1 truncate font-mono text-[12px] text-muted-foreground transition-colors group-hover:text-foreground">
         {hostname}
       </span>
       <IconRenderer
         iconName="ExternalLink"
         size={9}
-        className="text-white/25 group-hover:text-white/50 transition-colors flex-shrink-0"
+        className="shrink-0 text-dim transition-colors group-hover:text-muted-foreground"
       />
     </a>
   );

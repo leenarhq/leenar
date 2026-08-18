@@ -153,13 +153,12 @@ export function applyAutoLayout(nodes: Node[], edges: Edge[]): Node[] {
   });
 }
 
-export const SERVICE_DISPLAY: Record<string, { label: string; color: string }> =
-  {
-    github: { label: "GitHub", color: "#e2e8f0" },
-    vercel: { label: "Vercel", color: "#e2e8f0" },
-    supabase: { label: "Supabase", color: "#3ecf8e" },
-    resend: { label: "Resend", color: "#f97316" },
-    cloudflare: { label: "Cloudflare", color: "#f6821f" },
-    "cloudflare-workers": { label: "Cloudflare Workers", color: "#f6821f" },
-    "cloudflare-r2": { label: "Cloudflare R2", color: "#f6821f" },
-  };
+export const SERVICE_DISPLAY: Record<string, { label: string }> = {
+  github: { label: "GitHub" },
+  vercel: { label: "Vercel" },
+  supabase: { label: "Supabase" },
+  resend: { label: "Resend" },
+  cloudflare: { label: "Cloudflare" },
+  "cloudflare-workers": { label: "Cloudflare Workers" },
+  "cloudflare-r2": { label: "Cloudflare R2" },
+};

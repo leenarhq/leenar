@@ -196,7 +196,7 @@ export function SqlEditor({ projectId, nodeId }: SqlEditorProps) {
     <div className="space-y-4">
       {/* Mode toggle + Run */}
       <div className="flex items-center justify-between gap-3">
-        <div className="inline-flex items-center rounded-md border border-border bg-secondary/20 p-0.5">
+        <div className="inline-flex items-center rounded-xl border border-border bg-secondary p-0.5">
           <button
             onClick={() => setMode("read")}
             className={`inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-medium transition-colors ${
@@ -257,7 +257,7 @@ export function SqlEditor({ projectId, nodeId }: SqlEditorProps) {
 
       {/* Save snippet inline form */}
       {savingSnippet && (
-        <div className="rounded-md border border-border bg-card px-4 py-3">
+        <div className="rounded-xl border border-border bg-card px-4 py-3">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             Save snippet
           </p>
@@ -294,7 +294,7 @@ export function SqlEditor({ projectId, nodeId }: SqlEditorProps) {
             </Button>
           </div>
           {createSnippetMutation.isError && (
-            <div className="mt-2 flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <div className="mt-2 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               <AlertCircle size={13} className="shrink-0" />
               {createSnippetMutation.error instanceof Error
                 ? createSnippetMutation.error.message
@@ -306,7 +306,7 @@ export function SqlEditor({ projectId, nodeId }: SqlEditorProps) {
 
       {/* Error banner */}
       {mutation.isError && (
-        <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           {mutation.error instanceof Error
             ? mutation.error.message
@@ -316,7 +316,7 @@ export function SqlEditor({ projectId, nodeId }: SqlEditorProps) {
 
       {/* Results */}
       {result && (
-        <div className="rounded-md border border-border bg-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="flex items-center justify-between border-b border-border px-4 py-2">
             <p className="text-[11px] text-muted-foreground">
               {result.rowCount} row{result.rowCount === 1 ? "" : "s"}
@@ -329,7 +329,7 @@ export function SqlEditor({ projectId, nodeId }: SqlEditorProps) {
           </div>
 
           {result.truncated && (
-            <div className="border-b border-border bg-yellow-500/10 px-4 py-1.5 text-[11px] text-yellow-500">
+            <div className="border-b border-border bg-warn/10 px-4 py-1.5 text-[11px] text-warn">
               Showing first 1000 rows.
             </div>
           )}
@@ -374,7 +374,7 @@ export function SqlEditor({ projectId, nodeId }: SqlEditorProps) {
       )}
 
       {/* Saved snippets */}
-      <div className="rounded-md border border-border bg-card">
+      <div className="rounded-xl border border-border bg-card">
         <div className="flex items-center gap-1.5 border-b border-border px-4 py-2">
           <BookmarkPlus size={12} className="text-muted-foreground" />
           <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -403,7 +403,7 @@ export function SqlEditor({ projectId, nodeId }: SqlEditorProps) {
             {snippets.map((snippet) => (
               <li
                 key={snippet.id}
-                className="flex items-center gap-2 px-4 py-2 hover:bg-secondary/20 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 hover:bg-secondary transition-colors"
               >
                 <button
                   onClick={() => loadFromSnippet(snippet)}
@@ -431,7 +431,7 @@ export function SqlEditor({ projectId, nodeId }: SqlEditorProps) {
 
       {/* Session-only history */}
       {history.length > 0 && (
-        <div className="rounded-md border border-border bg-card">
+        <div className="rounded-xl border border-border bg-card">
           <div className="flex items-center gap-1.5 border-b border-border px-4 py-2">
             <History size={12} className="text-muted-foreground" />
             <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -443,7 +443,7 @@ export function SqlEditor({ projectId, nodeId }: SqlEditorProps) {
               <li key={entry.id}>
                 <button
                   onClick={() => loadFromHistory(entry)}
-                  className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-secondary/20 transition-colors"
+                  className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-secondary transition-colors"
                 >
                   <span
                     className={`shrink-0 rounded-sm px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${

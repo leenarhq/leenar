@@ -88,10 +88,10 @@ export function SettingsShell({
         {isMobile ? (
           <MobileNavStrip pathname={pathname} />
         ) : (
-          <aside className="w-56 shrink-0 border-r border-dashed border-border p-3">
+          <aside className="w-56 shrink-0 border-r border-border p-3">
             <Link
               to="/console"
-              className="mb-4 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+              className="mb-4 flex items-center gap-2 rounded-full px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" /> Back
             </Link>
@@ -113,7 +113,7 @@ export function SettingsShell({
 function MobileNavStrip({ pathname }: { pathname: string }) {
   const allItems = [...account, ...developer, ...danger];
   return (
-    <nav className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-dashed border-border px-3 py-2">
+    <nav className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border px-3 py-2">
       <Link
         to="/console"
         className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
@@ -152,7 +152,7 @@ function NavGroup({
 }) {
   return (
     <>
-      <div className="px-3 pb-2 pt-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div className="px-3 pb-2 pt-3 font-mono text-[10px] lowercase tracking-wide text-dim">
         {label}
       </div>
       <div className="space-y-1">
@@ -163,7 +163,7 @@ function NavGroup({
             <Link
               key={item.label}
               to={item.to}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm ${
+              className={`flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-colors ${
                 active
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -178,24 +178,29 @@ function NavGroup({
   );
 }
 
-/** Shared page header inside a settings route. */
+/**
+ * The subtitle line inside a settings route. It does NOT render the page
+ * name: SettingsShell already passes it to ConsoleTopBar, which renders it
+ * in the PageBar directly above this. Two copies of the same word is what
+ * this component used to do.
+ *
+ * `title` is still accepted so the eight callers keep compiling while they
+ * are converted one at a time; it is ignored, and every call site drops it.
+ */
 export function SettingsHeader({
-  title,
   subtitle,
   action,
 }: {
-  title: string;
+  title?: string;
   subtitle?: string;
   action?: ReactNode;
 }) {
+  if (!subtitle && !action) return null;
   return (
-    <div className="flex items-start justify-between">
-      <div>
-        <h1 className="font-serif text-2xl">{title}</h1>
-        {subtitle && (
-          <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>
-        )}
-      </div>
+    <div className="flex items-start justify-between gap-4 pb-2">
+      {subtitle && (
+        <p className="text-[13px] text-muted-foreground">{subtitle}</p>
+      )}
       {action}
     </div>
   );

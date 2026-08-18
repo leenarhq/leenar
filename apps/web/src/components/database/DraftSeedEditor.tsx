@@ -63,7 +63,7 @@ export function DraftSeedEditor({
       <TableEditor tables={tables} onChange={setTables} />
 
       {errorMessage && (
-        <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           {errorMessage}
         </div>
@@ -81,7 +81,7 @@ export function DraftSeedEditor({
           {save.isPending ? "Saving…" : "Save"}
         </Button>
         {!save.isPending && justSaved && !dirty && (
-          <span className="inline-flex items-center gap-1 text-xs text-emerald-400">
+          <span className="inline-flex items-center gap-1 text-xs text-ok">
             <Check size={12} />
             Saved
           </span>

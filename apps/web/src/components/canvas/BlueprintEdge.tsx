@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -31,22 +31,26 @@ export function BlueprintEdge({
 
   const running = !!(data as any)?.running;
   const synced = !!(data as any)?.synced;
-  const envVars = (data as any)?.envVars as string[] | undefined;
-  const hasEnv = !!(envVars && envVars.length > 0);
+  const envVars = ((data as any)?.envVars as string[] | undefined) ?? [];
+  const hasEnv = envVars.length > 0;
 
-  // Calm ("Sakin") styling: every edge is a quiet neutral line at rest. Colour
-  // and weight surface only on interaction (hover / selected) or while a deploy
-  // is actively running. Env details collapse to a small dot until hovered.
   const emphasized = selected || hovered || running;
-  const color = running
-    ? "var(--app-accent-muted, #60a5fa)"
-    : selected
-      ? "var(--color-white, #ffffff)"
-      : hovered
-        ? hasEnv || synced
-          ? "#34d399"
-          : "var(--app-accent, #3b82f6)"
-        : "#64748b"; // neutral idle
+
+  // One line colour, two states. `ok` marks a connection that has actually
+  // been provisioned and synced; everything else is structural chrome and
+  // takes the hairline. Selection reads through width and opacity, not hue —
+  // this replaces a five-branch expression of #60a5fa / #ffffff / #34d399 /
+  // #3b82f6 / #64748b.
+  const color = synced ? "var(--ok)" : "var(--edge)";
+
+  // What the edge carries, at a glance. An edge carrying nothing renders no
+  // chip at all — that absence is the visible form of "no edge, no env
+  // injection", and it is why the chip is not just decoration.
+  const payloadLabel = !hasEnv
+    ? null
+    : envVars.length === 1
+      ? envVars[0].toLowerCase()
+      : `${envVars[0].toLowerCase()} +${envVars.length - 1}`;
 
   return (
     <>
@@ -58,129 +62,50 @@ export function BlueprintEdge({
         style={{
           stroke: color,
           strokeWidth: selected ? 2 : emphasized ? 1.75 : 1.25,
-          strokeOpacity: selected ? 1 : hovered ? 0.9 : running ? 0.9 : 0.4,
+          strokeOpacity: selected ? 1 : hovered ? 0.9 : running ? 0.9 : 0.55,
           strokeDasharray: running ? "9 6" : undefined,
           animation: running ? "blueprintDash 0.5s linear infinite" : undefined,
         }}
       />
 
-      {/* Env indicator — a small dot at rest, expands to the var list on hover */}
-      {(hasEnv || synced) && (
+      {/* The payload chip. Progressive disclosure is kept exactly as it
+          shipped — summary at rest, full list on hover — only now the resting
+          state is the summary itself rather than an anonymous green dot. */}
+      {payloadLabel && (
         <EdgeLabelRenderer>
           <div
+            className="nodrag nopan pointer-events-auto absolute"
             style={{
-              position: "absolute",
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              pointerEvents: "all",
               zIndex: hovered ? 1000 : 10,
             }}
-            className="nodrag nopan"
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
           >
-            {/* Collapsed dot */}
             <div
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 999,
-                background:
-                  synced || hovered ? "#34d399" : "rgba(52,211,153,0.5)",
-                border: `1px solid ${
-                  synced || hovered
-                    ? "rgba(52,211,153,0.7)"
-                    : "rgba(52,211,153,0.3)"
-                }`,
-                boxShadow:
-                  synced || hovered
-                    ? "0 0 8px rgba(52,211,153,0.35)"
-                    : undefined,
-                transition: "background 0.15s, box-shadow 0.15s",
-              }}
-            />
+              className={`rounded-full border px-2.5 py-0.5 font-mono text-[9.5px] lowercase transition-colors ${
+                synced
+                  ? "border-ok/30 bg-popover text-ok"
+                  : "border-border bg-popover text-muted-foreground"
+              }`}
+            >
+              {payloadLabel}
+            </div>
 
-            {/* Expanded list on hover */}
             {hovered && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "calc(100% + 7px)",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  background: "var(--app-card-bg)",
-                  border: "1px solid rgba(52,211,153,0.18)",
-                  borderRadius: 8,
-                  padding: "8px 0",
-                  minWidth: 248,
-                  boxShadow:
-                    "0 12px 40px rgba(0,0,0,0.7), 0 0 24px rgba(52,211,153,0.06)",
-                  pointerEvents: "none",
-                }}
-              >
-                <div
-                  style={{
-                    padding: "0 10px 6px",
-                    borderBottom: "1px solid var(--app-border-dim)",
-                    marginBottom: 4,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 8,
-                      fontFamily: "monospace",
-                      color: "rgba(52,211,153,0.45)",
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {synced ? "Injected on provision" : "Injected on deploy"}
+              <div className="pointer-events-none absolute bottom-[calc(100%+7px)] left-1/2 min-w-[220px] -translate-x-1/2 overflow-hidden rounded-xl border border-border-soft bg-popover py-1.5 shadow-[var(--raise-lg)]">
+                <div className="border-b border-border-soft px-3 pb-1.5">
+                  <span className="font-mono text-[9.5px] lowercase text-dim">
+                    {synced ? "injected on provision" : "injected on deploy"}
                   </span>
                 </div>
-                {(envVars ?? []).map((v) => (
-                  <div
-                    key={v}
-                    style={{
-                      padding: "3px 10px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 7,
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 4,
-                        height: 4,
-                        borderRadius: "50%",
-                        background: "rgba(52,211,153,0.5)",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <code
-                      style={{
-                        fontSize: 9,
-                        fontFamily: "monospace",
-                        color: "var(--app-text)",
-                        letterSpacing: "0.01em",
-                      }}
-                    >
+                {envVars.map((v) => (
+                  <div key={v} className="px-3 py-[3px]">
+                    <code className="font-mono text-[10px] text-foreground">
                       {v}
                     </code>
                   </div>
                 ))}
-                {/* Arrow */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: 0,
-                    height: 0,
-                    borderLeft: "5px solid transparent",
-                    borderRight: "5px solid transparent",
-                    borderTop: "5px solid rgba(52,211,153,0.18)",
-                  }}
-                />
               </div>
             )}
           </div>

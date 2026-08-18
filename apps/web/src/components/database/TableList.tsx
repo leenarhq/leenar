@@ -150,7 +150,7 @@ export function TableList({ projectId, nodeId }: TableListProps) {
               })
             }
             disabled={schemaQuery.isFetching}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-secondary px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50"
           >
             {schemaQuery.isFetching ? (
               <Loader2 size={12} className="animate-spin" />
@@ -164,7 +164,7 @@ export function TableList({ projectId, nodeId }: TableListProps) {
 
       {/* Mutation error banner */}
       {runMutation.isError && (
-        <div className="mb-3 flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           {runMutation.error instanceof Error
             ? runMutation.error.message
@@ -174,7 +174,7 @@ export function TableList({ projectId, nodeId }: TableListProps) {
 
       {/* Create table form */}
       {creatingTable && (
-        <div className="mb-4 rounded-md border border-border bg-card p-3">
+        <div className="mb-4 rounded-xl border border-border bg-card p-3">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             New table
           </p>
@@ -211,7 +211,7 @@ export function TableList({ projectId, nodeId }: TableListProps) {
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="h-14 animate-pulse rounded-md border border-border bg-secondary/20"
+              className="h-14 animate-pulse rounded-xl border border-border bg-secondary"
             />
           ))}
         </div>
@@ -219,7 +219,7 @@ export function TableList({ projectId, nodeId }: TableListProps) {
 
       {/* Error state */}
       {schemaQuery.isError && (
-        <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertCircle size={14} className="shrink-0" />
           Failed to load schema
           {schemaQuery.error instanceof Error
@@ -230,7 +230,7 @@ export function TableList({ projectId, nodeId }: TableListProps) {
 
       {/* Empty state */}
       {schemaQuery.isSuccess && tables.length === 0 && (
-        <div className="rounded-md border border-dashed border-border py-24 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border py-24 text-center text-sm text-muted-foreground">
           No tables found in this database.
         </div>
       )}
@@ -241,11 +241,11 @@ export function TableList({ projectId, nodeId }: TableListProps) {
           {tables.map((table) => (
             <div
               key={table.name}
-              className="rounded-md border border-border bg-card overflow-hidden"
+              className="rounded-xl border border-border bg-card overflow-hidden"
             >
               <button
                 onClick={() => toggleExpand(table.name)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/20 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary transition-colors"
               >
                 <Table2 size={14} className="text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">

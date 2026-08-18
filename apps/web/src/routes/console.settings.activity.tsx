@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { SettingsShell, SettingsHeader } from "../components/settings-shell";
+import { Rows, Row, RowHead, Mono, Dim } from "../components/console/Rows";
 import { useAuth } from "../context/auth";
 import { fetchAuditLog } from "../lib/api";
 import { isCloud } from "../lib/cloud";
@@ -158,43 +159,41 @@ function ActivityPage() {
   return (
     <SettingsShell title="Activity">
       <div className="flex-1 p-8">
-        <SettingsHeader
-          title="Activity"
-          subtitle="A log of security-relevant actions on your account."
-        />
-        <div className="mt-6 rounded-md border border-border">
-          <div className="grid grid-cols-[1.5fr_2fr_1fr] gap-4 border-b border-border bg-secondary/20 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            <div>Event</div>
-            <div>Details</div>
-            <div>When</div>
-          </div>
-          <div className="max-h-[60vh] overflow-y-auto">
-            {query.isLoading ? (
-              <div className="px-4 py-12 text-center text-sm text-muted-foreground">
-                Loading…
+        <SettingsHeader subtitle="A log of security-relevant actions on your account." />
+        <div className="mt-4">
+          <Rows>
+            <RowHead>
+              <div className="grid w-full grid-cols-[1.5fr_2fr_1fr] gap-4">
+                <div>event</div>
+                <div>details</div>
+                <div>when</div>
               </div>
-            ) : entries.length === 0 ? (
-              <div className="px-4 py-16 text-center text-sm text-muted-foreground">
-                No activity recorded.
-              </div>
-            ) : (
-              entries.map((e) => (
-                <div
-                  key={e.id}
-                  className="grid grid-cols-[1.5fr_2fr_1fr] items-center gap-4 border-b border-border px-4 py-3 text-sm last:border-b-0"
-                >
-                  <div className="font-mono text-xs">{e.event}</div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    {formatAuditDetails(e.event, e.metadata)}
-                    {e.ip ? ` · ${e.ip}` : ""}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {timeAgo(new Date(e.created_at).getTime())}
-                  </div>
+            </RowHead>
+            <div className="max-h-[60vh] overflow-y-auto">
+              {query.isLoading ? (
+                <div className="px-4 py-12 text-center text-[13px] text-muted-foreground">
+                  Loading…
                 </div>
-              ))
-            )}
-          </div>
+              ) : entries.length === 0 ? (
+                <div className="px-4 py-16 text-center text-[13px] text-muted-foreground">
+                  No activity recorded.
+                </div>
+              ) : (
+                entries.map((e) => (
+                  <Row key={e.id}>
+                    <div className="grid w-full grid-cols-[1.5fr_2fr_1fr] items-center gap-4">
+                      <Mono>{e.event}</Mono>
+                      <div className="truncate text-[12px] text-muted-foreground">
+                        {formatAuditDetails(e.event, e.metadata)}
+                        {e.ip ? ` · ${e.ip}` : ""}
+                      </div>
+                      <Dim>{timeAgo(new Date(e.created_at).getTime())}</Dim>
+                    </div>
+                  </Row>
+                ))
+              )}
+            </div>
+          </Rows>
         </div>
       </div>
     </SettingsShell>

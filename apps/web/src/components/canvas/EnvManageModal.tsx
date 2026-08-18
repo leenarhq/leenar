@@ -209,16 +209,16 @@ export function EnvManageModal({
               {parentLines.map((hasLine, i) => (
                 <div key={i} className="shrink-0" style={{ width: 20 }}>
                   {hasLine && (
-                    <div className="w-px bg-white/[0.1] mx-auto h-full min-h-[36px]" />
+                    <div className="w-px bg-border mx-auto h-full min-h-[36px]" />
                   )}
                 </div>
               ))}
               <div className="shrink-0 relative" style={{ width: 20 }}>
-                <div className="absolute left-1/2 top-0 w-px bg-white/[0.1] h-[18px] -translate-x-1/2" />
+                <div className="absolute left-1/2 top-0 w-px bg-border h-[18px] -translate-x-1/2" />
                 {!isLastSibling && (
-                  <div className="absolute left-1/2 top-[18px] w-px bg-white/[0.1] bottom-0 -translate-x-1/2" />
+                  <div className="absolute left-1/2 top-[18px] w-px bg-border bottom-0 -translate-x-1/2" />
                 )}
-                <div className="absolute left-1/2 top-[18px] w-[10px] h-px bg-white/[0.1]" />
+                <div className="absolute left-1/2 top-[18px] w-[10px] h-px bg-border" />
               </div>
             </div>
           )}
@@ -228,7 +228,7 @@ export function EnvManageModal({
             className={`flex-1 flex items-center gap-2 px-2.5 py-2 rounded-xl border mb-1 transition-all ${
               isActive
                 ? "border-primary/30 bg-primary/[0.06]"
-                : "border-white/[0.06] bg-white/[0.02]"
+                : "border-border-soft bg-[var(--hover)]"
             }`}
           >
             <div className="flex-1 min-w-0">
@@ -242,30 +242,30 @@ export function EnvManageModal({
                       if (e.key === "Enter") handleRename(env.id);
                       if (e.key === "Escape") setRenamingId(null);
                     }}
-                    className="flex-1 bg-white/[0.06] border border-white/[0.1] rounded-md px-2 py-0.5 text-[13px] text-white/90 outline-none focus:border-primary/40"
+                    className="flex-1 bg-secondary border border-border rounded-md px-2 py-0.5 text-[13px] text-foreground outline-none focus:border-primary/40"
                   />
                   <button
                     onClick={() => handleRename(env.id)}
-                    className="p-1 rounded text-primary hover:bg-primary/10"
+                    className="p-1 rounded text-foreground hover:bg-[var(--hover)]"
                   >
                     <Check size={12} />
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[13px] font-medium text-white/80 truncate">
+                  <span className="text-[13px] font-medium text-foreground truncate">
                     {env.name}
                   </span>
-                  <span className="text-[9px] font-mono text-white/20">
+                  <span className="text-[9px] font-mono text-dim">
                     {env.slug}
                   </span>
                   {env.is_default && (
-                    <span className="text-[8px] font-mono text-primary/50 uppercase tracking-wide">
+                    <span className="text-[8px] font-mono text-primary/50 lowercase">
                       production
                     </span>
                   )}
                   {isActive && (
-                    <span className="text-[8px] font-mono text-emerald-400/60 uppercase tracking-wide">
+                    <span className="text-[8px] font-mono text-ok lowercase">
                       active
                     </span>
                   )}
@@ -286,8 +286,8 @@ export function EnvManageModal({
                   title="Branch from this environment"
                   className={`p-1.5 rounded-md transition-all ${
                     isBranchingHere
-                      ? "text-primary bg-primary/10"
-                      : "text-white/25 hover:text-primary hover:bg-primary/10"
+                      ? "text-foreground bg-secondary"
+                      : "text-dim hover:text-foreground hover:bg-[var(--hover)]"
                   }`}
                 >
                   <GitBranch size={11} />
@@ -300,7 +300,7 @@ export function EnvManageModal({
                       <button
                         onClick={() => handlePromote(env)}
                         disabled={promotingId === env.id}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold text-amber-400 border border-amber-400/25 bg-amber-400/10 hover:bg-amber-400/15 transition-all disabled:opacity-50"
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold text-warn border border-warn/30 bg-warn/10 hover:bg-warn/15 transition-all disabled:opacity-50"
                       >
                         {promotingId === env.id ? "…" : "Confirm"}
                       </button>
@@ -308,7 +308,7 @@ export function EnvManageModal({
                       <button
                         onClick={() => setPromoteConfirmId(env.id)}
                         title="Promote config to Production"
-                        className="p-1.5 rounded-md text-white/25 hover:text-amber-400 hover:bg-amber-400/10 transition-all"
+                        className="p-1.5 rounded-md text-dim hover:text-warn hover:bg-warn/10 transition-all"
                       >
                         <ArrowUpToLine size={11} />
                       </button>
@@ -322,7 +322,7 @@ export function EnvManageModal({
                         setPromoteConfirmId(null);
                         setBranchingFromId(null);
                       }}
-                      className="p-1.5 rounded-md text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+                      className="p-1.5 rounded-md text-dim hover:text-foreground hover:bg-secondary transition-all"
                     >
                       <Pencil size={11} />
                     </button>
@@ -337,7 +337,7 @@ export function EnvManageModal({
                         setRenamingId(null);
                       }}
                       disabled={deletingId === env.id}
-                      className="p-1.5 rounded-md text-white/25 hover:text-red-400 hover:bg-red-400/10 transition-all disabled:opacity-40"
+                      className="p-1.5 rounded-md text-dim hover:text-crit hover:bg-crit/10 transition-all disabled:opacity-40"
                     >
                       <Trash2 size={11} />
                     </button>
@@ -351,12 +351,12 @@ export function EnvManageModal({
         {/* Inline delete confirmation */}
         {deleteConfirmId === env.id && (
           <div
-            className="mb-2 pl-3 border-l border-red-500/20"
+            className="mb-2 pl-3 border-l border-crit/30"
             style={{ marginLeft: (depth + 1) * 20 }}
           >
-            <p className="text-[10px] text-red-400/70 font-mono uppercase tracking-wider mb-1.5">
-              Type <span className="text-red-400 font-bold">{env.name}</span> to
-              confirm deletion
+            <p className="text-[10px] text-crit font-mono lowercase mb-1.5">
+              Type <span className="text-crit">{env.name}</span> to confirm
+              deletion
             </p>
             <div className="flex gap-2">
               <input
@@ -372,14 +372,14 @@ export function EnvManageModal({
                   if (e.key === "Enter" && deleteConfirmValue === env.name)
                     handleDelete(env);
                 }}
-                className="flex-1 bg-red-500/5 border border-red-500/20 rounded-lg px-2.5 py-1.5 text-[12px] text-white/80 placeholder-white/15 outline-none focus:border-red-500/40 transition-all"
+                className="flex-1 bg-crit/5 border border-crit/30 rounded-lg px-2.5 py-1.5 text-[12px] text-foreground placeholder:text-dim outline-none focus:border-crit/40 transition-all"
               />
               <button
                 onClick={() => handleDelete(env)}
                 disabled={
                   deleteConfirmValue !== env.name || deletingId === env.id
                 }
-                className="px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/25 text-red-400 text-[11px] font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-500/25 transition-all"
+                className="px-3 py-1.5 rounded-lg bg-crit/15 border border-crit/30 text-crit text-[11px] font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-crit/15 transition-all"
               >
                 {deletingId === env.id ? "Deleting…" : "Delete"}
               </button>
@@ -388,7 +388,7 @@ export function EnvManageModal({
                   setDeleteConfirmId(null);
                   setDeleteConfirmValue("");
                 }}
-                className="px-3 py-1.5 rounded-lg text-white/30 text-[11px] hover:text-white/60 transition-all"
+                className="px-3 py-1.5 rounded-lg text-dim text-[11px] hover:text-muted-foreground transition-all"
               >
                 Cancel
               </button>
@@ -402,7 +402,7 @@ export function EnvManageModal({
             className="mb-2 ml-5 pl-3 border-l border-primary/20"
             style={{ marginLeft: (depth + 1) * 20 }}
           >
-            <p className="text-[10px] text-primary/50 font-mono uppercase tracking-wider mb-1.5">
+            <p className="text-[10px] text-primary/50 font-mono lowercase mb-1.5">
               Branch from {env.name}
             </p>
             <div className="flex gap-2">
@@ -415,7 +415,7 @@ export function EnvManageModal({
                   if (!branchSlugManual) setBranchSlug(slugify(e.target.value));
                 }}
                 onKeyDown={(e) => e.key === "Enter" && handleBranch(env)}
-                className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[12px] text-white/80 placeholder-white/20 outline-none focus:border-primary/30 transition-all"
+                className="flex-1 bg-[var(--hover)] border border-border rounded-lg px-2.5 py-1.5 text-[12px] text-foreground placeholder:text-dim outline-none focus:border-primary/30 transition-all"
               />
               <input
                 placeholder="slug"
@@ -427,7 +427,7 @@ export function EnvManageModal({
                   );
                 }}
                 onKeyDown={(e) => e.key === "Enter" && handleBranch(env)}
-                className="w-20 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[12px] text-white/80 placeholder-white/20 outline-none focus:border-primary/30 transition-all font-mono"
+                className="w-20 bg-[var(--hover)] border border-border rounded-lg px-2.5 py-1.5 text-[12px] text-foreground placeholder:text-dim outline-none focus:border-primary/30 transition-all font-mono"
               />
               <button
                 onClick={() => handleBranch(env)}
@@ -453,22 +453,21 @@ export function EnvManageModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.6)" }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-white/[0.08] shadow-2xl flex flex-col"
-        style={{ background: "var(--app-card-bg)" }}
+        className="flex w-full max-w-md flex-col rounded-2xl border border-border-soft shadow-[var(--raise-lg)]"
+        style={{ background: "var(--popover)" }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-          <h2 className="text-[15px] font-semibold text-white/90 tracking-tight">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-soft">
+          <h2 className="text-[15px] font-semibold text-foreground tracking-tight">
             Environments
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+            className="p-1 rounded-md text-dim hover:text-foreground hover:bg-secondary transition-all"
           >
             <X size={15} />
           </button>
@@ -482,8 +481,8 @@ export function EnvManageModal({
         </div>
 
         {/* Add top-level env */}
-        <div className="px-4 pb-4 pt-2 border-t border-white/[0.06]">
-          <p className="text-[10px] text-white/25 mb-2 font-mono uppercase tracking-wider">
+        <div className="px-4 pb-4 pt-2 border-t border-border-soft">
+          <p className="text-[10px] text-dim mb-2 font-mono lowercase">
             New environment
           </p>
           <div className="flex items-center gap-2">
@@ -495,7 +494,7 @@ export function EnvManageModal({
                 if (!slugManuallyEdited) setNewSlug(slugify(e.target.value));
               }}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-1.5 text-[13px] text-white/80 placeholder-white/25 outline-none focus:border-primary/30 transition-all"
+              className="flex-1 bg-[var(--hover)] border border-border rounded-lg px-3 py-1.5 text-[13px] text-foreground placeholder:text-dim outline-none focus:border-primary/30 transition-all"
             />
             <input
               placeholder="slug"
@@ -507,12 +506,12 @@ export function EnvManageModal({
                 );
               }}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              className="w-24 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-1.5 text-[13px] text-white/80 placeholder-white/25 outline-none focus:border-primary/30 transition-all font-mono"
+              className="w-24 bg-[var(--hover)] border border-border rounded-lg px-3 py-1.5 text-[13px] text-foreground placeholder:text-dim outline-none focus:border-primary/30 transition-all font-mono"
             />
             <button
               onClick={handleCreate}
               disabled={creating || !newName.trim()}
-              className="p-2 rounded-lg bg-primary/10 border border-primary/25 text-primary hover:bg-primary/15 transition-all disabled:opacity-40"
+              className="p-2 rounded-lg border border-border text-foreground hover:bg-[var(--hover)] transition-all disabled:opacity-40"
             >
               <Plus size={14} />
             </button>

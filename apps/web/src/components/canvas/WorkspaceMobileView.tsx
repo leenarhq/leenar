@@ -34,17 +34,17 @@ function ProviderIcon({ name, size = 16 }: { name?: string; size?: number }) {
         viewBox="0 0 256 120"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path
-          d="M202.357,51.394 L197.046,49.27 C172.085,105.434 72.786,71.289 66.811,87.997 C65.815,99.283 121.038,90.143 160.517,92.056 C172.556,92.639 178.593,101.727 173.481,116.54 L183.55,116.571 C195.165,80.362 232.233,98.841 233.782,86.891 C231.237,79.034 191.181,86.891 202.357,51.394 Z"
-          fill="#FFFFFF"
-        />
+        {/* Monochrome, and only the two silhouette paths. The mark's third path
+          was filled #FFFFFF, which vanished on the light theme; the brand
+          oranges are a provider hue and go with the rest of them (spec D3). */}
         <path
           d="M176.332,110.348 C177.925,105.037 177.394,99.726 174.739,96.539 C172.083,93.352 168.365,91.228 163.585,90.697 L71.17,89.634 C70.639,89.634 70.108,89.103 69.577,89.103 C69.046,88.572 69.046,88.041 69.577,87.51 C70.108,86.448 70.639,85.916 71.701,85.916 L164.647,84.854 C175.801,84.323 187.486,75.294 191.734,64.672 L197.046,50.863 C197.046,50.331 197.577,49.8 197.046,49.269 C191.203,22.182 166.772,1.999 138.091,1.999 C111.535,1.999 88.697,18.995 80.73,42.896 C75.419,39.178 69.046,37.053 61.61,37.585 C48.863,38.647 38.772,49.269 37.178,62.016 C36.647,65.203 37.178,68.39 37.71,71.576 C16.996,72.107 0,89.103 0,110.348 C0,112.472 0,114.066 0.531,116.19 C0.531,117.253 1.593,117.784 2.125,117.784 L172.614,117.784 C173.676,117.784 174.739,117.253 174.739,116.19 L176.332,110.348 Z"
-          fill="#F4811F"
+          fill="currentColor"
         />
         <path
           d="M205.544,50.863 L202.888,50.863 C202.357,50.863 201.826,51.394 201.295,51.925 L197.577,64.672 C195.984,69.983 196.515,75.295 199.171,78.481 C201.826,81.668 205.544,83.792 210.324,84.323 L229.976,85.386 C230.507,85.386 231.038,85.917 231.569,85.917 C232.1,86.448 232.1,86.979 231.569,87.51 C231.038,88.573 230.507,89.104 229.444,89.104 L209.262,90.166 C198.108,90.697 186.424,99.726 182.175,110.348 L181.112,115.129 C180.581,115.66 181.112,116.722 182.175,116.722 L252.283,116.722 C253.345,116.722 253.876,116.191 253.876,115.129 C254.938,110.88 256,106.1 256,101.319 C256,73.701 233.162,50.863 205.544,50.863"
-          fill="#FAAD3F"
+          fill="currentColor"
+          opacity="0.55"
         />
       </svg>
     );
@@ -57,18 +57,18 @@ function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; color: string; bg: string }> = {
     provisioned: {
       label: "Live",
-      color: "#34d399",
-      bg: "rgba(52,211,153,0.1)",
+      color: "var(--ok)",
+      bg: "color-mix(in srgb, var(--ok) 10%, transparent)",
     },
     provisioning: {
       label: "Deploying",
-      color: "#f59e0b",
-      bg: "rgba(245,158,11,0.1)",
+      color: "var(--warn)",
+      bg: "color-mix(in srgb, var(--warn) 10%, transparent)",
     },
     error: {
       label: "Error",
-      color: "#ef4444",
-      bg: "rgba(239,68,68,0.1)",
+      color: "var(--crit)",
+      bg: "color-mix(in srgb, var(--crit) 10%, transparent)",
     },
   };
   const c = config[status];
@@ -116,8 +116,8 @@ function NodeCard({ node }: { node: Node }) {
         gap: 12,
         padding: "12px 14px",
         borderRadius: 12,
-        background: "var(--app-card-bg)",
-        border: "1px solid var(--app-border)",
+        background: "var(--popover)",
+        border: "1px solid var(--border)",
       }}
     >
       <div
@@ -130,7 +130,7 @@ function NodeCard({ node }: { node: Node }) {
           alignItems: "center",
           justifyContent: "center",
           background: "var(--app-surface)",
-          color: svc?.color ?? "var(--app-text-dim)",
+          color: "var(--foreground)",
         }}
       >
         <ProviderIcon name={iconName} size={16} />
@@ -145,7 +145,11 @@ function NodeCard({ node }: { node: Node }) {
           }}
         >
           <span
-            style={{ fontSize: 14, fontWeight: 500, color: "var(--app-text)" }}
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: "var(--foreground)",
+            }}
           >
             {data.label ?? svc?.label ?? provider ?? "Service"}
           </span>
@@ -162,7 +166,7 @@ function NodeCard({ node }: { node: Node }) {
               gap: 4,
               marginTop: 5,
               fontSize: 12,
-              color: "var(--app-accent-muted)",
+              color: "var(--muted-foreground)",
               textDecoration: "none",
               fontFamily: "monospace",
               opacity: 0.85,
@@ -177,7 +181,7 @@ function NodeCard({ node }: { node: Node }) {
             style={{
               marginTop: 5,
               fontSize: 12,
-              color: "#f87171",
+              color: "var(--crit)",
               lineHeight: 1.5,
             }}
           >
@@ -252,7 +256,7 @@ export function ProjectMobileView({ projectId }: Props) {
       <div
         style={{
           height: "100vh",
-          background: "var(--app-bg)",
+          background: "var(--background)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -262,11 +266,11 @@ export function ProjectMobileView({ projectId }: Props) {
       >
         {loadError ? (
           <>
-            <AlertTriangle size={22} style={{ color: "#ef4444" }} />
+            <AlertTriangle size={22} style={{ color: "var(--crit)" }} />
             <p
               style={{
                 fontSize: 14,
-                color: "var(--app-text-muted)",
+                color: "var(--muted-foreground)",
                 margin: 0,
               }}
             >
@@ -277,7 +281,7 @@ export function ProjectMobileView({ projectId }: Props) {
           <Loader2
             size={24}
             style={{
-              color: "var(--app-text-muted)",
+              color: "var(--muted-foreground)",
               animation: "spin 1s linear infinite",
             }}
           />
@@ -288,9 +292,9 @@ export function ProjectMobileView({ projectId }: Props) {
 
   const wfStatus = workflow.status;
   const statusColors: Record<string, string> = {
-    draft: "var(--app-text-muted)",
-    active: "#34d399",
-    error: "#ef4444",
+    draft: "var(--muted-foreground)",
+    active: "var(--ok)",
+    error: "var(--crit)",
   };
   const statusLabels: Record<string, string> = {
     draft: "Draft",
@@ -303,10 +307,10 @@ export function ProjectMobileView({ projectId }: Props) {
       className="app-shell"
       style={{
         height: "100vh",
-        background: "var(--app-bg)",
+        background: "var(--background)",
         display: "flex",
         flexDirection: "column",
-        color: "var(--app-text)",
+        color: "var(--foreground)",
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Geist', sans-serif",
       }}
     >
@@ -317,7 +321,7 @@ export function ProjectMobileView({ projectId }: Props) {
           alignItems: "center",
           gap: 12,
           padding: "14px 16px",
-          borderBottom: "1px solid var(--app-border-dim)",
+          borderBottom: "1px solid var(--border)",
           background: "var(--app-surface)",
           flexShrink: 0,
         }}
@@ -334,7 +338,7 @@ export function ProjectMobileView({ projectId }: Props) {
             background: "transparent",
             border: "none",
             cursor: "pointer",
-            color: "var(--app-text-dim)",
+            color: "var(--muted-foreground)",
             flexShrink: 0,
           }}
         >
@@ -345,7 +349,7 @@ export function ProjectMobileView({ projectId }: Props) {
             style={{
               fontSize: 15,
               fontWeight: 600,
-              color: "var(--app-text)",
+              color: "var(--foreground)",
               lineHeight: 1.2,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -357,7 +361,7 @@ export function ProjectMobileView({ projectId }: Props) {
           <div
             style={{
               fontSize: 12,
-              color: statusColors[wfStatus] ?? "var(--app-text-muted)",
+              color: statusColors[wfStatus] ?? "var(--muted-foreground)",
               marginTop: 2,
             }}
           >
@@ -383,8 +387,8 @@ export function ProjectMobileView({ projectId }: Props) {
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: "0.07em",
-                color: "var(--app-text-muted)",
-                textTransform: "uppercase",
+                color: "var(--muted-foreground)",
+                textTransform: "lowercase",
                 marginBottom: 10,
               }}
             >
@@ -406,8 +410,8 @@ export function ProjectMobileView({ projectId }: Props) {
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: "0.07em",
-                color: "var(--app-text-muted)",
-                textTransform: "uppercase",
+                color: "var(--muted-foreground)",
+                textTransform: "lowercase",
                 marginBottom: 10,
               }}
             >
@@ -434,23 +438,23 @@ export function ProjectMobileView({ projectId }: Props) {
                       padding: "9px 12px",
                       borderRadius: 9,
                       background: "var(--app-surface)",
-                      border: "1px solid var(--app-border-dim)",
+                      border: "1px solid var(--border)",
                       gap: 6,
                     }}
                   >
-                    <span style={{ color: "var(--app-text)", fontSize: 13 }}>
+                    <span style={{ color: "var(--foreground)", fontSize: 13 }}>
                       {srcLabel}
                     </span>
                     <span
                       style={{
-                        color: "var(--app-text-muted)",
+                        color: "var(--muted-foreground)",
                         fontSize: 11,
                         flexShrink: 0,
                       }}
                     >
                       →
                     </span>
-                    <span style={{ color: "var(--app-text)", fontSize: 13 }}>
+                    <span style={{ color: "var(--foreground)", fontSize: 13 }}>
                       {tgtLabel}
                     </span>
                     {envVars?.length ? (
@@ -458,7 +462,7 @@ export function ProjectMobileView({ projectId }: Props) {
                         style={{
                           marginLeft: "auto",
                           fontSize: 10,
-                          color: "#34d399",
+                          color: "var(--ok)",
                           fontFamily: "monospace",
                           opacity: 0.8,
                           flexShrink: 0,
@@ -482,10 +486,11 @@ export function ProjectMobileView({ projectId }: Props) {
               marginTop: 20,
               padding: "12px 14px",
               borderRadius: 10,
-              background: "rgba(239,68,68,0.08)",
-              border: "1px solid rgba(239,68,68,0.2)",
+              background: "color-mix(in srgb, var(--crit) 8%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--crit) 30%, transparent)",
               fontSize: 13,
-              color: "#f87171",
+              color: "var(--crit)",
               display: "flex",
               gap: 8,
               alignItems: "flex-start",
@@ -502,7 +507,7 @@ export function ProjectMobileView({ projectId }: Props) {
             style={{
               textAlign: "center",
               padding: "60px 24px",
-              color: "var(--app-text-muted)",
+              color: "var(--muted-foreground)",
               fontSize: 14,
               lineHeight: 1.6,
             }}
@@ -526,7 +531,7 @@ export function ProjectMobileView({ projectId }: Props) {
           padding: "12px 16px",
           paddingBottom: "calc(max(16px, env(safe-area-inset-bottom)) + 4px)",
           background:
-            "linear-gradient(to top, var(--app-bg) 55%, color-mix(in srgb, var(--app-bg) 85%, transparent) 80%, transparent)",
+            "linear-gradient(to top, var(--background) 55%, color-mix(in srgb, var(--background) 85%, transparent) 80%, transparent)",
         }}
       >
         <button
@@ -544,12 +549,12 @@ export function ProjectMobileView({ projectId }: Props) {
             gap: 6,
             fontSize: 15,
             fontWeight: 600,
-            color: "#fff",
+            color: "var(--primary-foreground)",
             border: "none",
             cursor: nodes.length === 0 ? "not-allowed" : "pointer",
             background: isRunning
-              ? "rgba(239,68,68,0.18)"
-              : "var(--app-accent)",
+              ? "color-mix(in srgb, var(--crit) 18%, transparent)"
+              : "var(--primary)",
             opacity: nodes.length === 0 ? 0.4 : 1,
             transition: "opacity 0.15s, background 0.2s",
           }}
@@ -579,9 +584,9 @@ export function ProjectMobileView({ projectId }: Props) {
             alignItems: "center",
             justifyContent: "center",
             background: "var(--app-surface)",
-            border: "1px solid var(--app-border)",
+            border: "1px solid var(--border)",
             cursor: "pointer",
-            color: "var(--app-text-dim)",
+            color: "var(--muted-foreground)",
             flexShrink: 0,
           }}
         >

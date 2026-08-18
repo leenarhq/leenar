@@ -51,10 +51,10 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
       transition={{ duration: 0.15 }}
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <motion.div
-        className="relative z-10 w-80 rounded-2xl border border-white/[0.08] shadow-2xl p-5"
-        style={{ background: "var(--app-menu-bg)" }}
+        className="relative z-10 w-80 rounded-2xl border border-border-soft p-5 shadow-[var(--raise-lg)]"
+        style={{ background: "var(--popover)" }}
         initial={{ scale: 0.95, y: 8 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 8 }}
@@ -62,12 +62,12 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[15px] font-semibold text-white/85 tracking-tight">
+          <h2 className="text-[15px] font-semibold text-foreground tracking-tight">
             Keyboard Shortcuts
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+            className="p-1 rounded-md text-dim hover:text-foreground hover:bg-secondary transition-all"
           >
             <svg
               width="12"
@@ -86,7 +86,7 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
         <div className="space-y-4">
           {groups.map((g) => (
             <div key={g.label}>
-              <p className="text-[11px] font-mono uppercase tracking-[0.12em] text-white/25 mb-2">
+              <p className="text-[11px] font-mono lowercase text-dim mb-2">
                 {g.label}
               </p>
               <div className="space-y-1">
@@ -95,14 +95,14 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
                     key={item.desc}
                     className="flex items-center justify-between py-1"
                   >
-                    <span className="text-[14px] text-white/55">
+                    <span className="text-[14px] text-muted-foreground">
                       {item.desc}
                     </span>
                     <div className="flex items-center gap-1">
                       {item.keys.map((k) => (
                         <kbd
                           key={k}
-                          className="px-1.5 py-0.5 rounded text-[12px] font-mono font-semibold text-white/50 border border-white/[0.12] bg-white/[0.05] leading-none"
+                          className="px-1.5 py-0.5 rounded text-[12px] font-mono font-semibold text-muted-foreground border border-border bg-[var(--hover)] leading-none"
                         >
                           {k}
                         </kbd>

@@ -180,7 +180,7 @@ export function SettingsTab({
                 hint="Link a GitHub repo so Vercel auto-deploys on every push to main/master."
               >
                 {repoLoading ? (
-                  <div className="flex items-center gap-1.5 text-white/30 text-[12px] py-2">
+                  <div className="flex items-center gap-1.5 text-dim text-[12px] py-2">
                     <Loader2 size={11} className="animate-spin" />
                     <span>Loading repos…</span>
                   </div>
@@ -216,9 +216,7 @@ export function SettingsTab({
                 ) : (
                   <>
                     {repoError && (
-                      <p className="text-[11px] text-red-400/70 mb-1">
-                        {repoError}
-                      </p>
+                      <p className="text-[11px] text-crit mb-1">{repoError}</p>
                     )}
                     <input
                       type="text"
@@ -253,7 +251,7 @@ export function SettingsTab({
                   hint="Which branch Vercel deploys to production. Leave blank to use the repo's default branch."
                 >
                   {branchLoading ? (
-                    <div className="flex items-center gap-1.5 text-white/30 text-[12px] py-2">
+                    <div className="flex items-center gap-1.5 text-dim text-[12px] py-2">
                       <Loader2 size={11} className="animate-spin" />
                       <span>Loading branches…</span>
                     </div>
@@ -284,7 +282,7 @@ export function SettingsTab({
               )}
             </>
           ) : (
-            <div className="flex items-center gap-2 px-2.5 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/30">
+            <div className="flex items-center gap-2 px-2.5 py-2.5 rounded-lg bg-[var(--hover)] border border-border-soft text-[12px] text-dim">
               <svg
                 width="11"
                 height="11"
@@ -321,11 +319,11 @@ export function SettingsTab({
       {/* ── Supabase: Tables ── */}
       {provider === "supabase" && (
         <>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/25 px-1 pt-1">
+          <p className="px-1 pt-1 font-mono text-[10px] lowercase text-dim">
             Tables
           </p>
-          <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 space-y-2.5">
-            <div className="flex items-center gap-1.5 text-[12px] text-white/40">
+          <div className="rounded-lg bg-[var(--hover)] border border-border-soft p-3 space-y-2.5">
+            <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <span>
                 {(localData.tables ?? []).length} table
                 {(localData.tables ?? []).length === 1 ? "" : "s"} ·{" "}
@@ -342,11 +340,11 @@ export function SettingsTab({
                   : "s"}
               </span>
               {localData.supabaseProjectRef ? (
-                <span className="inline-flex items-center rounded-full bg-emerald-500/12 border border-emerald-500/25 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                <span className="inline-flex items-center rounded-full border border-ok/30 px-2 py-0.5 font-mono text-[10px] lowercase text-ok">
                   Provisioned
                 </span>
               ) : (
-                <span className="inline-flex items-center rounded-full bg-white/[0.06] border border-white/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/40">
+                <span className="inline-flex items-center rounded-full border border-border-soft px-2 py-0.5 font-mono text-[10px] lowercase text-muted-foreground">
                   Draft
                 </span>
               )}
@@ -356,12 +354,12 @@ export function SettingsTab({
                 to="/console/projects/$id/database"
                 params={{ id: projectId }}
                 search={{ node: node.id }}
-                className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-action/10 border border-action/20 text-action/80 text-[12px] font-semibold hover:bg-action/20 transition-all"
+                className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-[var(--hover)] border border-border text-foreground text-[12px] font-semibold hover:bg-secondary transition-all"
               >
                 Manage in Database →
               </Link>
             ) : (
-              <p className="text-[11px] text-white/25">
+              <p className="text-[11px] text-dim">
                 Save the project to manage tables in the Database Workspace.
               </p>
             )}
@@ -393,11 +391,11 @@ export function SettingsTab({
       {/* ── Supabase: Email Delivery via Resend ── */}
       {provider === "supabase" && (
         <>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/25 px-1 pt-1">
+          <p className="px-1 pt-1 font-mono text-[10px] lowercase text-dim">
             Email Delivery
           </p>
           {!connectedResend ? (
-            <div className="flex items-center gap-2 px-2.5 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/30">
+            <div className="flex items-center gap-2 px-2.5 py-2.5 rounded-lg bg-[var(--hover)] border border-border-soft text-[12px] text-dim">
               <svg
                 width="11"
                 height="11"
@@ -415,15 +413,17 @@ export function SettingsTab({
               Connect a Resend node to configure email delivery
             </div>
           ) : resendNotConnected ? (
-            <div className="flex flex-col gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-3">
-              <p className="text-[12px] text-white/40 leading-relaxed">
+            <div className="flex flex-col gap-2 rounded-lg border border-border bg-[var(--hover)] px-3 py-3">
+              <p className="text-[12px] text-muted-foreground leading-relaxed">
                 Connect{" "}
-                <span className="text-white/60 font-semibold">Resend</span> to
-                send auth emails from your own domain.
+                <span className="text-muted-foreground font-semibold">
+                  Resend
+                </span>{" "}
+                to send auth emails from your own domain.
               </p>
               <a
                 href="/console/integrations"
-                className="inline-flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-action/10 border border-action/20 text-action/80 text-[11px] font-semibold hover:bg-action/20 transition-all"
+                className="inline-flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-[var(--hover)] border border-border text-foreground text-[11px] font-semibold hover:bg-secondary transition-all"
               >
                 Connect Resend →
               </a>
@@ -434,22 +434,22 @@ export function SettingsTab({
               hint="Override Supabase's default auth email sender. Uses a verified domain from your Resend account (e.g. noreply@yourdomain.com)."
             >
               {domainLoading ? (
-                <div className="flex items-center gap-1.5 text-white/30 text-[12px] py-2">
+                <div className="flex items-center gap-1.5 text-dim text-[12px] py-2">
                   <Loader2 size={11} className="animate-spin" />
                   <span>Loading domains…</span>
                 </div>
               ) : domainError ? (
-                <p className="text-[11px] text-red-400/80">{domainError}</p>
+                <p className="text-[11px] text-crit">{domainError}</p>
               ) : resendDomains !== null && resendDomains.length === 0 ? (
                 <div className="space-y-1.5">
-                  <p className="text-[11px] text-white/30">
+                  <p className="text-[11px] text-dim">
                     No verified domains in your Resend account.
                   </p>
                   <a
                     href="https://resend.com/domains"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] text-action/70 hover:text-action transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Add & verify a domain in Resend →
                   </a>
@@ -476,7 +476,7 @@ export function SettingsTab({
                     ))}
                   </select>
                   {isProvisioned && (
-                    <p className="text-[11px] text-amber-400/60 mt-1">
+                    <p className="text-[11px] text-warn mt-1">
                       Changes apply on next deploy
                     </p>
                   )}
@@ -506,7 +506,7 @@ export function SettingsTab({
                         }
                         className={`${inputCls(false)} mt-1`}
                       />
-                      <p className="text-[11px] text-white/25 mt-1 font-mono">
+                      <p className="text-[11px] text-dim mt-1 font-mono">
                         {localData.senderName || "My App"} &lt;
                         {localData.fromEmail}&gt;
                       </p>
@@ -522,7 +522,7 @@ export function SettingsTab({
       {/* ── Cloudflare ── */}
       {provider === "cloudflare" && (
         <>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/25 px-1 pt-1">
+          <p className="px-1 pt-1 font-mono text-[10px] lowercase text-dim">
             Cloudflare Service
           </p>
           <Field
@@ -644,13 +644,13 @@ export function SettingsTab({
                     Open Worker
                   </a>
                 )}
-              <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] divide-y divide-white/[0.05]">
+              <div className="rounded-lg bg-[var(--hover)] border border-border-soft divide-y divide-border-soft">
                 {localData.cfWorkerNameProvisioned && (
                   <div className="flex items-center justify-between px-3 py-2 gap-2">
-                    <span className="text-[11px] text-white/30 shrink-0">
+                    <span className="text-[11px] text-dim shrink-0">
                       Worker
                     </span>
-                    <span className="text-[11px] font-mono text-white/60 truncate">
+                    <span className="text-[11px] font-mono text-muted-foreground truncate">
                       {localData.cfWorkerNameProvisioned as string}
                     </span>
                     <button
@@ -659,7 +659,7 @@ export function SettingsTab({
                           localData.cfWorkerNameProvisioned as string,
                         )
                       }
-                      className="text-white/20 hover:text-white/60 transition-colors shrink-0"
+                      className="text-dim hover:text-muted-foreground transition-colors shrink-0"
                       title="Copy"
                     >
                       <IconRenderer iconName="Copy" size={11} />
@@ -668,10 +668,10 @@ export function SettingsTab({
                 )}
                 {localData.cfBucketNameProvisioned && (
                   <div className="flex items-center justify-between px-3 py-2 gap-2">
-                    <span className="text-[11px] text-white/30 shrink-0">
+                    <span className="text-[11px] text-dim shrink-0">
                       Bucket
                     </span>
-                    <span className="text-[11px] font-mono text-white/60 truncate">
+                    <span className="text-[11px] font-mono text-muted-foreground truncate">
                       {localData.cfBucketNameProvisioned as string}
                     </span>
                     <button
@@ -680,7 +680,7 @@ export function SettingsTab({
                           localData.cfBucketNameProvisioned as string,
                         )
                       }
-                      className="text-white/20 hover:text-white/60 transition-colors shrink-0"
+                      className="text-dim hover:text-muted-foreground transition-colors shrink-0"
                       title="Copy"
                     >
                       <IconRenderer iconName="Copy" size={11} />
@@ -689,10 +689,8 @@ export function SettingsTab({
                 )}
                 {localData.cloudflareWorkerUrl && (
                   <div className="flex items-center justify-between px-3 py-2 gap-2">
-                    <span className="text-[11px] text-white/30 shrink-0">
-                      URL
-                    </span>
-                    <span className="text-[11px] font-mono text-white/60 truncate">
+                    <span className="text-[11px] text-dim shrink-0">URL</span>
+                    <span className="text-[11px] font-mono text-muted-foreground truncate">
                       {localData.cloudflareWorkerUrl as string}
                     </span>
                     <button
@@ -701,7 +699,7 @@ export function SettingsTab({
                           localData.cloudflareWorkerUrl as string,
                         )
                       }
-                      className="text-white/20 hover:text-white/60 transition-colors shrink-0"
+                      className="text-dim hover:text-muted-foreground transition-colors shrink-0"
                       title="Copy"
                     >
                       <IconRenderer iconName="Copy" size={11} />
@@ -710,10 +708,10 @@ export function SettingsTab({
                 )}
                 {localData.r2Endpoint && (
                   <div className="flex items-center justify-between px-3 py-2 gap-2">
-                    <span className="text-[11px] text-white/30 shrink-0">
+                    <span className="text-[11px] text-dim shrink-0">
                       Endpoint
                     </span>
-                    <span className="text-[11px] font-mono text-white/60 truncate">
+                    <span className="text-[11px] font-mono text-muted-foreground truncate">
                       {localData.r2Endpoint as string}
                     </span>
                     <button
@@ -722,7 +720,7 @@ export function SettingsTab({
                           localData.r2Endpoint as string,
                         )
                       }
-                      className="text-white/20 hover:text-white/60 transition-colors shrink-0"
+                      className="text-dim hover:text-muted-foreground transition-colors shrink-0"
                       title="Copy"
                     >
                       <IconRenderer iconName="Copy" size={11} />
@@ -731,10 +729,10 @@ export function SettingsTab({
                 )}
                 {localData.cloudflareAccountId && (
                   <div className="flex items-center justify-between px-3 py-2 gap-2">
-                    <span className="text-[11px] text-white/30 shrink-0">
+                    <span className="text-[11px] text-dim shrink-0">
                       Account
                     </span>
-                    <span className="text-[11px] font-mono text-white/60 truncate">
+                    <span className="text-[11px] font-mono text-muted-foreground truncate">
                       {localData.cloudflareAccountId as string}
                     </span>
                     <button
@@ -743,7 +741,7 @@ export function SettingsTab({
                           localData.cloudflareAccountId as string,
                         )
                       }
-                      className="text-white/20 hover:text-white/60 transition-colors shrink-0"
+                      className="text-dim hover:text-muted-foreground transition-colors shrink-0"
                       title="Copy"
                     >
                       <IconRenderer iconName="Copy" size={11} />
@@ -753,8 +751,8 @@ export function SettingsTab({
               </div>
 
               {/* Injected env vars info */}
-              <div className="rounded-lg bg-white/[0.02] border border-white/[0.05] p-3 space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/20 mb-1.5">
+              <div className="rounded-lg bg-[var(--hover)] border border-border-soft p-3 space-y-1">
+                <p className="mb-1.5 font-mono text-[10px] lowercase text-dim">
                   Injected into Vercel
                 </p>
                 {(localData.cloudflareService === "workers" ||
@@ -765,10 +763,7 @@ export function SettingsTab({
                       "CLOUDFLARE_WORKER_NAME",
                       "CLOUDFLARE_ACCOUNT_ID",
                     ].map((k) => (
-                      <p
-                        key={k}
-                        className="text-[11px] font-mono text-white/30"
-                      >
+                      <p key={k} className="text-[11px] font-mono text-dim">
                         {k}
                       </p>
                     ))}
@@ -782,10 +777,7 @@ export function SettingsTab({
                       "R2_ACCESS_KEY_ID",
                       "R2_SECRET_ACCESS_KEY",
                     ].map((k) => (
-                      <p
-                        key={k}
-                        className="text-[11px] font-mono text-white/30"
-                      >
+                      <p key={k} className="text-[11px] font-mono text-dim">
                         {k}
                       </p>
                     ))}
@@ -803,29 +795,25 @@ export function SettingsTab({
           rows={2}
           value={localData.description || ""}
           onChange={(e) => handleUpdate("description", e.target.value)}
-          className="w-full bg-surface-container-low border border-white/[0.07] rounded-lg py-1.5 px-3 text-white/85 focus:ring-1 focus:ring-primary/30 outline-none resize-none transition-all text-[13px]"
+          className="w-full bg-secondary border border-border rounded-lg py-1.5 px-3 text-foreground focus:border-foreground/30 outline-none resize-none transition-all text-[13px]"
         />
       </Field>
 
-      <div className="p-3 bg-surface-container-lowest border border-white/[0.05] rounded-xl">
-        <p className="text-[11px] text-white/25 uppercase tracking-widest mb-1.5">
-          Node
-        </p>
+      <div className="p-3 bg-[var(--hover)] border border-border-soft rounded-xl">
+        <p className="mb-1.5 font-mono text-[10px] lowercase text-dim">Node</p>
         <p className="text-[11px] font-mono text-primary/50">
           id: {node.id.slice(0, 8)}…
         </p>
-        <p className="text-[11px] font-mono text-white/25">type: {node.type}</p>
+        <p className="text-[11px] font-mono text-dim">type: {node.type}</p>
         {provider && (
-          <p className="text-[11px] font-mono text-white/25">
-            provider: {provider}
-          </p>
+          <p className="text-[11px] font-mono text-dim">provider: {provider}</p>
         )}
       </div>
 
       {/* Danger Zone */}
-      <div className="rounded-xl border border-red-500/[0.12] overflow-hidden">
-        <div className="px-3 py-2 bg-red-500/[0.04] border-b border-red-500/[0.08]">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-red-400/50">
+      <div className="rounded-xl border border-crit/20 overflow-hidden">
+        <div className="border-b border-crit/20 px-3 py-2">
+          <p className="font-mono text-[10px] lowercase text-crit">
             Danger Zone
           </p>
         </div>
@@ -839,7 +827,7 @@ export function SettingsTab({
               );
               onClose();
             }}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-red-500/20 bg-red-500/[0.04] text-[12px] font-semibold text-red-400/70 hover:bg-red-500/[0.1] hover:text-red-400 hover:border-red-500/30 transition-all"
+            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-crit/30 py-1.5 text-[12px] font-medium text-crit transition-colors hover:bg-crit/10"
           >
             <svg
               width="10"

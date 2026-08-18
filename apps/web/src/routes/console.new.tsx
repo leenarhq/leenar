@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
 import { ConsoleTopBar } from "./console";
 import ChatMarkdown from "../components/chat/ChatMarkdown";
 import { useAuth } from "../context/auth";
@@ -11,18 +10,22 @@ import {
   getGitHubRepos,
   importNode,
   saveEnvCanvas,
+  checkConnectionHealth,
+  startOAuthFlow,
+  getRepoSummaries,
   type ChatMessage,
   type StackProposal,
   type GitHubRepo,
+  type RepoSummary,
   type BuilderInfo,
 } from "../lib/api";
 import { ImportReport } from "../components/console/ImportReport";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "../components/ui/tabs";
+import { RepoGrid } from "../components/console/RepoGrid";
+import { EmptyCell } from "../components/console/EmptyCell";
+import { PromptStrip } from "../components/console/PromptStrip";
+import { HairGrid, HairCell } from "../components/console/HairGrid";
+import { INPUT, PILL, PILL_QUIET } from "../components/console/Field";
+import { filterRepos, looksLikeRepoUrl } from "../lib/repos";
 import {
   createChatConversation,
   saveChatHistory,
@@ -57,14 +60,12 @@ export const Route = createFileRoute("/console/new")({
 
 /* ── Service brand config (reused from Templates) ───────────── */
 
-const SVC: Record<
-  string,
-  { label: string; color: string; bg: string; icon: React.ReactNode }
-> = {
+// Brand colour is gone from this map: a row of five service chips in five
+// hues is what left `ok`/`warn`/`crit` with nothing to say. The glyph and the
+// label carry recognition. See the spec's D3.
+const SVC: Record<string, { label: string; icon: React.ReactNode }> = {
   github: {
     label: "GitHub",
-    color: "var(--provider-github)",
-    bg: "rgba(201,209,217,0.1)",
     icon: (
       <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13">
         <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
@@ -73,8 +74,6 @@ const SVC: Record<
   },
   vercel: {
     label: "Vercel",
-    color: "var(--provider-vercel)",
-    bg: "rgba(180,180,180,0.14)",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
         <path d="M12 2L2 19.5h20L12 2z" />
@@ -83,8 +82,6 @@ const SVC: Record<
   },
   supabase: {
     label: "Supabase",
-    color: "#3ecf8e",
-    bg: "rgba(62,207,142,0.1)",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
         <path d="M11.9 1.036c-.015-.986-1.26-1.41-1.874-.637L.764 12.05C.111 12.888.749 14 1.814 14h9.196l.183 10.964c.015.986 1.26 1.41 1.874.637l9.262-11.652c.653-.837.015-1.949-1.05-1.949h-9.196L11.9 1.036z" />
@@ -93,8 +90,6 @@ const SVC: Record<
   },
   resend: {
     label: "Resend",
-    color: "#f97316",
-    bg: "rgba(249,115,22,0.1)",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
         <path d="M3 3h18a1 1 0 011 1v.333L12 13 2 4.333V4a1 1 0 011-1zm-1 3.4V20a1 1 0 001 1h18a1 1 0 001-1V6.4l-10 8.6L2 6.4z" />
@@ -103,8 +98,6 @@ const SVC: Record<
   },
   cloudflare: {
     label: "Cloudflare",
-    color: "#f6821f",
-    bg: "rgba(246,130,31,0.1)",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
         <path d="M16.5 15.5c.3-1 .2-1.9-.3-2.5-.4-.5-1.1-.8-1.9-.9l-8.3-.1c-.1 0-.2-.1-.2-.2s.1-.2.2-.2l8.4-.1c1-.1 2.1-.9 2.5-1.9l.5-1.2c0-.1 0-.2-.1-.3C16.6 5.8 14.4 4 11.8 4 9.5 4 7.5 5.3 6.5 7.2c-.5-.4-1.2-.6-1.9-.5C3.2 6.9 2 8.3 2 9.7v.1C.8 10.1 0 11.2 0 12.5 0 14 1.2 15.2 2.7 15.2H16c.2 0 .4-.1.5-.3l.4-.4.-.4zM19.3 9.5c-.1 0-.2 0-.3 0-.1 0-.1 0-.2 0-.1-.5-.3-1-.6-1.5l-.1-.2h-.2c-.2 0-.4.1-.5.3-.1.2-.1.4 0 .6.2.3.3.7.4 1.1v.1c0 .2.1.3.3.4.1 0 .2 0 .3 0C20.3 10.4 21 11.1 21 12c0 .9-.7 1.6-1.6 1.6H18c-.3 0-.5.2-.5.5s.2.5.5.5h1.4C21.1 14.6 22.5 13.4 22.5 12c0-1.3-1-2.4-2.3-2.5H19.3z" />
@@ -202,7 +195,14 @@ function proposalToCanvas(proposal: StackProposal) {
         data: {},
         markerEnd: {
           type: "arrowclosed",
-          color: wired ? "#34d399" : "var(--app-accent)",
+          // Matches BlueprintEdge's line exactly: ok for a connection that
+          // carries env vars, the hairline for structural chrome. PR 2
+          // retired the five-hue scheme (#60a5fa / #34d399 / #3b82f6 / …)
+          // inside components/canvas/, but this route writes the marker and
+          // was out of that PR's scope, so a new canvas was drawing an old
+          // green arrowhead on a new-token line. Existing rows keep their
+          // stored value; they are not migrated.
+          color: wired ? "var(--ok)" : "var(--edge)",
         },
       };
     })
@@ -289,43 +289,57 @@ function aiAsksForGitHubRepo(msg: string): boolean {
 
 /* ── ProposalCard ───────────────────────────────────────────── */
 
+/**
+ * What Approve is about to build.
+ *
+ * The env-key count sits here rather than on a repo cell. The mockup drew it
+ * on the grid, but the number comes out of `analyzeRepo`
+ * (workers/api/src/routes/workflowProvision.ts) — ~10 upstream requests per
+ * repo behind a 20-per-5-minutes rate limit — so it cannot exist before a
+ * repo has been picked. The reason for wanting it on the grid ("how heavy an
+ * import is before you commit to it") is satisfied here anyway: this card is
+ * the commitment.
+ */
 function ProposalCard({
   proposal,
   onApprove,
   missingConnections,
   approving,
+  envKeyCount,
 }: {
   proposal: StackProposal;
   onApprove: () => void;
   missingConnections: string[];
   approving: boolean;
+  envKeyCount: number | null;
 }) {
   const hasMissing = missingConnections.length > 0;
 
   return (
-    <div className="my-4 rounded-xl border border-border bg-card shadow-sm overflow-hidden transition-shadow duration-150 hover:shadow-md">
-      <div className="p-5 border-b border-border">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-          Proposal
+    <div className="my-4 overflow-hidden rounded-2xl border border-border">
+      <div className="border-b border-border px-5 py-4">
+        <div className="flex items-baseline justify-between gap-3">
+          <div className="text-[14.5px] font-medium tracking-[-0.01em]">
+            {proposal.name}
+          </div>
+          {envKeyCount !== null && (
+            <span className="shrink-0 font-mono text-[10.5px] lowercase tabular-nums text-dim">
+              {envKeyCount} env {envKeyCount === 1 ? "key" : "keys"}
+            </span>
+          )}
         </div>
-        <div className="text-base font-semibold">{proposal.name}</div>
-        <div className="mt-1.5 text-sm text-muted-foreground">
+        <div className="mt-1.5 text-[13px] text-muted-foreground">
           {proposal.summary}
         </div>
       </div>
 
-      <div className="p-5 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 px-5 py-4">
         {proposal.services.map((svc) => {
           const cfg = SVC[svc.service_type];
           return (
             <span
               key={svc.service_type}
-              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-transform duration-150 hover:scale-[1.03]"
-              style={{
-                background: cfg?.bg,
-                borderColor: cfg ? `${cfg.color}40` : undefined,
-                color: cfg?.color,
-              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border-soft px-2.5 py-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
             >
               {cfg?.icon}
               {svc.display_name ||
@@ -338,24 +352,24 @@ function ProposalCard({
 
       {proposal.connections.length > 0 && (
         <div className="px-5 pb-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-            Connections
+          <div className="mb-2 font-mono text-[10px] lowercase tracking-wide text-dim">
+            connections
           </div>
           <div className="space-y-1.5">
             {proposal.connections.map((conn, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors duration-150 hover:bg-secondary/30"
+                className="flex items-center gap-2 text-[12px] text-muted-foreground"
               >
-                <span className="font-medium text-foreground">
+                <span className="text-foreground">
                   {SERVICE_LABELS[conn.from_type] ?? conn.from_type}
                 </span>
-                <span className="text-muted-foreground/70">→</span>
-                <span className="font-medium text-foreground">
+                <span className="text-dim">→</span>
+                <span className="text-foreground">
                   {SERVICE_LABELS[conn.to_type] ?? conn.to_type}
                 </span>
                 {conn.env_var_name && (
-                  <code className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-mono">
+                  <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
                     {conn.env_var_name}
                   </code>
                 )}
@@ -365,13 +379,15 @@ function ProposalCard({
         </div>
       )}
 
+      {/* No warning glyph: the warn tone already says it, and a second
+          signal for one state is what this system exists to stop. */}
       {hasMissing && (
-        <div className="mx-5 mb-4 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-400">
-          ⚠ {missingConnections.map((s) => SERVICE_LABELS[s] ?? s).join(" & ")}{" "}
+        <div className="mx-5 mb-4 rounded-xl border border-warn/30 px-3 py-2 text-[12px] text-warn">
+          {missingConnections.map((s) => SERVICE_LABELS[s] ?? s).join(" & ")}{" "}
           {missingConnections.length === 1 ? "is" : "are"} not connected yet.{" "}
           <Link
             to="/console/integrations"
-            className="underline hover:text-yellow-300"
+            className="underline hover:text-foreground"
           >
             Connect in Integrations →
           </Link>
@@ -379,27 +395,8 @@ function ProposalCard({
       )}
 
       <div className="px-5 pb-5">
-        <button
-          onClick={onApprove}
-          disabled={approving}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all duration-150 hover:shadow-md hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:hover:brightness-100"
-        >
-          {approving ? (
-            "Creating project…"
-          ) : (
-            <>
-              Open in Canvas
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M3 8h10M9 4l4 4-4 4"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </>
-          )}
+        <button onClick={onApprove} disabled={approving} className={PILL}>
+          {approving ? "Creating project…" : "Open in Canvas"}
         </button>
       </div>
     </div>
@@ -414,7 +411,7 @@ function TypingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce"
+          className="h-1 w-1 rounded-full bg-dim animate-bounce"
           style={{ animationDelay: `${i * 150}ms` }}
         />
       ))}
@@ -436,6 +433,19 @@ type NewChatMessage = ChatMessage & {
   proposalHidesMessage?: boolean;
 };
 
+/**
+ * How many repos the grid scans, and how many per request.
+ *
+ * The cap is not politeness: each repo costs a GitHub API call plus up to four
+ * raw fetches, and an account with 300 of them would spend a slice of its
+ * hourly budget on a screen the user is about to click once. Repos past the
+ * cap render plain — no chips, still clickable — which is the pre-PR-6 cell,
+ * so the cap degrades rather than breaks. The batch size mirrors the server's
+ * own MAX_REPOS (workers/api/src/routes/github.ts).
+ */
+const SUMMARY_CAP = 40;
+const SUMMARY_BATCH = 20;
+
 function NewStackPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
@@ -456,15 +466,20 @@ function NewStackPage() {
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[] | null>(null);
   const [reposLoading, setReposLoading] = useState(false);
   const [builderInfo, setBuilderInfo] = useState<BuilderInfo | null>(null);
-  const [activeTab, setActiveTab] = useState<"idea" | "import">("idea");
+  const [envKeyCount, setEnvKeyCount] = useState<number | null>(null);
+  const [summaries, setSummaries] = useState<Record<string, RepoSummary>>({});
 
   const reposFetchedRef = useRef(false);
   const draftWorkflowIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const repoSelectRef = useRef<HTMLSelectElement>(null);
-  const repoInputRef = useRef<HTMLInputElement>(null);
   const [wantsRepoFocus, setWantsRepoFocus] = useState(false);
+
+  const [filter, setFilter] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [connecting, setConnecting] = useState(false);
+  const [githubAccount, setGithubAccount] = useState<string | null>(null);
+  const filterRef = useRef<HTMLInputElement>(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -482,6 +497,35 @@ function NewStackPage() {
       .finally(() => setReposLoading(false));
   }, [session]);
 
+  // Per-repo scan for the grid. Batched, and merged as each batch lands, so
+  // the first twenty cells fill while the second twenty are still in flight.
+  useEffect(() => {
+    if (!session || !githubRepos?.length) return;
+    const names = githubRepos.slice(0, SUMMARY_CAP).map((r) => r.full_name);
+    let cancelled = false;
+    for (let i = 0; i < names.length; i += SUMMARY_BATCH) {
+      getRepoSummaries(names.slice(i, i + SUMMARY_BATCH), session)
+        .then((batch) => {
+          // Merge, never replace: two batches resolve in either order.
+          if (!cancelled) setSummaries((prev) => ({ ...prev, ...batch }));
+        })
+        // A failed scan is a grid without chips, not a grid without repos.
+        .catch(() => {});
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [session, githubRepos]);
+
+  // `@login`, for the bar's right side. Best-effort: the grid works without
+  // it, and connections/health is a slower call than the repo list.
+  useEffect(() => {
+    if (!session) return;
+    checkConnectionHealth(session)
+      .then((h) => setGithubAccount(h.github?.account ?? null))
+      .catch(() => {});
+  }, [session]);
+
   /**
    * Import intent carried from an SEO guide's CTA (e.g. "Try Leenar" on the
    * Lovable guide). Arrives via localStorage (see lib/pendingImport) because
@@ -495,31 +539,20 @@ function NewStackPage() {
     importIntentCheckedRef.current = true;
     const fromStorage = takePendingImport();
     const fromQuery = new URLSearchParams(window.location.search).get("import");
-    if (fromStorage || fromQuery) {
-      // The import pane is CSS-hidden (not unmounted — see the forceMount
-      // note on TabsContent) while the "idea" tab is active, and a hidden
-      // field can't take focus. Switch tabs first so it's visible before
-      // the focus effect below runs.
-      setActiveTab("import");
-      setWantsRepoFocus(true);
-    }
+    // The tab switch this used to do is gone with the tabs: the filter field
+    // is the paste-a-URL field and it is always mounted and always visible.
+    if (fromStorage || fromQuery) setWantsRepoFocus(true);
   }, []);
 
-  // Focus the repo field once it's actually usable. repoSelectRef/repoInputRef
-  // are attached from first mount (both TabsContent panes use forceMount, so
-  // this doesn't wait on Radix's own mount commit — see the note there), but
-  // which element exists — the <select> of loaded repos, or the plain URL
-  // <input> fallback, or neither while the "Loading repos…" placeholder is
-  // showing — depends on whether the GitHub repos fetch above has resolved.
-  // reposLoading/githubRepos stay in the deps for that reason, not to catch
-  // a tab-mount race.
+  // Focus the one field that takes a repo. It is mounted from first render —
+  // no Radix Presence commit to wait on any more, which is why this no longer
+  // needs reposLoading/githubRepos in its deps. See the header of
+  // console.new-import-focus.test.tsx.
   useEffect(() => {
-    if (!wantsRepoFocus || activeTab !== "import") return;
-    const field = repoSelectRef.current ?? repoInputRef.current;
-    if (!field) return;
-    field.focus();
+    if (!wantsRepoFocus) return;
+    filterRef.current?.focus();
     setWantsRepoFocus(false);
-  }, [wantsRepoFocus, activeTab, reposLoading, githubRepos]);
+  }, [wantsRepoFocus]);
 
   // Load existing chat when chatId is in URL
   useEffect(() => {
@@ -661,8 +694,10 @@ function NewStackPage() {
           setProposal(res.proposal);
           // This proposal came from chat, not from a repo import — any
           // ImportReport left over from an earlier import no longer
-          // describes what Approve is about to do.
+          // describes what Approve is about to do, and neither does the
+          // env-key count, which was counted from a different repo.
           setBuilderInfo(null);
+          setEnvKeyCount(null);
           if (session) {
             const neededServices = res.proposal.services.map(
               (s) => s.service_type,
@@ -686,52 +721,63 @@ function NewStackPage() {
     [loading, messages, session, navigate],
   );
 
-  const importFromRepo = useCallback(async () => {
-    const url = repoUrl.trim();
-    if (!url || repoLoading || !session) return;
-    setRepoLoading(true);
-    setRepoError(null);
-    try {
-      const result = await analyzeRepoForStack(url, session);
-      track("repo_analyzed", {
-        builder: result.builder?.name ?? null,
-        backend_ownership: result.builder?.backendOwnership ?? null,
-        env_style: result.builder?.envStyle ?? null,
-      });
-      const p = result.proposal as StackProposal;
-      setProposal(p);
-      setBuilderInfo(result.builder);
-      setProposalSplitAt(2);
-      setProposalMsgIdx(null);
-      setMessages([
-        { role: "user", content: `Import from GitHub: ${url}` },
-        {
-          role: "assistant",
-          content: `Analyzed \`${result.repoFullName}\` — detected ${p.services.map((s) => s.display_name).join(", ")}. Review the proposal below.`,
-          proposal: p,
-          proposalHidesMessage: false,
-        },
-      ]);
-      if (session) {
-        const neededServices = p.services.map((s) => s.service_type);
-        getConnectedServices(session)
-          .then((connected) => {
-            const missing = neededServices.filter(
-              (svc) => !connected.includes(svc),
-            );
-            setMissingConnections(missing);
-          })
-          .catch(() => {});
+  const importFromRepo = useCallback(
+    async (explicitUrl?: string) => {
+      const url = (explicitUrl ?? repoUrl).trim();
+      if (!url || repoLoading || !session) return;
+      setRepoLoading(true);
+      setRepoError(null);
+      try {
+        const result = await analyzeRepoForStack(url, session);
+        // Was fired on tab change; there are no tabs. Firing it on commitment
+        // answers the same funnel question with intent rather than with clicks.
+        track("new_project_path_selected", { path: "import" });
+        track("repo_analyzed", {
+          builder: result.builder?.name ?? null,
+          backend_ownership: result.builder?.backendOwnership ?? null,
+          env_style: result.builder?.envStyle ?? null,
+        });
+        const p = result.proposal as StackProposal;
+        setProposal(p);
+        setBuilderInfo(result.builder);
+        // Already on the wire and thrown away until now. It cannot be shown on
+        // a grid cell (that would need one analyzeRepo per repo, ~10 upstream
+        // requests each, behind a 20-per-5-minutes limit) so it lands here,
+        // on the card that is the actual commitment.
+        setEnvKeyCount(result.detected_env_vars?.length ?? null);
+        setProposalSplitAt(2);
+        setProposalMsgIdx(null);
+        setMessages([
+          { role: "user", content: `Import from GitHub: ${url}` },
+          {
+            role: "assistant",
+            content: `Analyzed \`${result.repoFullName}\` — detected ${p.services.map((s) => s.display_name).join(", ")}. Review the proposal below.`,
+            proposal: p,
+            proposalHidesMessage: false,
+          },
+        ]);
+        if (session) {
+          const neededServices = p.services.map((s) => s.service_type);
+          getConnectedServices(session)
+            .then((connected) => {
+              const missing = neededServices.filter(
+                (svc) => !connected.includes(svc),
+              );
+              setMissingConnections(missing);
+            })
+            .catch(() => {});
+        }
+      } catch (e) {
+        setRepoError(
+          (e as Error).message ||
+            "Failed to analyze repo. Make sure it's a public GitHub repo.",
+        );
+      } finally {
+        setRepoLoading(false);
       }
-    } catch (e) {
-      setRepoError(
-        (e as Error).message ||
-          "Failed to analyze repo. Make sure it's a public GitHub repo.",
-      );
-    } finally {
-      setRepoLoading(false);
-    }
-  }, [repoUrl, repoLoading, session]);
+    },
+    [repoUrl, repoLoading, session],
+  );
 
   const send = useCallback(() => sendText(input.trim()), [input, sendText]);
 
@@ -827,219 +873,140 @@ function NewStackPage() {
   );
 
   const isEmpty = messages.length === 0;
+  /**
+   * The third empty state: "Connected, no repo with a detectable app". The
+   * grid still renders — dimmed — and the prompt strip takes the emphasis,
+   * because building something new is the only move left.
+   *
+   * Computed over SCANNED repos only. Before the first batch lands nothing is
+   * scanned, and `every` over an empty list is true — which would flash the
+   * emphasis on every load.
+   */
+  const noAppAnywhere = useMemo(() => {
+    const scanned = (githubRepos ?? []).filter((r) => summaries[r.full_name]);
+    return (
+      scanned.length > 0 && scanned.every((r) => !summaries[r.full_name].hasApp)
+    );
+  }, [githubRepos, summaries]);
 
-  const SUGGESTIONS = [
-    "SaaS with auth, email & file storage",
-    "Next.js app with Supabase + Resend",
-    "Edge API with Cloudflare Workers + Supabase",
-    "Deploy a full-stack app to Vercel",
-  ];
-
-  const firstName =
-    (session?.user?.user_metadata?.full_name as string | undefined)?.split(
-      " ",
-    )[0] ??
-    session?.user?.email?.split("@")[0] ??
-    null;
+  const visibleRepos = useMemo(
+    () => filterRepos(githubRepos ?? [], filter),
+    [githubRepos, filter],
+  );
 
   return (
     <>
-      <ConsoleTopBar title="New Project" />
+      <ConsoleTopBar
+        title={
+          <span className="flex items-center gap-2.5">
+            New project
+            {isEmpty && githubRepos && githubRepos.length > 0 && (
+              <span className="font-mono text-[10px] tabular-nums text-dim">
+                {githubRepos.length}
+              </span>
+            )}
+          </span>
+        }
+        right={
+          isEmpty && githubAccount ? (
+            <span className="font-mono text-[11px] text-muted-foreground">
+              {githubAccount}
+            </span>
+          ) : undefined
+        }
+      />
       <div className="flex flex-1 flex-col overflow-hidden">
         {isEmpty ? (
-          /* ── Hero / empty state ── */
-          <div className="flex flex-1 flex-col items-center justify-center overflow-auto px-6 py-12">
-            <div className="w-full max-w-2xl">
-              {/* Badge */}
-              <div className="mb-6 flex items-center justify-center gap-2">
-                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground">
-                  <Sparkles className="h-3 w-3" />
-                  AI-powered stack builder
-                </div>
+          /* ── Repo-first: the repo list is the screen ── */
+          <div className="flex-1 overflow-auto p-7">
+            <div className="mx-auto max-w-[1000px]">
+              <div className="relative mb-5">
+                <input
+                  ref={filterRef}
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  onKeyDown={(e) => {
+                    // One field, two jobs: filter as you type, or paste a URL
+                    // and press Enter. There is no separate import entry
+                    // point because the whole page is the import.
+                    if (e.key === "Enter" && looksLikeRepoUrl(filter)) {
+                      setRepoUrl(filter.trim());
+                      void importFromRepo(filter.trim());
+                    }
+                  }}
+                  placeholder="Filter repos, or paste a GitHub URL…"
+                  className={INPUT}
+                />
               </div>
 
-              <h1 className="mb-2 text-center font-serif text-3xl">
-                {`What are you building${firstName ? `, ${firstName}` : ""}?`}
-              </h1>
-              <p className="mb-6 text-center text-sm text-muted-foreground">
-                Describe it, or bring something you already built.
-              </p>
-
-              <Tabs
-                value={activeTab}
-                onValueChange={(value) => {
-                  setActiveTab(value as "idea" | "import");
-                  track("new_project_path_selected", { path: value });
-                }}
-              >
-                {/* data-tour="chat" lives here, not on the chat card below:
-                    the SetupSpotlight "build" step targets it, and the chat
-                    card only exists in the DOM while the "idea" tab is
-                    active (see the forceMount note on TabsContent below).
-                    This wrapper is on-screen regardless of which tab is
-                    selected, so a user who lands on/switches to "import"
-                    doesn't strand an active tour step with nothing to
-                    spotlight. */}
-                <div data-tour="chat" className="mb-6 flex justify-center">
-                  <TabsList>
-                    <TabsTrigger value="idea">New idea</TabsTrigger>
-                    <TabsTrigger value="import">
-                      I already built something
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-
-                {/* Both panes use forceMount + CSS-driven visibility rather
-                    than Radix's default conditional mount/unmount. Radix's
-                    default swaps a pane's presence via its own internal
-                    Presence state machine, which lands the mount in a commit
-                    that this component doesn't control — so an effect here
-                    reacting to `activeTab` can run before the pane (and the
-                    refs inside it) actually exist. forceMount keeps both
-                    panes mounted from the first render, so repoSelectRef /
-                    repoInputRef are attached as soon as NewStackPage itself
-                    renders, and the auto-focus effect below no longer
-                    depends on an unrelated re-render (previously the GitHub
-                    repos fetch's setReposLoading(false)) to happen to land
-                    after Radix's own mount commit. */}
-                <TabsContent
-                  value="idea"
-                  forceMount
-                  className="data-[state=inactive]:hidden"
-                >
-                  {/* Suggestion chips */}
-                  <div className="mb-6 flex flex-wrap justify-center gap-2">
-                    {SUGGESTIONS.map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        onClick={() => sendText(suggestion)}
-                        disabled={loading}
-                        className="rounded-full border border-border bg-secondary/30 px-3 py-1.5 text-xs text-muted-foreground shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-[var(--app-accent)]/40 hover:bg-secondary/60 hover:text-foreground hover:shadow disabled:pointer-events-none disabled:opacity-50 disabled:hover:translate-y-0"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Chat input card */}
-                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow duration-150 focus-within:border-[var(--app-accent)]/50 focus-within:ring-2 focus-within:ring-[var(--app-accent)]/20">
-                    <textarea
-                      ref={textareaRef}
-                      value={input}
-                      placeholder="Describe your project — e.g. a SaaS app with auth, database and email…"
-                      rows={3}
-                      onChange={(e) => {
-                        setInput(e.target.value);
-                        autoResize();
-                      }}
-                      onKeyDown={onKey}
-                      disabled={loading}
-                      className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none disabled:opacity-50"
+              {reposLoading ? (
+                <HairGrid cols={2}>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <HairCell
+                      key={i}
+                      className="h-[104px] animate-pulse bg-card"
                     />
-                    <div className="mt-3 flex items-center justify-end">
-                      <button
-                        onClick={send}
-                        disabled={!input.trim() || loading}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-sm transition-all duration-150 hover:opacity-90 hover:shadow disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
-                      >
-                        {loading ? (
-                          "Thinking…"
-                        ) : (
-                          <>
-                            Send
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 16 16"
-                              fill="none"
-                            >
-                              <path
-                                d="M8 13V3M3 8l5-5 5 5"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </TabsContent>
+                  ))}
+                </HairGrid>
+              ) : !githubRepos ? (
+                <EmptyCell
+                  title="Connect GitHub to bring an app you already built"
+                  body="leenar reads the repo to work out which services it needs. nothing is written back to it."
+                  action={{
+                    label: "Connect GitHub",
+                    busy: connecting,
+                    onClick: () => {
+                      if (!session) return;
+                      setConnecting(true);
+                      startOAuthFlow("github", session, window.location.href)
+                        .then((url) => {
+                          window.location.href = url;
+                        })
+                        .catch(() => setConnecting(false));
+                    },
+                  }}
+                />
+              ) : githubRepos.length === 0 ? (
+                <EmptyCell
+                  title="No repositories on this account"
+                  body="there is nothing to import yet — describe what you want to build instead and leenar will draw the stack."
+                />
+              ) : visibleRepos.length === 0 ? (
+                <EmptyCell
+                  title="No matching repositories"
+                  body="try a different filter, or paste the repo's github url."
+                />
+              ) : (
+                <RepoGrid
+                  repos={visibleRepos}
+                  summaries={summaries}
+                  busy={repoLoading ? repoUrl : null}
+                  onPick={(r) => {
+                    setRepoUrl(r.html_url);
+                    void importFromRepo(r.html_url);
+                  }}
+                />
+              )}
 
-                <TabsContent
-                  value="import"
-                  forceMount
-                  className="data-[state=inactive]:hidden"
-                >
-                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-                    <h2 className="text-sm font-medium text-foreground">
-                      Take it to production
-                    </h2>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Point us at the repo. Nothing is written back to it.
-                    </p>
+              {repoError && (
+                <p className="mt-3 text-[12px] text-crit">{repoError}</p>
+              )}
 
-                    <div className="mt-4 flex gap-2">
-                      {reposLoading ? (
-                        <div className="flex-1 rounded-md border border-border bg-secondary/30 px-3 py-2 text-xs text-muted-foreground/50">
-                          Loading repos…
-                        </div>
-                      ) : githubRepos && githubRepos.length > 0 ? (
-                        <select
-                          ref={repoSelectRef}
-                          value={repoUrl}
-                          onChange={(e) => setRepoUrl(e.target.value)}
-                          disabled={repoLoading}
-                          className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-xs text-foreground focus:outline-none disabled:opacity-50"
-                        >
-                          <option value="">Select a repository…</option>
-                          {githubRepos.map((r) => (
-                            <option key={r.id} value={r.html_url}>
-                              {r.full_name}
-                              {r.private ? " 🔒" : ""}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          ref={repoInputRef}
-                          type="text"
-                          placeholder="https://github.com/you/your-repo"
-                          value={repoUrl}
-                          onChange={(e) => setRepoUrl(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") importFromRepo();
-                          }}
-                          disabled={repoLoading}
-                          className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
-                        />
-                      )}
-                      <button
-                        onClick={importFromRepo}
-                        disabled={!repoUrl.trim() || repoLoading}
-                        className="rounded-md border border-border bg-secondary/40 px-4 py-2 text-xs hover:bg-secondary/80 disabled:opacity-50"
-                      >
-                        {repoLoading ? "Analyzing…" : "Analyze"}
-                      </button>
-                    </div>
-                    {repoError && (
-                      <p className="mt-2 text-xs text-red-400">{repoError}</p>
-                    )}
-
-                    <div className="mt-4 border-l-2 border-border pl-3 text-xs text-muted-foreground">
-                      Built with Lovable? We find the Supabase project your app
-                      already uses and connect it. We never create a second,
-                      empty one.
-                    </div>
-
-                    <p className="mt-3 text-[11px] text-muted-foreground/70">
-                      Lovable, v0, Bolt, or any GitHub repo
-                    </p>
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <PromptStrip
+                value={prompt}
+                onChange={setPrompt}
+                onSubmit={() => {
+                  const text = prompt.trim();
+                  if (!text) return;
+                  track("new_project_path_selected", { path: "idea" });
+                  setPrompt("");
+                  void sendText(text);
+                }}
+                disabled={loading}
+                emphasised={
+                  (!!githubRepos && githubRepos.length === 0) || noAppAnywhere
+                }
+              />
             </div>
           </div>
         ) : (
@@ -1058,10 +1025,10 @@ function NewStackPage() {
                         className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm leading-relaxed ${
+                          className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-[13.5px] leading-relaxed ${
                             msg.role === "user"
-                              ? "bg-foreground text-background"
-                              : "bg-card border border-border text-foreground"
+                              ? "bg-secondary text-foreground"
+                              : "border border-border text-foreground"
                           }`}
                         >
                           {msg.role === "assistant" ? (
@@ -1082,6 +1049,7 @@ function NewStackPage() {
                     onApprove={approve}
                     missingConnections={missingConnections}
                     approving={approving}
+                    envKeyCount={envKeyCount}
                   />
                 )}
 
@@ -1092,10 +1060,10 @@ function NewStackPage() {
                       className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm leading-relaxed ${
+                        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-[13.5px] leading-relaxed ${
                           msg.role === "user"
-                            ? "bg-foreground text-background"
-                            : "bg-card border border-border text-foreground"
+                            ? "bg-secondary text-foreground"
+                            : "border border-border text-foreground"
                         }`}
                       >
                         {msg.role === "assistant" ? (
@@ -1109,14 +1077,14 @@ function NewStackPage() {
 
                 {loading && (
                   <div className="flex justify-start">
-                    <div className="rounded-xl border border-border bg-card">
+                    <div className="rounded-2xl border border-border">
                       <TypingDots />
                     </div>
                   </div>
                 )}
 
                 {error && (
-                  <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                  <div className="rounded-xl border border-crit/30 px-3 py-2 text-[12px] text-crit">
                     {error}
                   </div>
                 )}
@@ -1126,7 +1094,7 @@ function NewStackPage() {
             </div>
 
             {/* Bottom input bar */}
-            <div className="border-t border-dashed border-border px-6 py-4">
+            <div className="border-t border-border-soft px-6 py-4">
               <div className="mx-auto max-w-2xl">
                 {/* GitHub repo picker when AI asks */}
                 {!loading &&
@@ -1138,9 +1106,9 @@ function NewStackPage() {
                   ) &&
                   githubRepos &&
                   githubRepos.length > 0 && (
-                    <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-secondary/30 px-3 py-2">
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        Your repos
+                    <div className="mb-3 flex items-center gap-2 rounded-xl border border-border px-3 py-2">
+                      <span className="shrink-0 font-mono text-[11px] lowercase text-dim">
+                        your repos
                       </span>
                       <select
                         defaultValue=""
@@ -1148,7 +1116,7 @@ function NewStackPage() {
                           const val = e.target.value;
                           if (val) sendText(val);
                         }}
-                        className="flex-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs text-foreground focus:outline-none"
+                        className="flex-1 rounded-lg border border-border-soft bg-secondary px-2 py-1.5 text-[12.5px] text-foreground focus:outline-none"
                       >
                         <option value="" disabled>
                           Select a repository…
@@ -1162,14 +1130,14 @@ function NewStackPage() {
                       </select>
                       <button
                         onClick={() => sendText("I don't have a repo yet")}
-                        className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                        className={PILL_QUIET}
                       >
                         No repo yet
                       </button>
                     </div>
                   )}
 
-                <div className="flex items-end gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm transition-shadow duration-150 focus-within:border-[var(--app-accent)]/50 focus-within:ring-2 focus-within:ring-[var(--app-accent)]/20">
+                <div className="flex items-end gap-3 rounded-2xl border border-border px-4 py-3 transition-colors focus-within:border-foreground/25">
                   <textarea
                     ref={textareaRef}
                     value={input}
@@ -1181,13 +1149,13 @@ function NewStackPage() {
                     }}
                     onKeyDown={onKey}
                     disabled={loading}
-                    className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none disabled:opacity-50"
+                    className="flex-1 resize-none bg-transparent text-[13.5px] text-foreground placeholder:text-dim focus:outline-none disabled:opacity-50"
                     style={{ maxHeight: 120, overflowY: "auto" }}
                   />
                   <button
                     onClick={send}
                     disabled={!input.trim() || loading}
-                    className="shrink-0 rounded-md bg-foreground p-1.5 text-background shadow-sm transition-all duration-150 hover:opacity-90 hover:shadow disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                    className="shrink-0 rounded-full bg-primary p-2 text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                       <path

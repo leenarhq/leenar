@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
+  detectMonorepo,
   hasAppManifest,
   parseEnvKeys,
   pickEnvFile,
@@ -15,7 +16,7 @@ const PKG = JSON.stringify({
 
 /** Mirrors GitHub's contents listing: every file entry carries a download_url
  *  already pointed at the default branch. That is the whole reason this scan
- *  costs one API call — see F1 in the plan. */
+ *  costs one API call. */
 function listing(names: string[]) {
   return names.map((name) => ({
     name,
@@ -51,10 +52,9 @@ describe("pickEnvFile", () => {
 
 describe("parseEnvKeys", () => {
   it("takes the key from each assignment and skips comments", () => {
-    expect(parseEnvKeys("# comment\nAPI_KEY=1\n\nDB_URL=postgres://x")).toEqual([
-      "API_KEY",
-      "DB_URL",
-    ]);
+    expect(parseEnvKeys("# comment\nAPI_KEY=1\n\nDB_URL=postgres://x")).toEqual(
+      ["API_KEY", "DB_URL"],
+    );
   });
 
   it("rejects lowercase and dotted names", () => {
@@ -73,7 +73,73 @@ describe("hasAppManifest", () => {
   });
 });
 
+describe("detectMonorepo", () => {
+  it("accepts a workspace file from any of the tools that use one", () => {
+    for (const f of [
+      "pnpm-workspace.yaml",
+      "turbo.json",
+      "lerna.json",
+      "nx.json",
+    ])
+      expect(detectMonorepo([f, "package.json"], null)).toBe(true);
+  });
+
+  it("accepts package.json workspaces in both the array and the object form", () => {
+    expect(detectMonorepo(["package.json"], { workspaces: ["apps/*"] })).toBe(
+      true,
+    );
+    expect(
+      detectMonorepo(["package.json"], {
+        workspaces: { packages: ["apps/*"] },
+      }),
+    ).toBe(true);
+  });
+
+  it("does not call a declared-but-empty workspace a monorepo", () => {
+    expect(detectMonorepo(["package.json"], { workspaces: [] })).toBe(false);
+    expect(
+      detectMonorepo(["package.json"], { workspaces: { packages: [] } }),
+    ).toBe(false);
+  });
+
+  it("leaves an ordinary repo alone", () => {
+    expect(
+      detectMonorepo(["package.json", "next.config.mjs"], { name: "app" }),
+    ).toBe(false);
+    expect(detectMonorepo([], null)).toBe(false);
+  });
+});
+
 describe("summarizeRepo", () => {
+  it("says a workspace root is a monorepo, since it has no services to report", async () => {
+    // The root package.json of a workspace declares tooling, not a stack, so
+    // the chips come back empty. Without the flag that empty row reads as
+    // "scanned, nothing found" — which is the opposite of what happened.
+    vi.stubGlobal(
+      "fetch",
+      stubFetch({
+        "package.json": JSON.stringify({
+          name: "monorepo",
+          workspaces: ["apps/*", "packages/*"],
+          devDependencies: { turbo: "2" },
+        }),
+      }),
+    );
+
+    const s = await summarizeRepo("acme/app", "tok");
+
+    expect(s!.isMonorepo).toBe(true);
+    expect(s!.services.filter((x) => x !== "github")).toEqual([]);
+    // Still clickable: the proposal card resolves the real stack one click on.
+    expect(s!.hasApp).toBe(true);
+  });
+
+  it("does not flag an ordinary app", async () => {
+    vi.stubGlobal("fetch", stubFetch({ "package.json": PKG }));
+
+    expect((await summarizeRepo("acme/app", "tok"))!.isMonorepo).toBe(false);
+  });
+
   it("counts env keys from both the env file and the framework config", async () => {
     vi.stubGlobal(
       "fetch",
@@ -116,7 +182,7 @@ describe("summarizeRepo", () => {
   });
 
   it("returns null — not an empty summary — when GitHub will not answer", async () => {
-    // F7: a 502 must leave the cell plain and clickable, never dimmed.
+    // A 502 must leave the cell plain and clickable, never dimmed.
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response("nope", { status: 502 })),

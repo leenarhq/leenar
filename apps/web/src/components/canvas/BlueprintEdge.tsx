@@ -14,7 +14,6 @@ export function BlueprintEdge({
   targetY,
   sourcePosition,
   targetPosition,
-  markerEnd,
   data,
   selected,
 }: EdgeProps) {
@@ -43,6 +42,31 @@ export function BlueprintEdge({
   // #3b82f6 / #64748b.
   const color = synced ? "var(--ok)" : "var(--edge)";
 
+  const opacity = selected ? 1 : hovered ? 0.9 : running ? 0.9 : 0.55;
+
+  /**
+   * The arrowhead is drawn here rather than taken from the edge's stored
+   * `markerEnd`, and the incoming prop is deliberately ignored.
+   *
+   * `markerEnd.color` is a literal frozen at write time, and it was wrong
+   * three different ways. Rows written before PR 2 hold the retired five-hue
+   * scheme. Rows written by the API and the MCP tools still hold `#34d399`
+   * today, on edges whose `synced` is false — so the head claimed provisioned
+   * while the line said structural. And even the corrected writers call
+   * `getComputedStyle` and persist whatever the theme resolved to at that
+   * instant, so an edge drawn in the dark theme kept a dark arrowhead in the
+   * light one.
+   *
+   * `color` above is a `var()`, resolved by the browser on every paint, so
+   * deriving the head from it fixes all three at once — including every row
+   * already in the database, with no migration to run.
+   *
+   * The geometry is ReactFlow's own `arrowclosed`, so the shape is unchanged.
+   * The id is per-edge because a `<marker>` must live in the same SVG root as
+   * the path referencing it, and each edge is its own root.
+   */
+  const markerId = `blueprint-arrow-${id}`;
+
   // What the edge carries, at a glance. An edge carrying nothing renders no
   // chip at all — that absence is the visible form of "no edge, no env
   // injection", and it is why the chip is not just decoration.
@@ -54,15 +78,40 @@ export function BlueprintEdge({
 
   return (
     <>
+      <defs>
+        <marker
+          id={markerId}
+          className="react-flow__arrowhead"
+          markerWidth={12.5}
+          markerHeight={12.5}
+          viewBox="-10 -10 20 20"
+          markerUnits="strokeWidth"
+          orient="auto-start-reverse"
+          refX={0}
+          refY={0}
+        >
+          <polyline
+            points="-5,-4 0,0 -5,4 -5,-4"
+            fill={color}
+            fillOpacity={opacity}
+            stroke={color}
+            strokeOpacity={opacity}
+            strokeWidth={1}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </marker>
+      </defs>
+
       {/* Main line — thin & quiet at rest, no glow halo */}
       <BaseEdge
         id={id}
         path={edgePath}
-        markerEnd={markerEnd}
+        markerEnd={`url(#${markerId})`}
         style={{
           stroke: color,
           strokeWidth: selected ? 2 : emphasized ? 1.75 : 1.25,
-          strokeOpacity: selected ? 1 : hovered ? 0.9 : running ? 0.9 : 0.55,
+          strokeOpacity: opacity,
           strokeDasharray: running ? "9 6" : undefined,
           animation: running ? "blueprintDash 0.5s linear infinite" : undefined,
         }}

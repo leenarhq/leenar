@@ -3,10 +3,21 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Plus, Trash2, Copy, Loader2, Check } from "lucide-react";
 import { SettingsShell, SettingsHeader } from "../components/settings-shell";
-import { Rows, Row, RowHead, Mono, Dim } from "../components/console/Rows";
+import {
+  Rows,
+  Row,
+  RowHead,
+  Mono,
+  Dim,
+  ROW_HEAD_WIDE_ONLY,
+} from "../components/console/Rows";
 import { StateTag } from "../components/console/StateTag";
 import { INPUT, PILL } from "../components/console/Field";
 import { useAuth } from "../context/auth";
+
+/* Kept literal so Tailwind's scanner sees it, and declared once because the
+   header and the rows have to agree — they were two copies of this string. */
+const COLS = "sm:grid-cols-[2fr_1fr_1.5fr_1.5fr_auto]";
 import {
   listApiKeys,
   createApiKey,
@@ -53,7 +64,7 @@ function ApiTokensPage() {
 
   return (
     <SettingsShell title="API Tokens">
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-5 sm:p-8">
         <SettingsHeader subtitle="Create tokens that grant access to the Leenar API on behalf of this account." />
 
         <div className="mt-6 flex items-center gap-2">
@@ -122,8 +133,8 @@ function ApiTokensPage() {
 
         <div className="mt-6">
           <Rows>
-            <RowHead>
-              <div className="grid w-full grid-cols-[2fr_1fr_1.5fr_1.5fr_auto] gap-4">
+            <RowHead className={ROW_HEAD_WIDE_ONLY}>
+              <div className={`grid w-full gap-4 ${COLS}`}>
                 <div>name</div>
                 <div>scope</div>
                 <div>prefix</div>
@@ -142,21 +153,28 @@ function ApiTokensPage() {
             ) : (
               keys.map((k) => (
                 <Row key={k.id}>
-                  <div className="grid w-full grid-cols-[2fr_1fr_1.5fr_1.5fr_auto] items-center gap-4">
+                  <div
+                    className={`grid w-full grid-cols-1 gap-1.5 sm:items-center sm:gap-4 ${COLS}`}
+                  >
                     <div className="truncate">{k.name}</div>
-                    {/* A scope is a category, not a state — no hue (spec D3). */}
-                    <div>
-                      <StateTag
-                        tone="idle"
-                        label={k.scope === "write" ? "write" : "read"}
-                      />
+                    {/* `sm:contents` dissolves this wrapper back into the grid
+                        above the breakpoint, so the three secondary values are
+                        real columns there and one wrapped line here. */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:contents">
+                      {/* A scope is a category, not a state — no hue (spec D3). */}
+                      <div>
+                        <StateTag
+                          tone="idle"
+                          label={k.scope === "write" ? "write" : "read"}
+                        />
+                      </div>
+                      <Mono>{k.key_prefix}…</Mono>
+                      <Dim>
+                        {k.last_used_at
+                          ? `used ${timeAgo(new Date(k.last_used_at).getTime())}`
+                          : "never used"}
+                      </Dim>
                     </div>
-                    <Mono>{k.key_prefix}…</Mono>
-                    <Dim>
-                      {k.last_used_at
-                        ? timeAgo(new Date(k.last_used_at).getTime())
-                        : "never"}
-                    </Dim>
                     <button
                       onClick={() =>
                         window.confirm(`Revoke "${k.name}"?`) &&

@@ -599,7 +599,8 @@ export async function connectServices(
     type: "blueprint",
     animated: false,
     selected: false,
-    markerEnd: { type: "arrowclosed", color: "#34d399" },
+    // No `color` — the arrowhead is derived from `data.synced` on render.
+    markerEnd: { type: "arrowclosed" },
     data: { synced: false, envVars: computedEnvVars },
   };
 

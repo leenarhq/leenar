@@ -50,7 +50,7 @@ function ProfilePage() {
 
   return (
     <SettingsShell title="Profile">
-      <div className="max-w-2xl flex-1 p-8">
+      <div className="max-w-2xl flex-1 p-5 sm:p-8">
         <SettingsHeader subtitle="Manage your account identity." />
 
         {msg && (

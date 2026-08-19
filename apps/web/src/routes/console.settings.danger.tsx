@@ -37,7 +37,7 @@ function DangerPage() {
 
   return (
     <SettingsShell title="Danger Zone">
-      <div className="max-w-2xl flex-1 p-8">
+      <div className="max-w-2xl flex-1 p-5 sm:p-8">
         <SettingsHeader subtitle="Irreversible and destructive actions." />
 
         {/* crit border and crit text, never a crit fill — the spec is

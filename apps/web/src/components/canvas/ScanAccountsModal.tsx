@@ -324,7 +324,13 @@ export function ScanAccountsModal({
                             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--hover)] transition-colors text-left"
                           >
                             <div
-                              className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-colors ${on ? "bg-[#3ecf8e] border-[#3ecf8e]" : "border-border bg-transparent"}`}
+                              // bg-primary, not Supabase's #3ecf8e: a ticked
+                              // box is a selection, and a selection is not a
+                              // provider. The tick inside is already
+                              // --primary-foreground, which is defined against
+                              // --primary and against nothing else — the pair
+                              // only looked right by accident.
+                              className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-colors ${on ? "bg-primary border-primary" : "border-border bg-transparent"}`}
                             >
                               {on && (
                                 <svg
@@ -361,7 +367,10 @@ export function ScanAccountsModal({
                               {vp.name}
                             </span>
                             {autoDetected && (
-                              <span className="ml-auto text-[11px] font-mono px-1.5 py-0.5 rounded bg-[#3ecf8e]/10 text-[#3ecf8e]/70 border border-[#3ecf8e]/20 flex-shrink-0">
+                              // "auto" is provenance — how this pairing was
+                              // found — not a state and not a provider, so it
+                              // takes no hue.
+                              <span className="ml-auto flex-shrink-0 rounded border border-border-soft px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
                                 auto
                               </span>
                             )}

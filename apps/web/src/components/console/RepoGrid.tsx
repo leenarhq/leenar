@@ -140,6 +140,13 @@ export function RepoGrid({
                   pt-3 as well (border-box), and that number would then be two
                   measurements added together instead of one chip's height. */}
               <span className="flex min-h-[21px] min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                {/* The monorepo chip is the label on an empty row, not an
+                    extra fact beside a full one. The scan reads the root
+                    package.json only, so a workspace root genuinely has no
+                    services to report — without this the row looked like the
+                    scan had run and found nothing. It sits first because it
+                    explains whatever does or does not follow it. */}
+                {!noApp && summary?.isMonorepo && <SvcChip label="monorepo" />}
                 {noApp ? (
                   // `strong` because the whole cell is at 50%: measured on
                   // this ladder that puts muted at 2.2:1 in dark and the dim

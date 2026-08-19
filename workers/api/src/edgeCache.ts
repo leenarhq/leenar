@@ -2,13 +2,19 @@
  * A read-through cache on Cloudflare's edge cache, for values that are
  * expensive to derive and harmless a few minutes stale.
  *
- * Not KV, and not for want of trying: workers/api binds exactly one namespace
- * (IP_BLOCKS, wrangler.toml:33) and adding a second means running
- * `wrangler kv namespace create` against the real account — an operations
- * step, not a code change. `caches.default` needs no binding and no migration.
- * The trade is that it is per-colo and evictable, which only works because
- * every miss here is safe. KV remains the upgrade path if that stops being
- * true.
+ * Not KV, and this is a decision rather than a deferral. `caches.default`
+ * needs no binding and no migration; the trade is that it is per-colo and
+ * evictable, which only works because every miss here is safe.
+ *
+ * A KV tier was written and then reverted, so save the trip: the argument for
+ * it is that a user landing on a different colo pays the scan twice, and that
+ * user does not exist. Cloudflare routes to the nearest colo and keeps doing
+ * so for the length of a session, the TTL here is ten minutes, and the repo
+ * grid fires its batches concurrently — so they all land on the same colo by
+ * construction. What KV would buy is a hit rate that is already ~1.
+ *
+ * The thing worth remembering instead: this cache, not the rate limiter, is
+ * what bounds a user's GitHub spend. See routes/github.ts.
  *
  * Two rules the callers depend on:
  *   - the key lives on the caller's own origin, because Cloudflare rejects a

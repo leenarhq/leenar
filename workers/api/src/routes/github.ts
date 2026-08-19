@@ -46,6 +46,28 @@ const MAX_REPOS = 20
 const SUMMARY_TTL_S = 600
 
 /**
+ * Requests, not repos, per window.
+ *
+ * This number has to move with MAX_REPOS and the frontend's cap, because a
+ * full grid costs ceil(SUMMARY_CAP / MAX_REPOS) requests. At a hundred repos
+ * that is five, so a limit of twenty allowed four grid loads in five minutes —
+ * it was ten before the cap moved from forty to a hundred. And the failure is
+ * worse than a 429: the frontend fires its batches concurrently and swallows a
+ * rejected one, so the limit is reached partway through a load and the grid
+ * comes back half-chipped, which is the exact thing raising the cap was meant
+ * to stop.
+ *
+ * Forty is safe because this limiter is not what protects the GitHub budget.
+ * The cache is — every repeat load inside SUMMARY_TTL_S is a cache hit and
+ * costs GitHub nothing, while the limiter counts it all the same. What is left
+ * for the limiter is coarse abuse protection on the worker, and forty per five
+ * minutes is still that, while giving a hundred-repo account eight grid loads
+ * instead of four.
+ */
+const SUMMARY_RATE_LIMIT = 40
+const SUMMARY_RATE_WINDOW_MS = 5 * 60_000
+
+/**
  * POST /api/github/repos/summary — the env-key count, the detected stack and
  * "is there an app here" for a batch of repos.
  *
@@ -62,7 +84,15 @@ const SUMMARY_TTL_S = 600
 github.post('/repos/summary', async (c) => {
   const userId = c.get('userId')
 
-  if (!(await provisioningHooks.rateLimit.check(c.env, userId, 'repo-summary', 20, 5 * 60_000))) {
+  if (
+    !(await provisioningHooks.rateLimit.check(
+      c.env,
+      userId,
+      'repo-summary',
+      SUMMARY_RATE_LIMIT,
+      SUMMARY_RATE_WINDOW_MS,
+    ))
+  ) {
     return c.json({ error: 'Too many requests. Please wait a few minutes.' }, 429)
   }
 

@@ -22,10 +22,14 @@ export const Route = createFileRoute("/console/projects/$id/canvas")({
   component: ProjectCanvasPage,
 });
 
+// Tokens with no hex fallback. The fallback was insurance against a
+// stylesheet that never loaded, but this boundary catches a component that
+// threw — the stylesheet is fine, and if it were not, --crit below would be
+// just as unresolved as --background here.
 const fallbackStyle: React.CSSProperties = {
   height: "100%",
   width: "100%",
-  background: "var(--app-bg, #050505)",
+  background: "var(--background)",
 };
 
 class CanvasErrorBoundary extends Component<
@@ -55,7 +59,7 @@ class CanvasErrorBoundary extends Component<
             justifyContent: "center",
             flexDirection: "column",
             gap: 12,
-            color: "#ef4444",
+            color: "var(--crit)",
             fontSize: 14,
           }}
         >

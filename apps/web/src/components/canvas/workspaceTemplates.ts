@@ -1,13 +1,6 @@
 import { ENV_FLOW } from "../../lib/envFlow";
 import { applyAutoLayout } from "./workspaceHelpers";
 
-/** Read a theme token for the one place SVG markers need a literal colour. */
-function read(token: string): string {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(token)
-    .trim();
-}
-
 const TEMPLATE_ICON: Record<string, string> = {
   github: "Github",
   vercel: "Triangle",
@@ -133,10 +126,8 @@ export function buildTemplateCanvas(templateName: string) {
         // Leave envVars empty: backend resolves ENV_FLOW + framework at provision
         // time. Freezing names here would be treated as a user override.
         data: {},
-        markerEnd: {
-          type: "arrowclosed",
-          color: read(envVars.length ? "--ok" : "--edge"),
-        },
+        // No `color` — see BlueprintEdge: the arrowhead is derived.
+        markerEnd: { type: "arrowclosed" },
       },
     ];
   });

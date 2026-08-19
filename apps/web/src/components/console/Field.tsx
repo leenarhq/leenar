@@ -47,3 +47,14 @@ export const PILL =
 /** The quiet secondary shape. */
 export const PILL_QUIET =
   "inline-flex shrink-0 items-center gap-2 rounded-full border border-border-soft px-3.5 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-50";
+
+/**
+ * PILL with a glyph instead of a word: same fill, same radius, square.
+ *
+ * Not PILL with an icon child — `gap-2` and the asymmetric `px-3.5 py-2` are
+ * there to sit a label off its edge, and with nothing to sit off they read as
+ * a pill that lost its text. The point of sharing the shape is that the send
+ * button and a Save button are recognisably the same control.
+ */
+export const PILL_ICON =
+  "inline-flex shrink-0 items-center justify-center rounded-full bg-primary p-2 text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40";

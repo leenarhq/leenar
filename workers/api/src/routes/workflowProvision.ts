@@ -1403,19 +1403,19 @@ workflowProvision.post("/from-scan", async (c) => {
             ? supabaseRefMap.get(conn.toRef)
             : githubRepoMap.get(conn.toRef);
       if (!srcNodeId || !tgtNodeId) return null;
-      // Base names only used to decide the "wired" marker color. envVars is left
-      // unfrozen so the backend resolves ENV_FLOW + framework at provision time.
-      const wired = (ENV_FLOW[conn.fromService]?.[conn.toService]?.length ?? 0) > 0;
+      // envVars is left unfrozen so the backend resolves ENV_FLOW + framework
+      // at provision time.
       return {
         id: `scan-edge-${idPrefix}-${i}`,
         source: srcNodeId,
         target: tgtNodeId,
         type: "blueprint",
         animated: false,
-        markerEnd: {
-          type: "arrowclosed",
-          color: wired ? "#34d399" : "#3b82f6",
-        },
+        // No `color`: BlueprintEdge derives the arrowhead from `data.synced`
+        // at render time. The two hexes that used to sit here were the retired
+        // five-hue scheme, and the green one contradicted its own line — the
+        // edge is proposed, not provisioned.
+        markerEnd: { type: "arrowclosed" },
       };
     })
     .filter(Boolean) as Array<Record<string, unknown>>;
@@ -1699,7 +1699,7 @@ type ImportEdge = {
   type: string;
   animated: boolean;
   selected: boolean;
-  markerEnd: { type: string; color: string };
+  markerEnd: { type: string };
   data: { synced: boolean; envVars: string[] };
 };
 
@@ -1766,7 +1766,7 @@ async function detectImportEdges(
       type: "blueprint",
       animated: false,
       selected: false,
-      markerEnd: { type: "arrowclosed", color: "#34d399" },
+      markerEnd: { type: "arrowclosed" },
       data: {
         // Import edges represent connections that already exist in the real
         // infra (the two resources are already live and wired up) — unlike

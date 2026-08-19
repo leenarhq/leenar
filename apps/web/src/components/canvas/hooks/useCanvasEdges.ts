@@ -14,13 +14,6 @@ import type { Session } from "@supabase/supabase-js";
 import { deleteEdgeEnvVars } from "../../../lib/api";
 import { normalizeHandles } from "../edgeDisplay";
 
-/** Read a theme token for the one place SVG markers need a literal colour. */
-function read(token: string): string {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(token)
-    .trim();
-}
-
 interface UseCanvasEdgesParams {
   nodes: Node[];
   edges: Edge[];
@@ -90,13 +83,10 @@ export function useCanvasEdges({
             ...normalizeHandles(params),
             type: "blueprint",
             animated: isRunning,
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              // Colour literals only — this hook's logic is untouched. The
-              // arrowhead has to match BlueprintEdge's stroke, which is now
-              // --ok for a synced edge and --edge for everything else.
-              color: read(envVars ? "--ok" : "--edge"),
-            },
+            // No `color`: BlueprintEdge derives the arrowhead from the same
+            // `var()` as its line, so a colour stored here would be a stale
+            // copy of a value the renderer never reads.
+            markerEnd: { type: MarkerType.ArrowClosed },
             // Leave envVars empty: backend resolves ENV_FLOW + framework at
             // provision time. Freezing names here would be treated as a user
             // override that bypasses framework-aware prefix resolution.

@@ -30,13 +30,6 @@ import { nowTime, stepsToNewLogs } from "../workspaceHelpers";
 import { backupKeyFor } from "./useWorkflowPersistence";
 import { createSessionWatcher } from "../../../lib/sessionWatcher";
 
-/** Read a theme token for the one place SVG markers need a literal colour. */
-function read(token: string): string {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(token)
-    .trim();
-}
-
 type IntegrationBanner =
   | { type: "missing"; services: string[] }
   | {
@@ -361,10 +354,9 @@ export function useDeployFlow({
                   ...(e.data as Record<string, unknown>),
                   synced: true,
                 },
-                markerEnd: {
-                  type: MarkerType.ArrowClosed,
-                  color: read("--ok"),
-                },
+                // `data.synced` above is what turns the line and the
+                // arrowhead ok; no colour is stored — see BlueprintEdge.
+                markerEnd: { type: MarkerType.ArrowClosed },
               };
             }
             return e;

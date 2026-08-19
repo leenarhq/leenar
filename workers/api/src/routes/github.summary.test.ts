@@ -91,7 +91,7 @@ describe("POST /api/github/repos/summary", () => {
   });
 
   it("omits a repo GitHub would not answer for rather than reporting it as appless", async () => {
-    // F7: absent means "render the cell plain", hasApp:false means "dim it".
+    // Absent means "render the cell plain"; hasApp:false means "dim it".
     summarizeRepo.mockImplementation(async (full: string) =>
       full === "acme/dead" ? null : summary(full),
     );

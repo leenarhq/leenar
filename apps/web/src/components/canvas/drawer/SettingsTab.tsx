@@ -638,7 +638,12 @@ export function SettingsTab({
                     href={localData.cloudflareWorkerUrl as string}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-[#F4811F]/10 border border-[#F4811F]/25 text-[#F4811F] text-[13px] font-semibold hover:bg-[#F4811F]/20 transition-all"
+                    // Cloudflare's #F4811F used to tint the fill, the border
+                    // and the ink here. Opening a Worker is an action, not a
+                    // state, and the provider it belongs to is already named
+                    // by the node this drawer is attached to — so it takes the
+                    // console's neutral button rather than a brand hue.
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:bg-secondary"
                   >
                     <IconRenderer iconName="ExternalLink" size={11} />
                     Open Worker

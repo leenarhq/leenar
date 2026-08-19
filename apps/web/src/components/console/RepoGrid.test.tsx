@@ -45,6 +45,43 @@ describe("RepoGrid", () => {
     expect(screen.queryByText("github")).toBeNull();
   });
 
+  it("labels a workspace root, so its empty chip row is explained", () => {
+    render(
+      <RepoGrid
+        repos={[repo("app")]}
+        summaries={{
+          // What the scan actually returns for a workspace root: it reads the
+          // root package.json only, and that declares tooling, not a stack.
+          "acme/app": summary({
+            services: ["github"],
+            isMonorepo: true,
+            envKeys: 0,
+          }),
+        }}
+        busy={null}
+        onPick={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("monorepo")).toBeTruthy();
+  });
+
+  it("says nothing about a summary written before the scan detected this", () => {
+    // Cached summaries outlive a deploy: `isMonorepo` arrives absent, and
+    // absent must not render as "not a monorepo" any louder than it renders
+    // as one.
+    render(
+      <RepoGrid
+        repos={[repo("app")]}
+        summaries={{ "acme/app": summary() }}
+        busy={null}
+        onPick={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText("monorepo")).toBeNull();
+  });
+
   it("dims a repo with no app and refuses the click", () => {
     const onPick = vi.fn();
     render(

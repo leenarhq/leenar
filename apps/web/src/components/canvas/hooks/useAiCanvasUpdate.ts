@@ -4,13 +4,6 @@ import type { CanvasUpdatePayload } from "../../../lib/api";
 import { ENV_FLOW } from "../../../lib/envFlow";
 import { inferServiceType, applyAutoLayout } from "../workspaceHelpers";
 
-/** Read a theme token for the one place SVG markers need a literal colour. */
-function read(token: string): string {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(token)
-    .trim();
-}
-
 interface UseAiCanvasUpdateParams {
   nodes: Node[];
   isRunning: boolean;
@@ -73,10 +66,8 @@ export function useAiCanvasUpdate({
           sourceHandle: "source-right",
           targetHandle: "target-left",
           animated: isRunning,
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: read(envVars.length ? "--ok" : "--edge"),
-          },
+          // No `color` — see BlueprintEdge: the arrowhead is derived.
+          markerEnd: { type: MarkerType.ArrowClosed },
           // Leave data empty: backend resolves ENV_FLOW + framework at provision
           // time. Freezing names here would be treated as a user override.
           data: {},

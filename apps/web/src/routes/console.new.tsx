@@ -32,15 +32,11 @@ import {
   loadChatHistory,
 } from "../lib/workflows";
 import { createProject } from "../lib/workflows";
-import { ENV_FLOW } from "../lib/envFlow";
 import { remapCanvasNodeId } from "../lib/canvasNodeId";
 import { takePendingPrompt } from "../lib/pendingPrompt";
 import { takePendingImport } from "../lib/pendingImport";
 import { track } from "../lib/monitoring";
-import {
-  applyAutoLayout,
-  inferServiceType,
-} from "../components/canvas/workspaceHelpers";
+import { applyAutoLayout } from "../components/canvas/workspaceHelpers";
 
 /* ── Route ──────────────────────────────────────────────────── */
 
@@ -177,13 +173,6 @@ function proposalToCanvas(proposal: StackProposal) {
       const srcNode = nodes.find((n) => n.data.provider === conn.from_type);
       const tgtNode = nodes.find((n) => n.data.provider === conn.to_type);
       if (!srcNode || !tgtNode) return null;
-      const fromKey =
-        inferServiceType(srcNode.data as Record<string, unknown>) ??
-        conn.from_type;
-      const toKey =
-        inferServiceType(tgtNode.data as Record<string, unknown>) ??
-        conn.to_type;
-      const wired = (ENV_FLOW[fromKey]?.[toKey]?.length ?? 0) > 0;
       return {
         id: `edge-${ts}-${i}`,
         source: srcNode.id,
@@ -193,17 +182,8 @@ function proposalToCanvas(proposal: StackProposal) {
         // Leave envVars empty: backend resolves ENV_FLOW + framework at provision
         // time. Freezing names here would be treated as a user override.
         data: {},
-        markerEnd: {
-          type: "arrowclosed",
-          // Matches BlueprintEdge's line exactly: ok for a connection that
-          // carries env vars, the hairline for structural chrome. PR 2
-          // retired the five-hue scheme (#60a5fa / #34d399 / #3b82f6 / …)
-          // inside components/canvas/, but this route writes the marker and
-          // was out of that PR's scope, so a new canvas was drawing an old
-          // green arrowhead on a new-token line. Existing rows keep their
-          // stored value; they are not migrated.
-          color: wired ? "var(--ok)" : "var(--edge)",
-        },
+        // No `color` — see BlueprintEdge: the arrowhead is derived.
+        markerEnd: { type: "arrowclosed" },
       };
     })
     .filter((e): e is NonNullable<typeof e> => e !== null);
@@ -440,10 +420,24 @@ type NewChatMessage = ChatMessage & {
  * raw fetches, and an account with 300 of them would spend a slice of its
  * hourly budget on a screen the user is about to click once. Repos past the
  * cap render plain — no chips, still clickable — which is the pre-PR-6 cell,
- * so the cap degrades rather than breaks. The batch size mirrors the server's
- * own MAX_REPOS (workers/api/src/routes/github.ts).
+ * so the cap degrades rather than breaks.
+ *
+ * 40 was a first guess and the arithmetic did not support it. The GitHub cost
+ * is one API call per repo against 5,000 an hour, and the batch mirrors the
+ * server's MAX_REPOS, so what grows with the cap is the number of requests,
+ * not the subrequests inside any one of them.
+ *
+ * That request count is the part to watch, because the server's rate limit on
+ * this route counts requests: a full grid is ceil(cap / batch) of them, so
+ * going to a hundred took a load from two requests to five and would have cut
+ * a large account from ten grid loads per five minutes down to four. And the
+ * loop below fires every batch at once and swallows a rejection, so reaching
+ * the limit does not read as an error — it reads as a half-chipped grid, which
+ * is the thing raising the cap was for. The limit moved with the cap
+ * (SUMMARY_RATE_LIMIT, workers/api/src/routes/github.ts); change one and check
+ * the other.
  */
-const SUMMARY_CAP = 40;
+const SUMMARY_CAP = 100;
 const SUMMARY_BATCH = 20;
 
 function NewStackPage() {

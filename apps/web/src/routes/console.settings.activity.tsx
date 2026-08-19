@@ -1,11 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { SettingsShell, SettingsHeader } from "../components/settings-shell";
-import { Rows, Row, RowHead, Mono, Dim } from "../components/console/Rows";
+import {
+  Rows,
+  Row,
+  RowHead,
+  Mono,
+  Dim,
+  ROW_HEAD_WIDE_ONLY,
+} from "../components/console/Rows";
 import { useAuth } from "../context/auth";
 import { fetchAuditLog } from "../lib/api";
 import { isCloud } from "../lib/cloud";
 import { timeAgo } from "../lib/utils";
+
+/* Kept literal so Tailwind's scanner sees it, and declared once because the
+   header and the rows have to agree — they were two copies of this string. */
+const COLS = "sm:grid-cols-[1.5fr_2fr_1fr]";
 
 export const Route = createFileRoute("/console/settings/activity")({
   component: ActivityPage,
@@ -158,12 +169,12 @@ function ActivityPage() {
 
   return (
     <SettingsShell title="Activity">
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-5 sm:p-8">
         <SettingsHeader subtitle="A log of security-relevant actions on your account." />
         <div className="mt-4">
           <Rows>
-            <RowHead>
-              <div className="grid w-full grid-cols-[1.5fr_2fr_1fr] gap-4">
+            <RowHead className={ROW_HEAD_WIDE_ONLY}>
+              <div className={`grid w-full gap-4 ${COLS}`}>
                 <div>event</div>
                 <div>details</div>
                 <div>when</div>
@@ -181,9 +192,14 @@ function ActivityPage() {
               ) : (
                 entries.map((e) => (
                   <Row key={e.id}>
-                    <div className="grid w-full grid-cols-[1.5fr_2fr_1fr] items-center gap-4">
+                    <div
+                      className={`grid w-full grid-cols-1 gap-1 sm:items-center sm:gap-4 ${COLS}`}
+                    >
                       <Mono>{e.event}</Mono>
-                      <div className="truncate text-[12px] text-muted-foreground">
+                      {/* `truncate` only above the breakpoint: stacked, the
+                          details line has the full width and should use it
+                          rather than clip mid-sentence. */}
+                      <div className="text-[12px] text-muted-foreground sm:truncate">
                         {formatAuditDetails(e.event, e.metadata)}
                         {e.ip ? ` · ${e.ip}` : ""}
                       </div>

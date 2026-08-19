@@ -66,7 +66,7 @@ function AppearancePage() {
 
   return (
     <SettingsShell title="Appearance">
-      <div className="max-w-2xl flex-1 p-8">
+      <div className="max-w-2xl flex-1 p-5 sm:p-8">
         <SettingsHeader subtitle="Choose how Leenar looks on this device." />
         <div className="mt-4">
           <Rows>

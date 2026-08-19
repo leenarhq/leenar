@@ -164,6 +164,48 @@ export function hasAppManifest(rootFiles: string[]): boolean {
   return APP_MANIFESTS.some((f) => set.has(f));
 }
 
+/** Root files that only exist to declare a workspace. */
+const WORKSPACE_MANIFESTS = [
+  "pnpm-workspace.yaml",
+  "pnpm-workspace.yml",
+  "lerna.json",
+  "nx.json",
+  "turbo.json",
+  "rush.json",
+];
+
+/**
+ * "Are the apps one level down?" — answered from the root listing and the
+ * package.json this scan already has, so it costs nothing.
+ *
+ * It exists because of what summarizeRepo deliberately does not do. The
+ * five-path workspace probe that analyzeRepo runs would be 200 extra fetches
+ * across a full grid, so a monorepo root comes back with no service chips at
+ * all — and an empty chip row reads as "we looked and found nothing", which
+ * is the opposite of true. This is the cheap half of that answer: not which
+ * services are in there, but that there is an in-there.
+ *
+ * `workspaces` covers npm, yarn and bun, in both the array and the
+ * `{ packages: [...] }` form. Cargo and Go put their workspace declaration
+ * inside a file this scan does not read, so a Rust or Go monorepo is a known
+ * miss — undetected, not misreported.
+ */
+export function detectMonorepo(
+  rootFiles: string[],
+  pkg: Record<string, unknown> | null,
+): boolean {
+  const set = new Set(rootFiles);
+  if (WORKSPACE_MANIFESTS.some((f) => set.has(f))) return true;
+
+  const ws = pkg?.workspaces;
+  if (Array.isArray(ws)) return ws.length > 0;
+  if (ws && typeof ws === "object") {
+    const packages = (ws as { packages?: unknown }).packages;
+    return Array.isArray(packages) && packages.length > 0;
+  }
+  return false;
+}
+
 /** One grid cell's worth of scan. `envKeys` is a COUNT, never the names: the
  *  cell only ever renders the number, and the names are the sensitive half. */
 export interface RepoSummary {
@@ -171,6 +213,7 @@ export interface RepoSummary {
   hasApp: boolean;
   envKeys: number;
   services: RepoSvcType[];
+  isMonorepo: boolean;
 }
 
 interface GhContentItem {
@@ -229,10 +272,11 @@ async function fetchRawFile(
  * the worst thing this feature could do, and the null makes it unrepresentable.
  *
  * Deliberately NOT done here, unlike analyzeRepo: the five-path monorepo
- * workspace probe (routes/workflowProvision.ts). Forty repos would pay 200
- * extra fetches for it. A monorepo root therefore shows no chips — which reads
- * as "nothing detected", stays clickable, and is corrected by the proposal card
- * one click later.
+ * workspace probe (routes/workflowProvision.ts). A full grid would pay 500
+ * extra fetches for it. A monorepo root therefore still shows no service
+ * chips, stays clickable, and is corrected by the proposal card one click
+ * later — but `isMonorepo` now says so out loud, so the empty chip row is
+ * labelled rather than left to read as "we looked and found nothing".
  */
 export async function summarizeRepo(
   fullName: string,
@@ -244,10 +288,13 @@ export async function summarizeRepo(
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`https://api.github.com/repos/${fullName}/contents/`, {
-    headers,
-    signal: AbortSignal.timeout(8_000),
-  }).catch(() => null);
+  const res = await fetch(
+    `https://api.github.com/repos/${fullName}/contents/`,
+    {
+      headers,
+      signal: AbortSignal.timeout(8_000),
+    },
+  ).catch(() => null);
   if (!res || !res.ok) return null;
 
   const items = (await res.json().catch(() => null)) as GhContentItem[] | null;
@@ -268,9 +315,10 @@ export async function summarizeRepo(
   ]);
 
   let deps: string[] = [];
+  let pkg: Record<string, unknown> | null = null;
   if (pkgRaw) {
     try {
-      const pkg = JSON.parse(pkgRaw) as Record<string, unknown>;
+      pkg = JSON.parse(pkgRaw) as Record<string, unknown>;
       deps = Object.keys({
         ...((pkg.dependencies as Record<string, unknown>) ?? {}),
         ...((pkg.devDependencies as Record<string, unknown>) ?? {}),
@@ -292,5 +340,6 @@ export async function summarizeRepo(
     hasApp: hasAppManifest(rootFiles),
     envKeys: envKeys.size,
     services: detectServicesFromDeps(deps, [...envKeys], rootFiles).services,
+    isMonorepo: detectMonorepo(rootFiles, pkg),
   };
 }

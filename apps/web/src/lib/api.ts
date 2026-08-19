@@ -666,6 +666,9 @@ export interface RepoSummary {
   hasApp: boolean;
   envKeys: number;
   services: Array<"github" | "vercel" | "supabase" | "resend">;
+  /** Optional on the wire: a cached summary written before the scan learned
+   *  to detect this is served back without the field. */
+  isMonorepo?: boolean;
 }
 
 /**

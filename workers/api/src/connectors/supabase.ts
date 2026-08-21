@@ -812,12 +812,169 @@ export function buildCreateDDLFromLiveSchema(schema: LiveSchema): string {
   return stmts.join("\n");
 }
 
+/**
+ * Splits a SQL string on its TOP-LEVEL semicolons, lexing Postgres string
+ * literals, dollar-quoted bodies, quoted identifiers and (nestable) comments so
+ * a `;` inside any of them is never mistaken for a statement separator.
+ * Comments collapse to a space; literal bodies collapse to an empty literal.
+ *
+ * A single-pass lexer rather than a sequence of regex strips, because either
+ * strip order is defeatable. Strip comments first and `SELECT '--' ; DROP …`
+ * loses its real `;` into a phantom comment; strip literals first and
+ * `SELECT 1 --'\n; DROP … --'` has its real `;` swallowed by a phantom literal.
+ * Both collapse to a lone innocent-looking SELECT.
+ *
+ * Backslash is treated as an ORDINARY character inside `'...'`, matching
+ * `standard_conforming_strings=on` (Supabase's default — same premise
+ * `sqlLiteral.ts` is built on). That deliberately mis-lexes a backslash-escaped
+ * quote in an `E'...'` string, but only ever by ENDING a literal early, which
+ * exposes more top-level `;` and so can only over-count statements. Erring
+ * toward over-counting is the safe direction: it rejects an exotic-but-valid
+ * query rather than admitting a smuggled one.
+ */
+export function splitSqlStatements(sql: string): string[] {
+  const out: string[] = [];
+  let buf = "";
+  let i = 0;
+  const n = sql.length;
+
+  while (i < n) {
+    const c = sql[i];
+    const next = sql[i + 1];
+
+    // -- line comment
+    if (c === "-" && next === "-") {
+      i += 2;
+      while (i < n && sql[i] !== "\n") i++;
+      buf += " ";
+      continue;
+    }
+
+    // /* block comment */ — Postgres nests these, so track depth
+    if (c === "/" && next === "*") {
+      let depth = 1;
+      i += 2;
+      while (i < n && depth > 0) {
+        if (sql[i] === "/" && sql[i + 1] === "*") {
+          depth++;
+          i += 2;
+        } else if (sql[i] === "*" && sql[i + 1] === "/") {
+          depth--;
+          i += 2;
+        } else i++;
+      }
+      buf += " ";
+      continue;
+    }
+
+    // $tag$ … $tag$ dollar-quoted body (tag may be empty: $$ … $$).
+    // Only when the `$` does not continue an identifier: Postgres allows `$`
+    // inside an identifier after the first character and lexes greedily, so the
+    // `$` in `a$b$…` belongs to `a$b` and opens nothing. Skipping those keeps a
+    // `;` after them visible — the over-counting, i.e. safe, direction.
+    if (c === "$" && !/[A-Za-z0-9_$]/.test(sql[i - 1] ?? "")) {
+      const m = /^\$([A-Za-z_\u0080-\uFFFF][A-Za-z0-9_\u0080-\uFFFF]*)?\$/.exec(
+        sql.slice(i),
+      );
+      if (m) {
+        const tag = m[0];
+        const end = sql.indexOf(tag, i + tag.length);
+        buf += "''";
+        i = end === -1 ? n : end + tag.length; // unterminated → consume to end
+        continue;
+      }
+    }
+
+    // '…' string literal, '' being the only escape (see backslash note above)
+    if (c === "'") {
+      i++;
+      while (i < n) {
+        if (sql[i] === "'") {
+          if (sql[i + 1] === "'") {
+            i += 2;
+            continue;
+          }
+          i++;
+          break;
+        }
+        i++;
+      }
+      buf += "''";
+      continue;
+    }
+
+    // "…" quoted identifier, "" escape
+    if (c === '"') {
+      i++;
+      while (i < n) {
+        if (sql[i] === '"') {
+          if (sql[i + 1] === '"') {
+            i += 2;
+            continue;
+          }
+          i++;
+          break;
+        }
+        i++;
+      }
+      buf += '""';
+      continue;
+    }
+
+    if (c === ";") {
+      out.push(buf);
+      buf = "";
+      i++;
+      continue;
+    }
+
+    buf += c;
+    i++;
+  }
+  out.push(buf);
+  return out.map((s) => s.trim()).filter(Boolean);
+}
+
+// Leading keywords a read-mode statement may start with. EXPLAIN is included
+// even though EXPLAIN ANALYZE genuinely executes its inner statement, and WITH
+// is included even though a writing CTE (WITH x AS (DELETE … RETURNING *) …)
+// genuinely writes: both are caught by the READ ONLY transaction, which is
+// sound again now that assertReadOnlyStatement guarantees nothing can escape it.
+const READ_ONLY_LEAD_RE = /^(select|with|explain|show|table|values)\b/i;
+
+/**
+ * Gate for read-mode SQL. The `BEGIN; SET TRANSACTION READ ONLY; … ; ROLLBACK;`
+ * wrapper below is string concatenation, and `SET TRANSACTION READ ONLY` binds
+ * to the CURRENT transaction only — so caller SQL beginning with `ROLLBACK;`
+ * ends that transaction and everything after it runs in autocommit, read-write.
+ * Rejecting multi-statement input is what makes the wrapper a real boundary
+ * instead of a suggestion; the leading-keyword check is the second layer.
+ */
+export function assertReadOnlyStatement(sql: string): void {
+  const statements = splitSqlStatements(sql);
+  if (statements.length === 0) throw new Error("No SQL statement provided.");
+  if (statements.length > 1) {
+    throw new Error(
+      "Read mode runs exactly one statement — remove the ';' and any statements after it, or use write mode.",
+    );
+  }
+  // Leading parens are legal: `(SELECT 1) UNION (SELECT 2)`.
+  const head = statements[0].replace(/^[(\s]+/, "");
+  if (!READ_ONLY_LEAD_RE.test(head)) {
+    throw new Error(
+      "Read mode accepts only SELECT / WITH / EXPLAIN / SHOW / TABLE / VALUES statements.",
+    );
+  }
+}
+
 export async function executeSql(
   token: string,
   ref: string,
   sql: string,
   mode: "read" | "write",
 ): Promise<QueryResult> {
+  // Primary control for read mode — the wrapper below is defense-in-depth.
+  if (mode === "read") assertReadOnlyStatement(sql);
   const query =
     mode === "read"
       ? `BEGIN; SET TRANSACTION READ ONLY; ${sql}; ROLLBACK;`

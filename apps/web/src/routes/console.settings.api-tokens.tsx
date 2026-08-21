@@ -18,6 +18,23 @@ import { useAuth } from "../context/auth";
 /* Kept literal so Tailwind's scanner sees it, and declared once because the
    header and the rows have to agree — they were two copies of this string. */
 const COLS = "sm:grid-cols-[2fr_1fr_1.5fr_1.5fr_auto]";
+
+/* Shared by the two copy buttons in the one-time reveal, for the same reason
+   COLS is shared: they were about to be two copies of one string. */
+const COPY_BUTTON =
+  "inline-flex shrink-0 items-center gap-1 rounded-full border border-border-soft px-2.5 py-1.5 text-[12px] transition-colors hover:bg-secondary";
+
+/**
+ * The `claude mcp add` line for this key, ready to paste.
+ *
+ * `lib/api.ts` reads the same env var but falls back to `""` — a same-origin
+ * base, which is right for `fetch` and useless in a shell command. A CLI needs
+ * an absolute URL, so the fallback here is the production host instead.
+ */
+const mcpAddCommand = (key: string) =>
+  `claude mcp add --transport http leenar ${
+    (import.meta.env.VITE_API_URL as string) || "https://api.leenar.net"
+  }/api/mcp --header "Authorization: Bearer ${key}"`;
 import {
   listApiKeys,
   createApiKey,
@@ -37,7 +54,13 @@ function ApiTokensPage() {
   const [newName, setNewName] = useState("");
   const [scope, setScope] = useState<"read" | "write">("read");
   const [created, setCreated] = useState<ApiKeyCreated | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"key" | "command" | null>(null);
+
+  const copy = (what: "key" | "command", text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(what);
+    setTimeout(() => setCopied(null), 1500);
+  };
 
   const keysQuery = useQuery({
     queryKey: ["api-keys"],
@@ -113,21 +136,46 @@ function ApiTokensPage() {
                 {created.key}
               </code>
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(created.key);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1500);
-                }}
-                className="inline-flex items-center gap-1 rounded-full border border-border-soft px-2.5 py-1.5 text-[12px] transition-colors hover:bg-secondary"
+                onClick={() => copy("key", created.key)}
+                className={COPY_BUTTON}
               >
-                {copied ? (
+                {copied === "key" ? (
                   <Check className="h-3.5 w-3.5" />
                 ) : (
                   <Copy className="h-3.5 w-3.5" />
                 )}{" "}
-                {copied ? "Copied" : "Copy"}
+                {copied === "key" ? "Copied" : "Copy"}
               </button>
             </div>
+
+            {/* The key is on screen exactly once, so this is the only moment a
+                ready-to-run command can carry the real value. Without it the
+                next step is: copy the key, find the docs, hand-write the flags. */}
+            <p className="mt-4 text-[12px] text-muted-foreground">
+              Or connect Claude Code in one command:
+            </p>
+            <div className="mt-2 flex items-start gap-2">
+              <code className="flex-1 overflow-x-auto whitespace-pre rounded bg-background px-2 py-1.5 font-mono text-xs">
+                {mcpAddCommand(created.key)}
+              </code>
+              <button
+                onClick={() => copy("command", mcpAddCommand(created.key))}
+                className={COPY_BUTTON}
+              >
+                {copied === "command" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}{" "}
+                {copied === "command" ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Adds Leenar to the current project. Append{" "}
+              <code className="font-mono">--scope user</code> for every project,
+              then check it with{" "}
+              <code className="font-mono">claude mcp list</code>.
+            </p>
           </div>
         )}
 

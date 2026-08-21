@@ -169,7 +169,7 @@ cd workers/api && npx tsc --noEmit && npm test
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the details, and
 [SECURITY.md](./SECURITY.md) before reporting a vulnerability — please email
-security@leenar.net rather than opening a public issue.
+social@leenar.net rather than opening a public issue.
 
 ### How this repository works
 

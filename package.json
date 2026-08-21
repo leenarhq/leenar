@@ -10,7 +10,8 @@
     "build": "npm run build --workspace=apps/web",
     "lint": "npm run lint  --workspace=apps/web",
     "worker:dev": "npm run dev   --workspace=workers/api",
-    "worker:deploy": "npm run deploy --workspace=workers/api"
+    "worker:deploy": "npm run deploy --workspace=workers/api",
+    "test:redirects": "vitest run apps/docs"
   },
   "devDependencies": {
     "vite": "^7.3.6",

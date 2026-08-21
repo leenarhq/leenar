@@ -872,3 +872,153 @@ so
   border: 0;
   border-top: 1px solid var(--border);
 }
+
+/* No blog post ever had a table, so `.prose-leenar` never needed one. The docs
+   do. `table` is `display: block` so it can scroll horizontally on its own —
+   verified in a browser: at 375px a table with an unbreakable long token
+   overflows only the table (scrollWidth > clientWidth) while `document.body`
+   stays at the viewport width. Cell text is left to wrap normally rather than
+   forcing `white-space: nowrap`: the same check showed ordinary prose in a
+   4-column parameter table just re-wraps to fit a narrow viewport, so forcing
+   nowrap on every table would trade a real problem (page pushed sideways) for
+   a manufactured one (small tables scrolling for no reason). */
+.prose-leenar table {
+  display: block;
+  max-width: 100%;
+  margin-top: 1.35rem;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.prose-leenar th,
+.prose-leenar td {
+  padding: 0.55rem 0.9rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.prose-leenar thead th {
+  color: var(--foreground);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.prose-leenar td {
+  color: var(--muted);
+}
+
+.prose-leenar tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/*
+  Docs components. `renderDocs` (src/lib/docsComponents.ts) emits Tailwind
+  utilities straight from DESIGN.md, so on paper the only rules that belong
+  here are the two things a utility cannot express: the step number, which is
+  generated content, and the default disclosure triangle, which has to go
+  before `<summary>` can carry the card's own layout.
+
+  In practice `.prose-leenar` itself gets in the way of those utilities.
+  Tailwind v4 puts every utility in `@layer utilities`; every rule above this
+  comment is unlayered. An unlayered author rule always wins over a layered
+  one, independent of specificity — so `.prose-leenar ol { list-style: decimal;
+  padding-left: 1.25rem }` (this file, above) beats `list-none pl-0` on
+  `<ol data-steps>` outright, and `.prose-leenar a { text-decoration:
+  underline }` beats a `<Card>`'s `hover:bg-panel-hover` link having no
+  underline at all. Verified with Playwright against the real compiled
+  stylesheet (`npm run build`): before the two rules below, computed style on
+  `[data-steps]` was `list-style-type: decimal`, `padding-left: 20px`,
+  `margin-top: 21.6px` (the unlayered `1.35rem`, not the intended `mt-8`), and
+  `[data-card]` computed `text-decoration-line: underline`.
+
+  The same audit found a second, less obvious case: `.prose-leenar p, ul, ol,
+  pre, blockquote { margin-top: 1.35rem }` (also unlayered) reaches every
+  paragraph/list/etc *nested inside* a Note, Accordion, Tab or Card, not just
+  top-level ones — it's a descendant selector. That inflates the intended
+  `mt-2`/`mt-3` gap between a callout's label and its body: the wrapper div's
+  small margin and the paragraph's 1.35rem margin are adjacent block margins
+  and collapse to the larger one. Measured in the browser: the Note callout's
+  label-to-body gap rendered at ~26.6px instead of the intended 8px (`mt-2`),
+  the Accordion's at ~21.6px instead of 12px (`mt-3`), and a Card's title-to-body
+  gap at 16px instead of 8px. The `[data-steps]`/`[data-step]` `space-y-4` gap
+  was checked too and is fine as shipped: Tailwind v4's `space-y-*` sets
+  `margin-block-end` (not `-start`), so it doesn't share a property with the
+  unlayered `li + li { margin-top: 0.5rem }` rule above — the two collapse to
+  max(16px, 8px) = 16px, which is what `space-y-4` alone intended.
+
+  A second pass over the same audit (every property `render()` sets against
+  every property `.prose-leenar` sets on the same element) found two more:
+
+  - A `Step` title is an `<h3>` (`docsComponents.ts`'s `case "Step"`), and
+    `.prose-leenar h3` (above) sets `font-family`, `font-weight` and
+    `font-size` — all three beating the `CARD_TITLE` utilities
+    (`text-[15px] font-medium`) the renderer intends. This is the same
+    element that already carries `!mt-0` to escape `.prose-leenar h3`'s
+    `margin-top` — that `!` was the standing hint this collision existed;
+    it just wasn't generalised to the element's other properties yet.
+  - `.prose-leenar a`'s `transition: text-decoration-color 0.2s` is a
+    shorthand, so it replaces `<a data-card>`'s intended `transition-colors`
+    outright rather than adding to it — the card's `hover:bg-panel-hover`
+    has nothing left transitioning `background-color`, so it snaps instead
+    of fading.
+*/
+.prose-leenar [data-steps] {
+  counter-reset: docs-step;
+  list-style: none;
+  padding-left: 0;
+  margin-top: 2rem;
+}
+
+.prose-leenar [data-card] {
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+/* Restores CARD_TITLE (`text-[15px] font-medium`, DM Sans) on a Step's title,
+   overriding `.prose-leenar h3`'s display-face styling the same way
+   `[data-card]` above overrides `.prose-leenar a`'s underline: a
+   `[data-step]` attribute selector plus the `h3` type selector outweighs the
+   plain `.prose-leenar h3` rule's specificity, so this doesn't need `!`. */
+.prose-leenar [data-step] h3 {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.9375rem;
+}
+
+/* Resets the nested-margin-collapse bug described above, the same way
+   `.prose-leenar > :first-child { margin-top: 0 }` already resets it for the
+   top-level case — just scoped to the docs containers that can hold a first
+   paragraph/list/etc of their own. */
+.prose-leenar [data-callout] :first-child,
+.prose-leenar [data-accordion] :first-child,
+.prose-leenar [data-tab] :first-child,
+.prose-leenar [data-card] :first-child,
+.prose-leenar [data-step] :first-child {
+  margin-top: 0;
+}
+
+.prose-leenar [data-step] {
+  counter-increment: docs-step;
+}
+
+.prose-leenar [data-step]::before {
+  content: counter(docs-step);
+  position: absolute;
+  left: 1.5rem;
+  top: 1.5rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+
+.prose-leenar [data-accordion] > summary::-webkit-details-marker {
+  display: none;
+}

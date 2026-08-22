@@ -13,6 +13,7 @@ import {
   cancelDeployment,
   diagnoseProvisionError,
 } from "../../../lib/api";
+import type { VercelGitHubReason } from "../../../lib/api";
 import {
   createProject,
   saveCanvas as saveWorkflowCanvas,
@@ -34,6 +35,7 @@ type IntegrationBanner =
   | { type: "missing"; services: string[] }
   | {
       type: "vercel_github";
+      reason: VercelGitHubReason;
       vercelHasGitHub: boolean;
       githubHasVercel: boolean;
     }
@@ -600,6 +602,7 @@ export function useDeployFlow({
             if (!vgh.linked) {
               setIntegrationBanner({
                 type: "vercel_github",
+                reason: vgh.reason ?? "not_linked",
                 vercelHasGitHub: vgh.vercelHasGitHub,
                 githubHasVercel: vgh.githubHasVercel,
               });
@@ -607,8 +610,11 @@ export function useDeployFlow({
               return;
             }
           } catch {
+            // The preflight itself failed — we know nothing about the link, so
+            // don't claim it's missing.
             setIntegrationBanner({
               type: "vercel_github",
+              reason: "check_failed",
               vercelHasGitHub: false,
               githubHasVercel: false,
             });

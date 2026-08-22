@@ -1165,6 +1165,7 @@ function ProjectCanvasInner({ projectId, template }: ProjectCanvasInnerProps) {
         )}
         {integrationBanner?.type === "vercel_github" && (
           <VercelGitHubBanner
+            reason={integrationBanner.reason}
             vercelHasGitHub={integrationBanner.vercelHasGitHub}
             githubHasVercel={integrationBanner.githubHasVercel}
             onClose={() => setIntegrationBanner(null)}

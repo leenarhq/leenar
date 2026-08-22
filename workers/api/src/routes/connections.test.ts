@@ -69,3 +69,49 @@ describe('identity extraction', () => {
     expect(r.account).toBeUndefined()
   })
 })
+
+// ── probeVercelGitHub ────────────────────────────────────────────────────────
+// A 403 from Vercel means "this token can't see the scope", NOT "GitHub is not
+// linked". Collapsing the two sent users to github.com/apps/vercel to install an
+// app that was already installed — the actual fix was reconnecting Vercel. Every
+// non-linked outcome must stay distinguishable so the UI can say which one.
+
+describe('probeVercelGitHub', () => {
+  it('linked when namespaces are present', async () => {
+    stubFetch(() => ({ status: 200, body: { namespaces: [{ slug: 'acme' }] } }))
+    expect(await __test.probeVercelGitHub('tok')).toEqual({ linked: true, reason: 'linked' })
+  })
+
+  it('accepts the bare-array response shape', async () => {
+    stubFetch(() => ({ status: 200, body: [{ slug: 'acme' }] }))
+    expect(await __test.probeVercelGitHub('tok')).toEqual({ linked: true, reason: 'linked' })
+  })
+
+  it('not_linked when Vercel returns an empty namespace list', async () => {
+    stubFetch(() => ({ status: 200, body: { namespaces: [] } }))
+    expect(await __test.probeVercelGitHub('tok')).toEqual({ linked: false, reason: 'not_linked' })
+  })
+
+  it('auth_failed on 403 — a scope the token cannot reach, not a missing GitHub link', async () => {
+    stubFetch(() => ({
+      status: 403,
+      body: { error: { code: 'forbidden', message: 'Not authorized: Trying to access resource under scope "acme-projects".' } },
+    }))
+    expect(await __test.probeVercelGitHub('tok')).toEqual({ linked: false, reason: 'auth_failed' })
+  })
+
+  it('auth_failed on 401', async () => {
+    stubFetch(() => ({ status: 401, body: {} }))
+    expect(await __test.probeVercelGitHub('tok')).toEqual({ linked: false, reason: 'auth_failed' })
+  })
+
+  it('check_failed on a server-side Vercel error — we learned nothing either way', async () => {
+    stubFetch(() => ({ status: 500, body: {} }))
+    expect(await __test.probeVercelGitHub('tok')).toEqual({ linked: false, reason: 'check_failed' })
+  })
+
+  it('check_failed when the request throws', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network down') }))
+    expect(await __test.probeVercelGitHub('tok')).toEqual({ linked: false, reason: 'check_failed' })
+  })
+})

@@ -278,8 +278,21 @@ export async function checkConnectionHealth(
   return res.json();
 }
 
+/**
+ * `reason` separates the ways a deploy preflight can come back unlinked. They
+ * need different fixes: `auth_failed` is solved by reconnecting Vercel, only
+ * `not_linked` is solved by installing the Vercel GitHub App.
+ */
+export type VercelGitHubReason =
+  | "linked"
+  | "not_linked"
+  | "auth_failed"
+  | "check_failed"
+  | "no_connection";
+
 export async function checkVercelGitHub(session: Session): Promise<{
   linked: boolean;
+  reason: VercelGitHubReason;
   vercelHasGitHub: boolean;
   githubHasVercel: boolean;
 }> {

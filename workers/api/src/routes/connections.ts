@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "../types";
 import { decrypt } from "../crypto";
 import { getUserToken } from "../utils";
+import { log } from "../logger";
 import { getAccountId, getCloudflareWorkerErrors } from "../connectors/cloudflare";
 
 export const connections = new Hono<{
@@ -136,6 +137,63 @@ async function pingCloudflare(token: string): Promise<Ping> {
   return { status: "valid", account: await fetchCloudflareAccount(token) };
 }
 
+/**
+ * Why every outcome carries a distinct reason: a 403 from Vercel means the token
+ * cannot reach the account's scope, which is a completely different fix from
+ * "the Vercel GitHub App isn't installed". Folding both into `false` sent users
+ * to github.com/apps/vercel to install an app that was already there, while the
+ * thing that actually fixed it — reconnecting Vercel — was never suggested.
+ */
+export type VercelGitHubReason =
+  | "linked"
+  | "not_linked"
+  | "auth_failed"
+  | "check_failed";
+
+async function probeVercelGitHub(
+  token: string,
+): Promise<{ linked: boolean; reason: VercelGitHubReason }> {
+  let res: Response;
+  try {
+    res = await fetch(
+      "https://api.vercel.com/v1/integrations/git-namespaces?provider=github",
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+  } catch (e) {
+    log.warn("vercel_github.probe_threw", {
+      error: e instanceof Error ? e.message : String(e),
+    });
+    return { linked: false, reason: "check_failed" };
+  }
+
+  if (!res.ok) {
+    const authFailed = res.status === 401 || res.status === 403;
+    log.warn("vercel_github.probe_http_error", {
+      status: res.status,
+      body: await res.text().then((t) => t.slice(0, 300)).catch(() => ""),
+    });
+    return { linked: false, reason: authFailed ? "auth_failed" : "check_failed" };
+  }
+
+  let namespaces: Array<{ slug?: string }>;
+  try {
+    const data = (await res.json()) as
+      | { namespaces?: Array<{ slug?: string }> }
+      | Array<{ slug?: string }>;
+    namespaces = Array.isArray(data) ? data : (data?.namespaces ?? []);
+  } catch {
+    return { linked: false, reason: "check_failed" };
+  }
+
+  log.info("vercel_github.probe", {
+    namespaceCount: namespaces.length,
+    slugs: namespaces.map((n) => n?.slug).filter(Boolean).slice(0, 20),
+  });
+  return namespaces.length > 0
+    ? { linked: true, reason: "linked" }
+    : { linked: false, reason: "not_linked" };
+}
+
 connections.get("/vercel-github", async (c) => {
   const userId = c.get("userId");
   const sbH = {
@@ -156,6 +214,9 @@ connections.get("/vercel-github", async (c) => {
 
   let vercelHasGitHub = false;
   let githubHasVercel = false;
+  // No Vercel row at all is its own outcome — nothing to probe, and the fix is
+  // "connect Vercel", not anything to do with GitHub.
+  let reason: VercelGitHubReason | "no_connection" = "no_connection";
 
   if (vercelRows.length) {
     try {
@@ -163,23 +224,17 @@ connections.get("/vercel-github", async (c) => {
         vercelRows[0].access_token_enc,
         c.env.ENCRYPTION_KEY,
       );
-      const res = await fetch(
-        "https://api.vercel.com/v1/integrations/git-namespaces?provider=github",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      if (res.ok) {
-        const data = (await res.json()) as
-          | { namespaces?: unknown[] }
-          | unknown[];
-        const namespaces = Array.isArray(data)
-          ? data
-          : ((data as any).namespaces ?? []);
-        vercelHasGitHub = namespaces.length > 0;
-      }
-    } catch {
-      /* ignore */
+      const probe = await probeVercelGitHub(token);
+      vercelHasGitHub = probe.linked;
+      reason = probe.reason;
+    } catch (e) {
+      // decrypt failed — the stored token is unusable, same user-facing fix as
+      // an auth failure: reconnect Vercel.
+      reason = "auth_failed";
+      log.warn("vercel_github.decrypt_failed", {
+        userId,
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   }
 
@@ -213,7 +268,19 @@ connections.get("/vercel-github", async (c) => {
   }
 
   // linked is determined by Vercel side only — GitHub OAuth token can't reliably list app installations
-  return c.json({ linked: vercelHasGitHub, vercelHasGitHub, githubHasVercel });
+  log.info("vercel_github.result", {
+    userId,
+    linked: vercelHasGitHub,
+    reason,
+    githubHasVercel,
+    hasGithubRow: githubRows.length > 0,
+  });
+  return c.json({
+    linked: vercelHasGitHub,
+    reason,
+    vercelHasGitHub,
+    githubHasVercel,
+  });
 });
 
 connections.get("/health", async (c) => {
@@ -267,4 +334,4 @@ connections.get("/health", async (c) => {
   return c.json(result);
 });
 
-export const __test = { pingGitHub, pingVercel, pingSupabase, pingResend, pingCloudflare };
+export const __test = { pingGitHub, pingVercel, pingSupabase, pingResend, pingCloudflare, probeVercelGitHub };

@@ -16,6 +16,8 @@ vi.mock('./connectors/github-app', async () => {
     findWorkflowRun: vi.fn(),
     getWorkflowRunFailureTail: vi.fn(),
     getWranglerWorkerName: vi.fn(),
+    pushLeenarCommitAsApp: vi.fn(),
+    createGitHubDeployment: vi.fn(),
   }
 })
 vi.mock('./connectors/github-actions-secrets', async () => {
@@ -30,7 +32,12 @@ vi.mock('./connectors/github', async () => {
   return {
     ...actual,
     verifyRepo: vi.fn(),
+    branchGitHub: vi.fn(),
   }
+})
+vi.mock('./connectors/capabilities', async () => {
+  const actual = await vi.importActual<typeof import('./connectors/capabilities')>('./connectors/capabilities')
+  return { ...actual, resolveBranchDecision: vi.fn() }
 })
 vi.mock('./connectors/cloudflare', async () => {
   const actual = await vi.importActual<typeof import('./connectors/cloudflare')>('./connectors/cloudflare')
@@ -43,7 +50,11 @@ vi.mock('./connectors/cloudflare', async () => {
 })
 vi.mock('./connectors/vercel', async () => {
   const actual = await vi.importActual<typeof import('./connectors/vercel')>('./connectors/vercel')
-  return { ...actual, deprovisionVercel: vi.fn().mockResolvedValue(undefined) }
+  return {
+    ...actual,
+    deprovisionVercel: vi.fn().mockResolvedValue(undefined),
+    provisionVercel: vi.fn(),
+  }
 })
 vi.mock('./connectors/supabase', async () => {
   const actual = await vi.importActual<typeof import('./connectors/supabase')>('./connectors/supabase')
@@ -80,9 +91,11 @@ import {
   getWranglerWorkerName,
 } from './connectors/github-app'
 import { putRepoActionsSecret } from './connectors/github-actions-secrets'
-import { verifyRepo } from './connectors/github'
+import { verifyRepo, branchGitHub } from './connectors/github'
+import { resolveBranchDecision } from './connectors/capabilities'
 import { getAccountId, getWorkersSubdomain, provisionR2 } from './connectors/cloudflare'
-import { deprovisionVercel } from './connectors/vercel'
+import { deprovisionVercel, provisionVercel } from './connectors/vercel'
+import { pushLeenarCommitAsApp, createGitHubDeployment } from './connectors/github-app'
 import { refreshNodeSnapshot } from './connectors/supabase'
 import { getProvisionedResources } from './projectEvents'
 
@@ -93,6 +106,10 @@ const mockEnv = {
   GITHUB_APP_PRIVATE_KEY: 'dummy-pem',
 } as any
 
+/** Promises handed to state.waitUntil — tests assert what got detached, and
+ *  await them so a detached rejection can't leak into a later test. */
+const detached: Promise<unknown>[] = []
+
 const mockState = {
   storage: {
     get: async () => null,
@@ -100,6 +117,9 @@ const mockState = {
     delete: async () => {},
     deleteAlarm: async () => {},
     setAlarm: async () => {},
+  },
+  waitUntil: (p: Promise<unknown>) => {
+    detached.push(p)
   },
 } as any
 
@@ -449,6 +469,65 @@ describe('ProvisionerDO.runWithSession — Cloudflare Worker GitHub-repo preflig
   })
 })
 
+// --- vercel step — critical path vs. detached side effects ---
+describe('ProvisionerDO.executeStep — vercel step latency shape', () => {
+  beforeEach(() => {
+    detached.length = 0
+    vi.mocked(provisionVercel).mockResolvedValue({
+      vercel_project_id: 'prj_1',
+      vercel_project_url: 'https://widgets.vercel.app',
+    } as any)
+    vi.mocked(getInstallationTokenForRepo).mockResolvedValue('gh-install-token')
+    vi.mocked(pushLeenarCommitAsApp).mockResolvedValue(undefined as any)
+    vi.mocked(createGitHubDeployment).mockResolvedValue(undefined as any)
+  })
+
+  afterEach(() => {
+    detached.length = 0
+    vi.clearAllMocks()
+  })
+
+  function makeVercelStep() {
+    return {
+      service: 'vercel',
+      action: 'provision',
+      params: { existing_repo: 'acme/widgets' },
+      nodeId: 'node-1',
+      nodeLabel: 'Vercel',
+    } as any
+  }
+
+  it('the branded commit and the GitHub deployment marker are detached, not awaited in the step', async () => {
+    const do_ = makeDO()
+    vi.spyOn(do_, 'getUserToken' as any).mockResolvedValue('vercel-token')
+
+    // Both side effects hang forever. If the step awaited them it could never
+    // resolve — so resolving at all is the assertion.
+    vi.mocked(pushLeenarCommitAsApp).mockReturnValue(new Promise(() => {}) as any)
+
+    const result = await do_.executeStep(makeVercelStep(), {} as Record<string, string>, 'user-1', 'My Project')
+
+    expect(result.vercel_project_url).toBe('https://widgets.vercel.app')
+    expect(detached).toHaveLength(1)
+  })
+
+  it('a branch deploy mints ONE installation token for the step, not one per consumer', async () => {
+    const do_ = makeDO()
+    vi.spyOn(do_, 'getUserToken' as any).mockResolvedValue('vercel-token')
+    // Branch mode makes two independent consumers (git-branch creation and
+    // framework detection) need the same repo's token in one step.
+    do_.branchCtx = { branchKey: 'feat-x', trunkState: {} }
+    vi.mocked(resolveBranchDecision).mockResolvedValue({ mode: 'native' } as any)
+    vi.mocked(branchGitHub).mockResolvedValue(undefined as any)
+
+    await do_.executeStep(makeVercelStep(), {} as Record<string, string>, 'user-1', 'My Project')
+    await Promise.all(detached)
+
+    expect(vi.mocked(branchGitHub)).toHaveBeenCalledWith('gh-install-token', expect.anything())
+    expect(vi.mocked(getInstallationTokenForRepo)).toHaveBeenCalledTimes(1)
+  })
+})
+
 // --- cloudflare-workers step — dispatch + poll ---
 describe('ProvisionerDO.executeStep — cloudflare-workers dispatch + poll', () => {
   beforeEach(() => {
@@ -503,6 +582,29 @@ describe('ProvisionerDO.executeStep — cloudflare-workers dispatch + poll', () 
     expect(writeWorkflowFileAsApp).toHaveBeenCalledWith('app-1', 'dummy-pem', 'acme/widgets', undefined)
     expect(dispatchWorkflow).toHaveBeenCalledWith('gh-install-token', 'acme/widgets', 'leenar-deploy.yml', 'main', { signal: expect.any(AbortSignal) })
     expect(findWorkflowRun).toHaveBeenCalledTimes(3)
+  })
+
+  it('poll cadence ramps: the early checks (while GitHub is still creating the run) are short, the tail settles at 15s', async () => {
+    const do_ = makeDO()
+    vi.spyOn(do_, 'getUserToken' as any).mockResolvedValue('cf-user-token')
+
+    vi.mocked(getInstallationTokenForRepo).mockResolvedValue('gh-install-token')
+    vi.mocked(verifyRepo).mockResolvedValue({ full_name: 'acme/widgets', html_url: 'https://github.com/acme/widgets', default_branch: 'main' })
+    vi.mocked(putRepoActionsSecret).mockResolvedValue(undefined)
+    vi.mocked(writeWorkflowFileAsApp).mockResolvedValue(true)
+    vi.mocked(dispatchWorkflow).mockResolvedValue(undefined)
+    vi.mocked(getAccountId).mockResolvedValue('cf-account-id')
+    vi.mocked(getWorkersSubdomain).mockResolvedValue('acme-sub')
+    vi.mocked(getWranglerWorkerName).mockResolvedValue('acme-worker')
+
+    // Six misses, then completion — enough to walk off the end of the ramp.
+    for (let i = 0; i < 6; i++) vi.mocked(findWorkflowRun).mockResolvedValueOnce(null)
+    vi.mocked(findWorkflowRun).mockResolvedValueOnce({ id: 555, status: 'completed', conclusion: 'success', html_url: 'https://github.com/acme/widgets/actions/runs/555' })
+
+    await do_.executeStep(makeStep(), {} as Record<string, string>, 'user-1', 'My Project')
+
+    const waits = vi.mocked((globalThis as any).scheduler.wait).mock.calls.map((c: unknown[]) => c[0])
+    expect(waits).toEqual([3000, 3000, 5000, 8000, 15000, 15000])
   })
 
   it('resolves the dispatch branch from verifyRepo, ignoring ctx.github_default_branch entirely', async () => {
@@ -2270,6 +2372,76 @@ describe('ProvisionerDO step loop — finalize reachable from a resumed (alarm) 
     await do_.alarm()
     expect(finalizeSpy).toHaveBeenCalledTimes(1)
     expect((finalizeSpy.mock.calls[0][0] as any).sessionId).toBe(loop.sessionId)
+  })
+
+  it('a cross-isolate resume rehydrates cachedSteps from the DB (empty in-memory cache)', async () => {
+    const do_ = makeDO()
+    const { storage } = makeStatefulStorage()
+    do_.state = { storage }
+    const loop = makeTwoStepLoopState()
+    loop.nextStepIndex = 1
+    await (do_ as any).saveStepLoopState(loop)
+    await (do_ as any).state.storage.put('watchdog', {
+      sessionId: loop.sessionId, stackId: loop.stackId,
+      workflowId: loop.projectId, userId: loop.userId,
+    })
+    vi.spyOn(do_ as any, 'executeStep').mockResolvedValueOnce({ out: 'last' })
+    vi.spyOn(do_ as any, 'finalizeSuccess').mockResolvedValue(undefined)
+
+    await do_.alarm()
+
+    const stepReads = vi.mocked(fetch).mock.calls.filter(([u]) => String(u).includes('select=steps'))
+    expect(stepReads).toHaveLength(1)
+    expect((do_ as any).cachedSteps).toHaveLength(2)
+  })
+
+  it('a same-isolate hop skips the rehydrating read — the in-memory cache is already this session', async () => {
+    const do_ = makeDO()
+    const { storage } = makeStatefulStorage()
+    do_.state = { storage }
+    const loop = makeTwoStepLoopState()
+    loop.nextStepIndex = 1
+    await (do_ as any).saveStepLoopState(loop)
+    await (do_ as any).state.storage.put('watchdog', {
+      sessionId: loop.sessionId, stackId: loop.stackId,
+      workflowId: loop.projectId, userId: loop.userId,
+    })
+    // What the previous invocation on this isolate left behind.
+    ;(do_ as any).cachedSteps = [
+      { name: 'cloudflare-workers', nodeId: 'n1', status: 'success' },
+      { name: 'vercel', nodeId: 'n2', status: 'pending' },
+    ]
+    ;(do_ as any).cachedStepsSessionId = loop.sessionId
+    vi.spyOn(do_ as any, 'executeStep').mockResolvedValueOnce({ out: 'last' })
+    vi.spyOn(do_ as any, 'finalizeSuccess').mockResolvedValue(undefined)
+
+    await do_.alarm()
+
+    const stepReads = vi.mocked(fetch).mock.calls.filter(([u]) => String(u).includes('select=steps'))
+    expect(stepReads).toHaveLength(0)
+  })
+
+  it('a hop carrying ANOTHER session\'s cache still rehydrates — stale steps must never be written back', async () => {
+    const do_ = makeDO()
+    const { storage } = makeStatefulStorage()
+    do_.state = { storage }
+    const loop = makeTwoStepLoopState()
+    loop.nextStepIndex = 1
+    await (do_ as any).saveStepLoopState(loop)
+    await (do_ as any).state.storage.put('watchdog', {
+      sessionId: loop.sessionId, stackId: loop.stackId,
+      workflowId: loop.projectId, userId: loop.userId,
+    })
+    ;(do_ as any).cachedSteps = [{ name: 'stale', nodeId: 'nX', status: 'success' }]
+    ;(do_ as any).cachedStepsSessionId = 'some-other-session'
+    vi.spyOn(do_ as any, 'executeStep').mockResolvedValueOnce({ out: 'last' })
+    vi.spyOn(do_ as any, 'finalizeSuccess').mockResolvedValue(undefined)
+
+    await do_.alarm()
+
+    const stepReads = vi.mocked(fetch).mock.calls.filter(([u]) => String(u).includes('select=steps'))
+    expect(stepReads).toHaveLength(1)
+    expect((do_ as any).cachedSteps.map((s: any) => s.name)).not.toContain('stale')
   })
 })
 

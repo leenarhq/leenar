@@ -82,6 +82,10 @@ export class ProvisionerDO implements DurableObject {
   private abortController = new AbortController();
   private activeSession: string | null = null;
   private cachedSteps: ProvisionStepRecord[] = [];
+  /** Session `cachedSteps` currently holds. Lets a same-isolate alarm hop skip
+   *  the rehydrating read — the cache is already this session's latest state,
+   *  since every write to it goes through mutateCachedStep on this isolate. */
+  private cachedStepsSessionId: string | null = null;
   private _seqCounters = new Map<string, number>();
   // Known secret values seen during this provision (decrypted OAuth tokens,
   // injected env var values, generated credentials) — scrubbed out of any
@@ -188,13 +192,20 @@ export class ProvisionerDO implements DurableObject {
         // running the next step. This mirrors how the existing watchdog
         // reconciliation branch below also re-reads `steps` from the DB rather
         // than trusting in-memory state on a cross-isolate resume.
-        const stepsRes = await systemQuery(
-          this.env,
-          `provisioning_sessions?id=eq.${pendingLoop.sessionId}&select=steps`,
-        );
-        if (stepsRes.ok) {
-          const rows = await stepsRes.json<Array<{ steps?: ProvisionStepRecord[] }>>();
-          this.cachedSteps = rows[0]?.steps ?? [];
+        // …but only when it ISN'T already this session's cache. On a same-isolate
+        // hop (the common case — setAlarm(now) fires back into this object) the
+        // in-memory array is the authoritative latest state and re-reading it
+        // costs a Supabase round trip on every single step boundary.
+        if (this.cachedStepsSessionId !== pendingLoop.sessionId) {
+          const stepsRes = await systemQuery(
+            this.env,
+            `provisioning_sessions?id=eq.${pendingLoop.sessionId}&select=steps`,
+          );
+          if (stepsRes.ok) {
+            const rows = await stepsRes.json<Array<{ steps?: ProvisionStepRecord[] }>>();
+            this.cachedSteps = rows[0]?.steps ?? [];
+            this.cachedStepsSessionId = pendingLoop.sessionId;
+          }
         }
         // this.branchCtx is an in-memory field too, and is read throughout
         // executeStep to derive branch-specific resource identity (branch-
@@ -2180,6 +2191,21 @@ export class ProvisionerDO implements DurableObject {
       const repoName =
         parsedRepo && VALID_REPO.test(parsedRepo) ? parsedRepo : undefined;
 
+      // Minting an installation token is a two-hop GitHub round trip (JWT sign
+      // + POST /access_tokens). Branch-mode, framework detection and the
+      // post-provision GitHub side effects all need the same token for the same
+      // repo — memoize it for the step instead of paying for it three times.
+      let ghTokenPromise: Promise<string | null> | undefined;
+      const ghTokenForRepo = (): Promise<string | null> => {
+        if (!repoName) return Promise.resolve(null);
+        ghTokenPromise ??= getInstallationTokenForRepo(
+          this.env.GITHUB_APP_ID,
+          this.env.GITHUB_APP_PRIVATE_KEY,
+          repoName,
+        );
+        return ghTokenPromise;
+      };
+
       // ── Branch mode ────────────────────────────────────────────────────
       // Native (git-linked): deploy a preview off the branch key — reuses the
       // parent project. Isolated (no link): a separate suffixed Vercel project.
@@ -2199,11 +2225,7 @@ export class ProvisionerDO implements DurableObject {
           // Ensure the git branch exists so Vercel has a ref to build a preview.
           if (repoName) {
             try {
-              const ghToken = await getInstallationTokenForRepo(
-                this.env.GITHUB_APP_ID,
-                this.env.GITHUB_APP_PRIVATE_KEY,
-                repoName,
-              );
+              const ghToken = await ghTokenForRepo();
               if (ghToken)
                 await branchGitHub(ghToken, {
                   repo: repoName,
@@ -2238,11 +2260,7 @@ export class ProvisionerDO implements DurableObject {
       let hasWrangler = false;
       if (repoName) {
         try {
-          const ghToken = await getInstallationTokenForRepo(
-            this.env.GITHUB_APP_ID,
-            this.env.GITHUB_APP_PRIVATE_KEY,
-            repoName,
-          );
+          const ghToken = await ghTokenForRepo();
           if (ghToken) {
             const rootDir = (step.params as any)?.rootDirectory as
               | string
@@ -2316,14 +2334,17 @@ export class ProvisionerDO implements DurableObject {
           branchCtx?.branchKey ??
           (ctx as Record<string, string>).github_default_branch ??
           "main";
-        try {
-          // Use GitHub App only — no user-token fallback (avoids committing on user's behalf).
-          // These are best-effort side effects that run INLINE in the provision
-          // step, so they must never strand the deploy: each ghFetch is bounded
-          // (30s), and the whole block is bounded again here so their sum can't
-          // block finalize/SessionCompleted — which is what leaves config-only
-          // GitHub nodes stuck at DRAFT.
-          await this.withTimeout(
+        // Use GitHub App only — no user-token fallback (avoids committing on user's behalf).
+        // These are cosmetic side effects (a branded commit + a GitHub
+        // deployment marker); nothing downstream reads their result, and they
+        // were already best-effort — a throw or a 45s hang only produced a warn
+        // log. Running them inline still charged the user's deploy for that
+        // wait, so they are detached: waitUntil keeps the invocation alive for
+        // them without holding the step (and therefore finalize /
+        // SessionCompleted) open. Still bounded at 45s so a hung call can't
+        // pin the invocation open indefinitely.
+        this.state.waitUntil(
+          this.withTimeout(
             (async () => {
               const brand = this.deployBrand();
               await pushLeenarCommitAsApp(
@@ -2343,12 +2364,12 @@ export class ProvisionerDO implements DurableObject {
             })(),
             45_000,
             "github-app.provisionSteps",
-          );
-        } catch (e) {
-          createLogger().warn("github-app.provision_steps_skipped", {
-            err: (e as Error).message,
-          });
-        }
+          ).catch((e: unknown) => {
+            createLogger().warn("github-app.provision_steps_skipped", {
+              err: (e as Error).message,
+            });
+          }),
+        );
       }
 
       return result;
@@ -2604,8 +2625,23 @@ export class ProvisionerDO implements DurableObject {
       // Cloudflare subrequest and the whole DO session shares one subrequest
       // budget across every step, so an unbounded 5s-interval loop alone could
       // exhaust it before the run even finishes.
+      //
+      // The cadence ramps rather than sitting flat at 15s. GitHub takes a
+      // second or two to materialise the run, so the first check after dispatch
+      // is near-certain to miss and a flat interval spent 15s learning that;
+      // and a typical `wrangler deploy` job finishes inside two minutes, which
+      // a flat interval overshoots by ~7.5s on average. Short early checks fix
+      // both ends; the tail settles back to 15s. The attempt cap is unchanged,
+      // so the worst-case subrequest cost is exactly what it was.
       const POLL_INTERVAL_MS = 15000;
+      const POLL_RAMP_MS = [3000, 3000, 5000, 8000];
+      const pollDelayFor = (attempt: number) =>
+        POLL_RAMP_MS[attempt] ?? POLL_INTERVAL_MS;
       const MAX_POLL_ATTEMPTS = 40;
+      const POLL_WINDOW_MS = Array.from(
+        { length: MAX_POLL_ATTEMPTS },
+        (_, n) => pollDelayFor(n),
+      ).reduce((a, b) => a + b, 0);
       let run: {
         id: number;
         status: string;
@@ -2628,11 +2664,11 @@ export class ProvisionerDO implements DurableObject {
           dispatchedAfter,
         );
         if (run && run.status === "completed") break;
-        await scheduler.wait(POLL_INTERVAL_MS);
+        await scheduler.wait(pollDelayFor(pollAttempt));
       }
       if (!run || run.status !== "completed") {
         throw new Error(
-          `Cloudflare Worker deploy for ${repoName} did not complete via GitHub Actions within ${(MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS) / 60000} minutes.`,
+          `Cloudflare Worker deploy for ${repoName} did not complete via GitHub Actions within ${Math.round(POLL_WINDOW_MS / 60000)} minutes.`,
         );
       }
 
@@ -2986,6 +3022,8 @@ export class ProvisionerDO implements DurableObject {
       status: "pending",
     }));
     this.cachedSteps = initialSteps;
+    // Not this session's cache until the INSERT below hands back the id.
+    this.cachedStepsSessionId = null;
 
     const res = await systemQuery(this.env, "provisioning_sessions", {
       method: "POST",
@@ -3000,6 +3038,7 @@ export class ProvisionerDO implements DurableObject {
     const rows = (await res.json()) as Array<{ id: string }>;
     if (!rows[0]?.id)
       throw new Error("provisioning_sessions INSERT returned no row");
+    this.cachedStepsSessionId = rows[0].id;
     return rows[0].id;
   }
 

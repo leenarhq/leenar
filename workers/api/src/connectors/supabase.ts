@@ -85,6 +85,12 @@ export async function provisionSupabase(
 
   // Check for an existing project with the same name — handles retries after partial failure
   let ref: string | undefined;
+  // The listing already carries each project's status. On the reuse path that
+  // makes it authoritative: re-polling a project it just reported healthy is a
+  // full poll interval of dead wall-clock on every redeploy. Only trust it for
+  // a project we did NOT create below — for a fresh create the listing predates
+  // the project and says nothing about it.
+  let listedHealthy = false;
   const listRes = await fetch(`${SB_MGMT}/v1/projects`, {
     headers: sbHeaders(token),
     signal: cancelSignal ?? AbortSignal.timeout(30_000),
@@ -95,7 +101,10 @@ export async function provisionSupabase(
         Array<{ ref: string; name: string; status: string }>
       >();
     const match = all.find((p) => p.name === name);
-    if (match) ref = match.ref;
+    if (match) {
+      ref = match.ref;
+      listedHealthy = match.status === "ACTIVE_HEALTHY";
+    }
   }
 
   if (cancelSignal?.aborted) throw new Error("cancelled");
@@ -145,20 +154,26 @@ export async function provisionSupabase(
   // the previous 5s interval (24 vs 72 worst-case fetches) — Supabase project
   // activation doesn't change state faster than every few seconds anyway, so
   // this costs no real wall-clock wait time on the common path.
-  let ready = false;
-  for (let i = 0; i < 24; i++) {
-    // Abort the interruptible sleep when the caller cancels
-    await new Promise<void>((resolve, reject) => {
-      const t = setTimeout(resolve, 15_000);
-      cancelSignal?.addEventListener(
-        "abort",
-        () => {
-          clearTimeout(t);
-          reject(new Error("cancelled"));
-        },
-        { once: true },
-      );
-    });
+  //
+  // Check first, sleep after. The loop used to sleep before its first check,
+  // which spent a full interval finding out what the caller usually already
+  // knew — the dominant cost of a redeploy against an existing project.
+  let ready = listedHealthy;
+  for (let i = 0; i < 24 && !ready; i++) {
+    if (i > 0) {
+      // Abort the interruptible sleep when the caller cancels
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(resolve, 15_000);
+        cancelSignal?.addEventListener(
+          "abort",
+          () => {
+            clearTimeout(t);
+            reject(new Error("cancelled"));
+          },
+          { once: true },
+        );
+      });
+    }
     if (cancelSignal?.aborted) throw new Error("cancelled");
 
     const controller = new AbortController();

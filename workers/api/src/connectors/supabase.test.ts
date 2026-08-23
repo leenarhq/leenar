@@ -99,6 +99,102 @@ describe("provisionSupabase", () => {
     }
   });
 
+  it("an already-ACTIVE_HEALTHY existing project skips the status poll entirely — no sleep, no status GET", async () => {
+    // The project listing already reports `status`, so re-polling a project it
+    // just told us is healthy costs a full poll interval of dead wall-clock on
+    // every redeploy. Settle without advancing a single timer.
+    vi.useFakeTimers();
+
+    try {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string, init?: RequestInit) => {
+          const u = String(url);
+          if (u.includes("/organizations")) return json([{ id: "org-1" }]);
+          if (u.endsWith("/projects") && !init?.method) {
+            return json([
+              { ref: "existing-ref", name: "test-project", status: "ACTIVE_HEALTHY" },
+            ]);
+          }
+          if (u.includes("existing-ref") && u.includes("/api-keys")) {
+            return json([
+              { name: "anon", api_key: "anon-k" },
+              { name: "service_role", api_key: "svc-k" },
+            ]);
+          }
+          return json({});
+        }),
+      );
+
+      const fetchSpy = vi.mocked(fetch);
+      let settled = false;
+      const prom = provisionSupabase("token", "test-project").then((r) => {
+        settled = true;
+        return r;
+      });
+
+      // Microtasks only — no timer advancement.
+      for (let i = 0; i < 50; i++) await Promise.resolve();
+
+      expect(settled).toBe(true);
+      const result = await prom;
+      expect(result.supabase_project_ref).toBe("existing-ref");
+
+      const statusPolls = (fetchSpy.mock.calls as [string, RequestInit | undefined][]).filter(
+        ([u]) => String(u).includes("existing-ref") && !String(u).includes("/api-keys"),
+      );
+      expect(statusPolls).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("an existing project that is NOT healthy still polls — and checks before sleeping", async () => {
+    vi.useFakeTimers();
+
+    try {
+      let statusPolls = 0;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string, init?: RequestInit) => {
+          const u = String(url);
+          if (u.includes("/organizations")) return json([{ id: "org-1" }]);
+          if (u.endsWith("/projects") && !init?.method) {
+            // Listed as still coming up — the poll loop must run.
+            return json([
+              { ref: "existing-ref", name: "test-project", status: "COMING_UP" },
+            ]);
+          }
+          if (u.includes("existing-ref") && u.includes("/api-keys")) {
+            return json([
+              { name: "anon", api_key: "anon-k" },
+              { name: "service_role", api_key: "svc-k" },
+            ]);
+          }
+          if (u.includes("existing-ref")) {
+            statusPolls++;
+            return json({ status: "ACTIVE_HEALTHY" });
+          }
+          return json({});
+        }),
+      );
+
+      const prom = provisionSupabase("token", "test-project");
+
+      // No timer advancement: the first status check must happen up front.
+      for (let i = 0; i < 50; i++) await Promise.resolve();
+      expect(statusPolls).toBe(1);
+
+      await vi.runAllTimersAsync();
+      const result = await prom;
+      expect(result.supabase_project_ref).toBe("existing-ref");
+      // Healthy on the very first check → exactly one poll, no extra rounds.
+      expect(statusPolls).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("throws when cancelSignal is already aborted before listRes — no create POST fires", async () => {
     const controller = new AbortController();
     controller.abort(); // pre-aborted

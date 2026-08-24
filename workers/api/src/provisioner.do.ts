@@ -2099,6 +2099,30 @@ export class ProvisionerDO implements DurableObject {
               from: currentRepo,
               to: newRepoName,
             });
+            // Relink deletes and recreates the project: custom domains,
+            // deployment history and analytics do not survive it. That deserves
+            // a durable trace, not a console line — ProvisionerDO's logs do NOT
+            // reach `wrangler tail` (verified 2026-08-24), so a console.info
+            // here is unreadable in prod and a spurious relink is invisible.
+            // The decision inputs ride along so the next one is diagnosable
+            // from provisioning_events alone.
+            emitEvent?.(
+              "Warning",
+              {
+                service: "vercel",
+                nodeId: step.nodeId,
+                reason: "vercel_relink",
+                message:
+                  "Recreated the Vercel project to attach its GitHub repo. Custom domains and deployment history are not carried over.",
+                projectId,
+                desiredRepo: newRepoName,
+                currentRepo: currentRepo ?? null,
+                projectReadOk: projRes.ok,
+                projectReadStatus: projRes.status,
+                link: proj?.link ?? null,
+              },
+              "vercel-relink",
+            );
             const out = await relinkVercelWithGitHub(
               token,
               projectId,

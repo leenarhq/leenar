@@ -2555,6 +2555,39 @@ describe('ProvisionerDO.executeStep — vercel redeploy relink guard', () => {
 
     expect(calls.some((c) => c.method === 'DELETE' && c.url.includes('/v9/projects/prj_1'))).toBe(true)
   })
+
+  it('emits a Warning event carrying the decision inputs when it relinks', async () => {
+    // ProvisionerDO's console logs do not reach `wrangler tail` (verified in
+    // prod 2026-08-24), so a destructive relink left no readable trace and a
+    // spurious one could not be told apart from a real one. The event is the
+    // durable record.
+    stubVercel([{ status: 200, body: { name: 'web', link: { org: 'acme', repo: 'other-repo' } } }])
+    const do_ = makeDO()
+    vi.spyOn(do_, 'getUserToken' as any).mockResolvedValue('fake-token')
+    const emitted: Array<{ type: string; payload: Record<string, unknown> }> = []
+
+    await do_.executeStep(step, {}, 'user-1', 'My Project', undefined, undefined,
+      (type: string, payload: Record<string, unknown>) => emitted.push({ type, payload }))
+
+    const warn = emitted.find((e) => e.type === 'Warning')
+    expect(warn).toBeDefined()
+    expect(warn!.payload.reason).toBe('vercel_relink')
+    expect(warn!.payload.link).toEqual({ org: 'acme', repo: 'other-repo' })
+    expect(warn!.payload.desiredRepo).toBe('acme/web')
+    expect(warn!.payload.projectReadStatus).toBe(200)
+  })
+
+  it('emits no relink Warning on a plain redeploy', async () => {
+    stubVercel([{ status: 200, body: { name: 'web', link: { org: 'acme', repo: 'web' } } }])
+    const do_ = makeDO()
+    vi.spyOn(do_, 'getUserToken' as any).mockResolvedValue('fake-token')
+    const emitted: Array<{ type: string; payload: Record<string, unknown> }> = []
+
+    await do_.executeStep(step, {}, 'user-1', 'My Project', undefined, undefined,
+      (type: string, payload: Record<string, unknown>) => emitted.push({ type, payload }))
+
+    expect(emitted.some((e) => e.payload.reason === 'vercel_relink')).toBe(false)
+  })
 })
 
 // A canvas can point at a Vercel project that no longer exists — deleted in the

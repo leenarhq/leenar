@@ -2090,7 +2090,7 @@ export class ProvisionerDO implements DurableObject {
 
           if (
             shouldRelinkVercelProject(
-              { ok: projRes.ok, link: proj?.link },
+              { ok: projRes.ok, status: projRes.status, link: proj?.link },
               newRepoName,
             )
           ) {
@@ -2105,6 +2105,10 @@ export class ProvisionerDO implements DurableObject {
               newRepoName,
               injectedEnv,
               idempotencyKey,
+              // Only used when the old project can't be read (the 404 recovery
+              // path); otherwise its own name wins and this is ignored. Same
+              // source provisionVercel names a fresh project from.
+              projectName,
             );
             result = out as unknown as Record<string, string>;
           } else {

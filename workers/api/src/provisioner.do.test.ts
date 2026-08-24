@@ -2556,3 +2556,54 @@ describe('ProvisionerDO.executeStep — vercel redeploy relink guard', () => {
     expect(calls.some((c) => c.method === 'DELETE' && c.url.includes('/v9/projects/prj_1'))).toBe(true)
   })
 })
+
+// A canvas can point at a Vercel project that no longer exists — deleted in the
+// dashboard, or orphaned by a half-finished deploy. That is a conclusive 404,
+// not the transient read the guard above protects against: there is nothing to
+// destroy, and recreating is the only way the node ever deploys again.
+describe('ProvisionerDO.executeStep — vercel redeploy against a deleted project', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('recreates the project when the canvas points at a 404', async () => {
+    const calls: Array<{ url: string; method: string }> = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const u = String(url)
+      const method = String(init?.method ?? 'GET').toUpperCase()
+      calls.push({ url: u, method })
+      if (u.includes('/v9/projects/prj_gone') && method === 'GET') {
+        return new Response(JSON.stringify({}), { status: 404 })
+      }
+      if (u.includes('/v10/projects') && method === 'POST') {
+        return new Response(
+          JSON.stringify({ id: 'prj_fresh', name: 'web', link: { repoId: 7, defaultBranch: 'main' } }),
+          { status: 200 },
+        )
+      }
+      if (u.includes('/v13/deployments')) {
+        return new Response(JSON.stringify({ uid: 'dpl_fresh', url: 'web-xyz.vercel.app' }), { status: 200 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    }))
+
+    const do_ = makeDO()
+    vi.spyOn(do_, 'getUserToken' as any).mockResolvedValue('fake-token')
+
+    const out = await do_.executeStep(
+      {
+        service: 'vercel',
+        action: 'redeploy',
+        nodeId: 'v1',
+        nodeLabel: 'Vercel',
+        params: { vercelProjectId: 'prj_gone', existing_repo: 'https://github.com/acme/web' },
+        injectEnvVars: [],
+      } as any,
+      {},
+      'user-1',
+      'My Project',
+    )
+
+    expect(out.vercel_project_id).toBe('prj_fresh')
+    expect(out.vercel_deployment_id).toBe('dpl_fresh')
+    expect(calls.some((c) => c.method === 'POST' && c.url.includes('/v10/projects'))).toBe(true)
+  })
+})

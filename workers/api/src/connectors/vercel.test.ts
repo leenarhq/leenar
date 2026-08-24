@@ -450,6 +450,16 @@ describe('shouldRelinkVercelProject', () => {
     // A 429 or a 5xx used to read as "no link -> repo changed -> destroy it".
     expect(shouldRelinkVercelProject({ ok: false }, 'acme/web')).toBe(false)
     expect(shouldRelinkVercelProject({ ok: false, link: null }, 'acme/web')).toBe(false)
+    expect(shouldRelinkVercelProject({ ok: false, status: 429 }, 'acme/web')).toBe(false)
+    expect(shouldRelinkVercelProject({ ok: false, status: 500 }, 'acme/web')).toBe(false)
+  })
+
+  it('DOES relink on a 404 — the project is gone, not unreadable', () => {
+    // Conclusive, not transient: the canvas points at a project that no longer
+    // exists (deleted in the dashboard, or orphaned by a half-finished deploy).
+    // There is nothing to destroy and recreating is the only way the node works
+    // again — without this the node is stuck failing forever.
+    expect(shouldRelinkVercelProject({ ok: false, status: 404 }, 'acme/web')).toBe(true)
   })
 
   it('does NOT relink when the linked repo already matches', () => {
@@ -529,6 +539,22 @@ describe('relinkVercelWithGitHub — deployment id', () => {
     ])
     const out = await relinkVercelWithGitHub('tok', 'prj_old', 'org/repo')
     expect(out.vercel_deployment_id).toBe('dpl_relink')
+  })
+
+  it('names the recreated project from the caller fallback when the old one is a 404', async () => {
+    // The 404 recovery path can never read the dead project's name, so without
+    // a fallback every recovered project was renamed to the literal
+    // "my-project" (seen in prod 2026-08-24 03:46).
+    const calls = makeFetchSpy([
+      { status: 404, body: {} },                                            // GET existing project — gone
+      { status: 404, body: {} },                                            // GET env snapshot — gone
+      { status: 404, body: {} },                                            // DELETE — already gone, tolerated
+      { status: 200, body: { id: 'prj_new', name: 'tanstack-start-ts', link: { repoId: 42, defaultBranch: 'main' } } },
+      { status: 200, body: { uid: 'dpl_relink', url: 'x.vercel.app' } },
+    ])
+    await relinkVercelWithGitHub('tok', 'prj_gone', 'org/repo', {}, undefined, 'Tanstack Start TS')
+    const createBody = JSON.parse(String(calls[3].init?.body))
+    expect(createBody.name).toBe('tanstack-start-ts')
   })
 
   it('leaves the id undefined when no deployment could be triggered', async () => {

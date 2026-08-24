@@ -262,9 +262,16 @@ export interface VercelProjectLink {
  * recreated on four consecutive deploys without the repo ever changing.
  */
 export function shouldRelinkVercelProject(
-  projectRead: { ok: boolean; link?: VercelProjectLink | null },
+  projectRead: { ok: boolean; status?: number; link?: VercelProjectLink | null },
   desiredRepo: string,
 ): boolean {
+  // 404 is not a failed read — it is a conclusive answer: the project the
+  // canvas points at is gone (deleted in the Vercel dashboard, or left behind
+  // by a half-finished deploy). Recreating it is the only way the node ever
+  // works again, and there is nothing to destroy. Kept distinct from the
+  // transient case below, which must NOT delete anything.
+  if (projectRead.status === 404) return true;
+
   // Couldn't read the project — a rate limit, a 5xx, a network blip. Deleting
   // the user's project because a GET failed is the worst available response to
   // a transient error.
@@ -703,13 +710,18 @@ export async function relinkVercelWithGitHub(
   repoName: string,
   extraEnvVars: Record<string, string> = {},
   idempotencyKey?: string,
+  fallbackName?: string,
 ): Promise<VercelOutput> {
   // 1. Fetch existing project name and snapshot env vars before delete
   const getRes = await fetch(`${VERCEL_API}/v9/projects/${projectId}`, {
     headers: vHeaders(token),
     signal: AbortSignal.timeout(30_000),
   });
-  let name = "my-project";
+  // Recreating after a 404 is the normal recovery path, and there the GET can
+  // never succeed — so the name has to come from somewhere other than the dead
+  // project. Without a caller-supplied fallback every recovered project got
+  // renamed to the literal "my-project" (seen in prod 2026-08-24 03:46).
+  let name = fallbackName ? toProjectName(fallbackName) : "my-project";
   if (getRes.ok) {
     const p = await getRes.json<{ name: string }>();
     name = p.name;

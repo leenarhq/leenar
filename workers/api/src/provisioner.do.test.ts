@@ -2476,3 +2476,83 @@ describe('ProvisionerDO step loop — cross-invocation 10-minute deadline', () =
     expect(result).toBe('continue')
   })
 })
+
+// --- Vercel redeploy must not destroy the project on an inconclusive read ---
+// Relink deletes the Vercel project and recreates it. A prod repro (2026-08-24)
+// had the same node deleted and recreated across four consecutive deploys with
+// the repo never changing — every deploy handing the user a fresh project id and
+// dropping whatever was attached to the old one.
+describe('ProvisionerDO.executeStep — vercel redeploy relink guard', () => {
+  let calls: Array<{ url: string; method: string }>
+
+  function stubVercel(projectGet: Array<{ status: number; body: unknown }>) {
+    calls = []
+    let getIdx = 0
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const u = String(url)
+      const method = String(init?.method ?? 'GET').toUpperCase()
+      calls.push({ url: u, method })
+      if (u.includes('/v9/projects/prj_1') && method === 'GET') {
+        const r = projectGet[getIdx] ?? projectGet[projectGet.length - 1]
+        getIdx++
+        return new Response(JSON.stringify(r.body), { status: r.status })
+      }
+      if (u.includes('/v6/deployments')) {
+        return new Response(JSON.stringify({ deployments: [{ uid: 'dpl_prev' }] }), { status: 200 })
+      }
+      if (u.includes('/v13/deployments')) {
+        return new Response(JSON.stringify({ uid: 'dpl_new', url: 'web-abc.vercel.app' }), { status: 200 })
+      }
+      return new Response(JSON.stringify({}), { status: 200 })
+    }))
+  }
+
+  const step = {
+    service: 'vercel',
+    action: 'redeploy',
+    nodeId: 'v1',
+    nodeLabel: 'Vercel',
+    params: { vercelProjectId: 'prj_1', existing_repo: 'https://github.com/acme/web' },
+    injectEnvVars: [],
+  } as any
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('does NOT delete the project when the project read fails (transient 5xx/429)', async () => {
+    // First GET fails, later ones succeed — exactly the shape of a rate limit or
+    // a blip. This used to read as "no link => repo changed => delete it".
+    stubVercel([
+      { status: 500, body: {} },
+      { status: 200, body: { name: 'web', link: { org: 'acme', repo: 'web' } } },
+    ])
+    const do_ = makeDO()
+    vi.spyOn(do_, 'getUserToken' as any).mockResolvedValue('fake-token')
+
+    const out = await do_.executeStep(step, {}, 'user-1', 'My Project')
+
+    expect(calls.some((c) => c.method === 'DELETE')).toBe(false)
+    expect(out.vercel_project_id).toBe('prj_1')
+    expect(out.vercel_deployment_id).toBe('dpl_new')
+  })
+
+  it('does NOT delete the project when the linked repo already matches', async () => {
+    stubVercel([{ status: 200, body: { name: 'web', link: { org: 'acme', repo: 'web' } } }])
+    const do_ = makeDO()
+    vi.spyOn(do_, 'getUserToken' as any).mockResolvedValue('fake-token')
+
+    const out = await do_.executeStep(step, {}, 'user-1', 'My Project')
+
+    expect(calls.some((c) => c.method === 'DELETE')).toBe(false)
+    expect(out.vercel_project_id).toBe('prj_1')
+  })
+
+  it('still deletes + recreates when the repo genuinely changed', async () => {
+    stubVercel([{ status: 200, body: { name: 'web', link: { org: 'acme', repo: 'other-repo' } } }])
+    const do_ = makeDO()
+    vi.spyOn(do_, 'getUserToken' as any).mockResolvedValue('fake-token')
+
+    await do_.executeStep(step, {}, 'user-1', 'My Project')
+
+    expect(calls.some((c) => c.method === 'DELETE' && c.url.includes('/v9/projects/prj_1'))).toBe(true)
+  })
+})

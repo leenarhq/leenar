@@ -27,6 +27,7 @@ import {
   injectVercelEnvVars,
   redeployVercel,
   relinkVercelWithGitHub,
+  shouldRelinkVercelProject,
   assertVercelGitHubLinked,
   deprovisionVercel,
 } from "./connectors/vercel";
@@ -2080,9 +2081,19 @@ export class ProvisionerDO implements DurableObject {
           createLogger().info("vercel.redeploy", {
             currentRepo,
             newRepo: newRepoName,
+            readOk: projRes.ok,
+            // The raw link is what decides between a redeploy and a project
+            // delete+recreate, so log the shape Vercel actually returned —
+            // a spurious relink is otherwise indistinguishable from a real one.
+            link: proj?.link,
           });
 
-          if (currentRepo !== newRepoName) {
+          if (
+            shouldRelinkVercelProject(
+              { ok: projRes.ok, link: proj?.link },
+              newRepoName,
+            )
+          ) {
             // Repo changed — relink (delete old project + recreate with new git connection)
             createLogger().info("vercel.relink", {
               from: currentRepo,

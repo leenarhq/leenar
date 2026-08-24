@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { injectVercelEnvVars, assertVercelGitHubLinked, promoteVercelDeployment, getVercelObservability, provisionVercel, deleteVercelEnvVar, relinkVercelWithGitHub, triggerVercelDeployment, redeployVercel, narrowClientEnvPrefixes, getVercelDeploymentState } from './vercel'
+import { injectVercelEnvVars, assertVercelGitHubLinked, promoteVercelDeployment, getVercelObservability, provisionVercel, deleteVercelEnvVar, relinkVercelWithGitHub, shouldRelinkVercelProject, triggerVercelDeployment, redeployVercel, narrowClientEnvPrefixes, getVercelDeploymentState } from './vercel'
 import { RateLimitError } from './errors'
 
 afterEach(() => vi.restoreAllMocks())
@@ -439,7 +439,111 @@ describe('deleteVercelEnvVar', () => {
   })
 })
 
+// ── shouldRelinkVercelProject ─────────────────────────────────────────────────
+
+// Relink DELETES the Vercel project and recreates it, taking the custom
+// domains, deployment history and analytics with it. A prod repro (2026-08-24)
+// had the same node deleted and recreated on four consecutive deploys with the
+// repo never changing, so every "we aren't sure" answer here must be `false`.
+describe('shouldRelinkVercelProject', () => {
+  it('does NOT relink when the project could not be read', () => {
+    // A 429 or a 5xx used to read as "no link -> repo changed -> destroy it".
+    expect(shouldRelinkVercelProject({ ok: false }, 'acme/web')).toBe(false)
+    expect(shouldRelinkVercelProject({ ok: false, link: null }, 'acme/web')).toBe(false)
+  })
+
+  it('does NOT relink when the linked repo already matches', () => {
+    expect(
+      shouldRelinkVercelProject({ ok: true, link: { org: 'acme', repo: 'web' } }, 'acme/web'),
+    ).toBe(false)
+  })
+
+  it('does NOT relink on a case difference (GitHub names are case-insensitive)', () => {
+    expect(
+      shouldRelinkVercelProject({ ok: true, link: { org: 'Acme', repo: 'Web' } }, 'acme/web'),
+    ).toBe(false)
+  })
+
+  it('does NOT relink when Vercel reports the bare repo name and it matches', () => {
+    // `${org}/${repo}` collapsed to just `repo` never equals the owner-qualified
+    // canvas value, so this shape relinked on every single deploy, forever.
+    expect(
+      shouldRelinkVercelProject({ ok: true, link: { repo: 'web' } }, 'acme/web'),
+    ).toBe(false)
+  })
+
+  it('DOES relink when the linked repo genuinely differs', () => {
+    expect(
+      shouldRelinkVercelProject({ ok: true, link: { org: 'acme', repo: 'api' } }, 'acme/web'),
+    ).toBe(true)
+    expect(
+      shouldRelinkVercelProject({ ok: true, link: { org: 'other', repo: 'web' } }, 'acme/web'),
+    ).toBe(true)
+    expect(
+      shouldRelinkVercelProject({ ok: true, link: { repo: 'api' } }, 'acme/web'),
+    ).toBe(true)
+  })
+
+  it('DOES relink when the project has no git connection at all', () => {
+    // The case the function exists for: Vercel cannot PATCH git integration
+    // onto an existing project, so delete + recreate is the only route.
+    expect(shouldRelinkVercelProject({ ok: true, link: null }, 'acme/web')).toBe(true)
+    expect(shouldRelinkVercelProject({ ok: true }, 'acme/web')).toBe(true)
+    expect(shouldRelinkVercelProject({ ok: true, link: { org: 'acme' } }, 'acme/web')).toBe(true)
+  })
+})
+
 // ── relinkVercelWithGitHub ────────────────────────────────────────────────────
+
+describe('relinkVercelWithGitHub — deployment id', () => {
+  // The relink branch triggers a real production build, but used to drop the
+  // deployment's id on the floor. Every consumer downstream keys off
+  // `vercel_deployment_id` to decide whether a service is still building —
+  // DeploySuccessModal renders a service with no id as READY, with a live link,
+  // while Vercel is still building it. Measured over 79 prod Vercel steps: the
+  // 8 with no deployment id were exactly the 8 that relinked.
+  it('returns the id of the deployment it triggered', async () => {
+    makeFetchSpy([
+      { status: 200, body: { name: 'my-project' } },                       // GET existing project
+      { status: 200, body: { envs: [] } },                                 // GET env snapshot
+      { status: 200, body: {} },                                           // DELETE old project
+      { status: 200, body: {                                               // POST recreate
+        id: 'prj_new', name: 'my-project',
+        link: { repoId: 42, defaultBranch: 'main' },
+      } },
+      { status: 200, body: { uid: 'dpl_relink', url: 'my-project-abc.vercel.app' } }, // POST deployment
+    ])
+    const out = await relinkVercelWithGitHub('tok', 'prj_old', 'org/repo')
+    expect(out.vercel_deployment_id).toBe('dpl_relink')
+    expect(out.vercel_project_id).toBe('prj_new')
+    expect(out.vercel_project_url).toBe('https://my-project-abc.vercel.app')
+  })
+
+  it('falls back to `id` when Vercel returns no `uid`', async () => {
+    makeFetchSpy([
+      { status: 200, body: { name: 'my-project' } },
+      { status: 200, body: { envs: [] } },
+      { status: 200, body: {} },
+      { status: 200, body: { id: 'prj_new', name: 'my-project', link: { repoId: 42, defaultBranch: 'main' } } },
+      { status: 200, body: { id: 'dpl_relink', url: 'my-project-abc.vercel.app' } },
+    ])
+    const out = await relinkVercelWithGitHub('tok', 'prj_old', 'org/repo')
+    expect(out.vercel_deployment_id).toBe('dpl_relink')
+  })
+
+  it('leaves the id undefined when no deployment could be triggered', async () => {
+    makeFetchSpy([
+      { status: 200, body: { name: 'my-project' } },
+      { status: 200, body: { envs: [] } },
+      { status: 200, body: {} },
+      { status: 200, body: { id: 'prj_new', name: 'my-project', link: { repoId: 42, defaultBranch: 'main' } } },
+      { status: 500, body: { error: { message: 'boom' } } },              // POST deployment fails
+    ])
+    const out = await relinkVercelWithGitHub('tok', 'prj_old', 'org/repo')
+    expect(out.vercel_deployment_id).toBeUndefined()
+    expect(out.vercel_project_id).toBe('prj_new')
+  })
+})
 
 describe('relinkVercelWithGitHub — secret redaction', () => {
   it('redacts the token out of a failed project-recreate response body', async () => {

@@ -240,6 +240,54 @@ export interface VercelOutput {
   vercel_deployment_id?: string;
 }
 
+/** A Vercel project's git connection, as returned inside `project.link`. */
+export interface VercelProjectLink {
+  org?: string;
+  repo?: string;
+}
+
+/**
+ * Decide whether a redeploy has to relink — i.e. DELETE the Vercel project and
+ * recreate it against a different GitHub repo, because Vercel's API cannot
+ * PATCH a git connection onto an existing project.
+ *
+ * Relink is destructive: the project's custom domains, deployment history,
+ * analytics and env var ids all die with it. So it may only fire on POSITIVE
+ * evidence that the connected repo differs from the one on the canvas.
+ * Everything we could not read is "leave the project alone" — a plain redeploy
+ * is always the safe fallback, and a deploy that redeploys when it should have
+ * relinked is recoverable, while the reverse is not.
+ *
+ * Found by a prod repro (2026-08-24) where the same node was deleted and
+ * recreated on four consecutive deploys without the repo ever changing.
+ */
+export function shouldRelinkVercelProject(
+  projectRead: { ok: boolean; link?: VercelProjectLink | null },
+  desiredRepo: string,
+): boolean {
+  // Couldn't read the project — a rate limit, a 5xx, a network blip. Deleting
+  // the user's project because a GET failed is the worst available response to
+  // a transient error.
+  if (!projectRead.ok) return false;
+
+  const link = projectRead.link;
+  // No git connection at all: relink is the only way to attach one. This is the
+  // case the function was written for.
+  if (!link?.repo) return true;
+
+  const desired = desiredRepo.toLowerCase();
+  // GitHub owner and repo names are case-insensitive, so a canvas value that
+  // differs only in case is the same repo.
+  if (link.org) return `${link.org}/${link.repo}`.toLowerCase() !== desired;
+
+  // Vercel reported the bare repo name with no owner. Comparing that against
+  // the owner-qualified canvas value never matches, which relinks on every
+  // single deploy — compare on the repo segment instead. Trade-off: a switch to
+  // a same-named repo under a different owner goes undetected in this shape,
+  // which costs a stale link; the alternative costs the project itself.
+  return link.repo.toLowerCase() !== (desired.split("/").pop() ?? desired);
+}
+
 /** Throws if the Vercel GitHub App integration is not installed (required to link repos). */
 export async function assertVercelGitHubLinked(
   token: string,
@@ -751,6 +799,12 @@ export async function relinkVercelWithGitHub(
 
   // 5. Trigger deployment
   let projectUrl = `https://${newProject.name}.vercel.app`;
+  // The build this kicks off is a real, asynchronous production deploy, so its
+  // id has to travel back with the rest of the output: `vercel_deployment_id`
+  // is the ONLY signal DeploySuccessModal has that a service is still building
+  // (see useDeployFlow's success handler). Dropping it here made every relinked
+  // deploy render as ready — link live — while Vercel was still building.
+  let deploymentId: string | undefined;
   let repoId = newProject.link?.repoId;
   let defaultBranch = newProject.link?.defaultBranch;
   if (!repoId) {
@@ -792,6 +846,8 @@ export async function relinkVercelWithGitHub(
           },
         );
         const dep = await depRes.json<{
+          uid?: string;
+          id?: string;
           url?: string;
           alias?: string[];
           error?: unknown;
@@ -799,7 +855,8 @@ export async function relinkVercelWithGitHub(
         if (depRes.ok) {
           const domain = dep.alias?.[0] ?? dep.url;
           if (domain) projectUrl = `https://${domain}`;
-          log.info("relink.deploy_triggered", { repoName, ref });
+          deploymentId = dep.uid ?? dep.id;
+          log.info("relink.deploy_triggered", { repoName, ref, deploymentId });
           break;
         } else {
           log.warn("relink.deploy_failed", { ref, error: dep.error });
@@ -814,6 +871,7 @@ export async function relinkVercelWithGitHub(
     vercel_project_id: newProject.id,
     vercel_project_url: projectUrl,
     vercel_project_name: newProject.name,
+    vercel_deployment_id: deploymentId,
   };
 }
 

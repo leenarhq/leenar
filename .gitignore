@@ -30,3 +30,6 @@ supabase/core-migrations/.validate/*.sql
 
 # Local tooling scratch (gstack browse logs) — machine-specific, never shipped.
 .gstack/
+
+# Demo video — hosted on GitHub user-attachments, linked from README. Never commit the file.
+leenar-demo.mp4

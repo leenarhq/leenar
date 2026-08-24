@@ -1,12 +1,27 @@
 {
+  // Open-core edition of apps/web/wrangler.jsonc. Staged over it at export
+  // (manifest.json contentOverrides), the same mechanism wrangler.core.toml
+  // uses for the API worker — and for the same reason: the cloud file pins
+  // this build to Leenar's own zone and API host, neither of which a
+  // self-hoster owns.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "leenar-web",
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/worker.ts",
-  "routes": [{ "pattern": "leenar.net/*", "zone_name": "leenar.net" }],
-  "workers_dev": false,
-  // API origin the SPA calls — the edge worker's CSP connect-src reads this.
-  // (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY stay dashboard secrets.)
-  "vars": { "API_URL": "https://api.leenar.net" },
+  // No `routes` — that needs a zone you control. Deployed as-is the console
+  // comes up on its workers.dev subdomain; add a routes entry for your own
+  // domain once you have one:
+  //   "routes": [{ "pattern": "app.example.com/*", "zone_name": "example.com" }]
+  "workers_dev": true,
+  // API origin the SPA calls. src/worker.ts feeds this straight into the CSP
+  // connect-src, so it MUST name the origin your API worker actually answers
+  // on — if it does not, every call is blocked inside the browser before it
+  // reaches the network and nothing appears in any log. The default matches
+  // the API worker's own wrangler.toml, i.e. `wrangler dev` on both halves.
+  //
+  // SUPABASE_URL is optional and belongs here only when Supabase is NOT on
+  // *.supabase.co (a self-hosted Kong, say) — the CSP already allows the
+  // hosted wildcard. docker/Dockerfile.web passes both as `--var` overrides.
+  "vars": { "API_URL": "http://localhost:8787" },
 }

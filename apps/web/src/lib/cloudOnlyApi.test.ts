@@ -131,6 +131,24 @@ function cloudOnlyApiFunctions(): string[] {
 
 const FILES = walk(SRC).filter((f) => rel(f) !== "lib/api.ts");
 
+/**
+ * Cloud-only /api paths a file writes out ITSELF, instead of going through a
+ * lib/api.ts helper. The derivation above only sees api.ts exports, so this
+ * whole class was invisible to it: console.settings.api-tokens.tsx built a
+ * `claude mcp add … /api/mcp` command as a plain string and shipped it,
+ * ungated, to a core build where /api/mcp does not exist — the page handed the
+ * self-hoster a command that could only ever 404.
+ *
+ * Matches a path opening right after a quote, a backtick, or the `}` that
+ * closes an interpolation (`${API_URL}/api/mcp`), and stops at whitespace so a
+ * path embedded mid-command is still recognised.
+ */
+function directCloudPaths(src: string): string[] {
+  return [...src.matchAll(/["`}](\/api\/[^"`\s]*)/g)]
+    .map((m) => m[1].replace(/\$\{[^}]*\}/g, "X"))
+    .filter((p) => CLOUD_RE.some((r) => r.test(p)));
+}
+
 /** Files calling `fn`, as src-relative paths. */
 function consumersOf(fn: string): string[] {
   const re = new RegExp(`\\b${fn}\\b`);
@@ -171,6 +189,19 @@ describe("cloud-only API consumers are gated behind isCloud", () => {
         if (readFileSync(join(SRC, file), "utf8").includes("isCloud")) continue;
         offenders.push(`${file} calls ${fn}`);
       }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("has no ungated file that writes a cloud-only path itself", () => {
+    const offenders: string[] = [];
+    for (const file of FILES) {
+      const src = readFileSync(file, "utf8");
+      const paths = directCloudPaths(src);
+      if (!paths.length) continue;
+      if (rel(file) in ALLOWED_UNGATED) continue;
+      if (src.includes("isCloud")) continue;
+      offenders.push(`${rel(file)} writes ${paths.join(", ")}`);
     }
     expect(offenders).toEqual([]);
   });

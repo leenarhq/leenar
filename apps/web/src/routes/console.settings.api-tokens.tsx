@@ -14,6 +14,7 @@ import {
 import { StateTag } from "../components/console/StateTag";
 import { INPUT, PILL } from "../components/console/Field";
 import { useAuth } from "../context/auth";
+import { isCloud } from "../lib/cloud";
 
 /* Kept literal so Tailwind's scanner sees it, and declared once because the
    header and the rows have to agree — they were two copies of this string. */
@@ -30,6 +31,9 @@ const COPY_BUTTON =
  * `lib/api.ts` reads the same env var but falls back to `""` — a same-origin
  * base, which is right for `fetch` and useless in a shell command. A CLI needs
  * an absolute URL, so the fallback here is the production host instead.
+ *
+ * Cloud-only: /api/mcp is mounted by registerCloudRoutes, so in a core build
+ * this command would point at a 404. Every render site below is isCloud-gated.
  */
 const mcpAddCommand = (key: string) =>
   `claude mcp add --transport http leenar ${
@@ -122,8 +126,8 @@ function ApiTokensPage() {
           </button>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Read &amp; write tokens can create and deploy workflows via the MCP
-          server — keep them secret. Read-only tokens can only list and inspect.
+          Read &amp; write tokens can create and deploy projects through the API
+          — keep them secret. Read-only tokens can only list and inspect.
         </p>
 
         {created && (
@@ -150,32 +154,39 @@ function ApiTokensPage() {
 
             {/* The key is on screen exactly once, so this is the only moment a
                 ready-to-run command can carry the real value. Without it the
-                next step is: copy the key, find the docs, hand-write the flags. */}
-            <p className="mt-4 text-[12px] text-muted-foreground">
-              Or connect Claude Code in one command:
-            </p>
-            <div className="mt-2 flex items-start gap-2">
-              <code className="flex-1 overflow-x-auto whitespace-pre rounded bg-background px-2 py-1.5 font-mono text-xs">
-                {mcpAddCommand(created.key)}
-              </code>
-              <button
-                onClick={() => copy("command", mcpAddCommand(created.key))}
-                className={COPY_BUTTON}
-              >
-                {copied === "command" ? (
-                  <Check className="h-3.5 w-3.5" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}{" "}
-                {copied === "command" ? "Copied" : "Copy"}
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Adds Leenar to the current project. Append{" "}
-              <code className="font-mono">--scope user</code> for every project,
-              then check it with{" "}
-              <code className="font-mono">claude mcp list</code>.
-            </p>
+                next step is: copy the key, find the docs, hand-write the flags.
+
+                Cloud only — the MCP server it connects to is a cloud-only
+                mount, so a core build must not offer the command at all. */}
+            {isCloud && (
+              <>
+                <p className="mt-4 text-[12px] text-muted-foreground">
+                  Or connect Claude Code in one command:
+                </p>
+                <div className="mt-2 flex items-start gap-2">
+                  <code className="flex-1 overflow-x-auto whitespace-pre rounded bg-background px-2 py-1.5 font-mono text-xs">
+                    {mcpAddCommand(created.key)}
+                  </code>
+                  <button
+                    onClick={() => copy("command", mcpAddCommand(created.key))}
+                    className={COPY_BUTTON}
+                  >
+                    {copied === "command" ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}{" "}
+                    {copied === "command" ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Adds Leenar to the current project. Append{" "}
+                  <code className="font-mono">--scope user</code> for every
+                  project, then check it with{" "}
+                  <code className="font-mono">claude mcp list</code>.
+                </p>
+              </>
+            )}
           </div>
         )}
 

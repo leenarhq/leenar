@@ -78,7 +78,7 @@ must read before exposing this beyond `localhost`.
 | **Edge-gated env vars** | Connect two nodes and the credentials flow along that edge — framework-aware, so `NEXT_PUBLIC_`/`VITE_`/`PUBLIC_` prefixes land correctly. No edge, no injection. |
 | **Database workspace** | Introspect a live Supabase schema, edit tables and RLS policies, toggle extensions, run SQL — against the real database, not a cached copy. |
 | **Environments** | Branch a stack off its trunk and promote it back, instead of hand-copying variables between staging and production. |
-| **MCP server** | Point Claude Code, Cursor or any MCP client at your workspace and let it read and reshape the canvas. |
+| **Canvas agent** | Ask for a change in plain language and the AI edits the graph in place — adds a service, wires an edge, renames a node — with every tool call scoped to the canvas in front of you. |
 | **Own your keys** | Bring your own OpenAI key and your own provider tokens. Nothing is proxied through us, and there are no usage caps. |
 
 ## Core vs Leenar Cloud
@@ -94,10 +94,11 @@ is *autonomy* — the AI DevOps engineer that keeps working while you sleep.
 | GitHub · Vercel · Supabase · Cloudflare · Resend | ✅ | ✅ |
 | Database workspace (introspect, SQL, schema, RLS) | ✅ | ✅ |
 | Environments, API keys, webhooks | ✅ | ✅ |
-| MCP server | ✅ | ✅ |
+| Canvas agent (AI edits the graph in place) | ✅ | ✅ |
 | Self-host with `docker compose up` | ✅ | — |
 | Bring your own OpenAI key, no usage caps | ✅ | managed |
 | Connecting providers | pasted tokens | OAuth |
+| MCP server (drive a workspace from Claude Code, Cursor, …) | — | ✅ |
 | 24/7 incident monitoring and AI diagnosis | — | ✅ |
 | Drift detection and auto-reconcile | — | ✅ |
 | Autopilot: approved changes applied unattended | — | ✅ |
@@ -112,7 +113,7 @@ flowchart LR
     W["Console<br/>React 19 · TanStack Router · React Flow"]
   end
   subgraph edge["Cloudflare Workers"]
-    A["API worker<br/>Hono routes · MCP server"]
+    A["API worker<br/>Hono routes · canvas agent"]
     D["Provisioner<br/>Durable Object"]
   end
   subgraph data["Postgres"]
@@ -151,9 +152,24 @@ interface in `workers/api/src/types.ts` for the full list.
 
 ```bash
 npm install
-cd workers/api && npx wrangler dev   # API worker
-cd apps/web    && npm run dev        # console
+cd workers/api && npx wrangler dev   # API worker on :8787
+cd apps/web    && npm run dev        # console on :5173
 ```
+
+The console needs to know where that API worker is, and it is a build-time
+value — put it in `apps/web/.env.local` before `npm run dev`:
+
+```
+VITE_API_URL=http://localhost:8787
+VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your anon key>
+VITE_LEENAR_CLOUD=false
+```
+
+If you move the API off `:8787`, change `vars.API_URL` in
+`apps/web/wrangler.jsonc` to match. The edge worker copies it into the CSP
+`connect-src`, so a stale value gets every API call blocked inside the browser
+— the request never reaches the network, and nothing shows up in any log.
 
 ## Contributing
 

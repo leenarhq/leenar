@@ -62,6 +62,25 @@ describe('buildLeenarDeployWorkflowYaml', () => {
         '    runs-on: ubuntu-latest',
         '    steps:',
         '      - uses: actions/checkout@v4',
+        '      - name: Install dependencies',
+        '        shell: bash',
+        '        run: |',
+        '          set -euo pipefail',
+        '          dir="."',
+        '          if [ ! -f "$dir/package.json" ]; then',
+        '            echo "No package.json found - skipping dependency install."',
+        '            exit 0',
+        '          fi',
+        '          cd "$dir"',
+        '          if [ -f package-lock.json ]; then',
+        '            npm ci',
+        '          elif [ -f pnpm-lock.yaml ]; then',
+        '            corepack enable && pnpm install --frozen-lockfile',
+        '          elif [ -f yarn.lock ]; then',
+        '            corepack enable && yarn install --frozen-lockfile',
+        '          else',
+        '            npm install',
+        '          fi',
         '      - uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0',
         '        with:',
         '          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}',
@@ -93,6 +112,68 @@ describe('buildLeenarDeployWorkflowYaml', () => {
     const yaml = buildLeenarDeployWorkflowYaml({ onPush: true, workingDirectory: 'svc/api' })
     expect(yaml).toContain('push:\n    branches: [main]')
     expect(yaml).toContain('workingDirectory: svc/api')
+  })
+
+  // wrangler-action only installs WRANGLER — its `packageManager` input is
+  // documented as "the package manager you'd like to use to install and run
+  // wrangler". The project's own dependencies are ours to install, or
+  // `wrangler deploy` fails bundling every Worker that imports an npm package.
+  describe('dependency install', () => {
+    it('installs project dependencies after checkout and before wrangler-action', () => {
+      const yaml = buildLeenarDeployWorkflowYaml()
+      const checkoutIdx = yaml.indexOf('actions/checkout@v4')
+      const installIdx = yaml.indexOf('name: Install dependencies')
+      const wranglerIdx = yaml.indexOf('cloudflare/wrangler-action@')
+      expect(installIdx).toBeGreaterThan(checkoutIdx)
+      expect(wranglerIdx).toBeGreaterThan(installIdx)
+    })
+
+    it('picks the install command from the lockfile, covering npm/pnpm/yarn', () => {
+      const yaml = buildLeenarDeployWorkflowYaml()
+      expect(yaml).toContain('npm ci')
+      expect(yaml).toContain('pnpm install --frozen-lockfile')
+      expect(yaml).toContain('yarn install --frozen-lockfile')
+      // No lockfile but a package.json still needs deps.
+      expect(yaml).toContain('npm install')
+    })
+
+    it('is a no-op for a repo with no package.json — the zero-dependency Worker still deploys', () => {
+      const yaml = buildLeenarDeployWorkflowYaml()
+      expect(yaml).toContain('skipping dependency install')
+      expect(yaml).toContain('exit 0')
+    })
+
+    it('prefers a repo-root package.json over the workingDirectory (monorepo workspaces)', () => {
+      const yaml = buildLeenarDeployWorkflowYaml({ workingDirectory: 'apps/worker' })
+      expect(yaml).toContain('dir="."')
+      expect(yaml).toContain('apps/worker/package.json')
+    })
+
+    it('emits no directory probe when there is no workingDirectory', () => {
+      // The probe line is the only one that ANDs a second -f test.
+      expect(buildLeenarDeployWorkflowYaml()).not.toContain('&& [ -f "')
+    })
+
+    it('the YAML stays ASCII — btoa() is latin1-only and throws on anything else', () => {
+      for (const yaml of [
+        buildLeenarDeployWorkflowYaml(),
+        buildLeenarDeployWorkflowYaml({ onPush: true, workingDirectory: 'apps/worker' }),
+        buildLeenarDeployWorkflowYaml({ workerName: 'my-app-staging' }),
+      ]) {
+        expect(() => btoa(yaml)).not.toThrow()
+      }
+    })
+
+    it('rejects a workingDirectory that could escape or inject into the run block', () => {
+      for (const bad of ['apps; rm -rf /', '../../etc', 'a$(whoami)', 'a`id`', "a'b", 'a b']) {
+        expect(() => buildLeenarDeployWorkflowYaml({ workingDirectory: bad })).toThrow(
+          /workingDirectory/i,
+        )
+      }
+      // Ordinary relative paths still work.
+      expect(() => buildLeenarDeployWorkflowYaml({ workingDirectory: 'apps/worker' })).not.toThrow()
+      expect(() => buildLeenarDeployWorkflowYaml({ workingDirectory: 'svc/api-v2_1' })).not.toThrow()
+    })
   })
 
   it('{ workerName } scopes the deploy command with --name (branch safety)', () => {

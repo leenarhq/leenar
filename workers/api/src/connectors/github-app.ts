@@ -214,6 +214,18 @@ export async function pushLeenarCommitAsApp(
  * Pure function, no I/O — always triggers on `workflow_dispatch`; optionally
  * also on push to `main` (off by default — Leenar dispatches manually).
  */
+/** A repo-relative path safe to interpolate into a `run:` shell block: plain
+ *  segments only — no traversal, no whitespace, no shell metacharacters. */
+const SAFE_REL_PATH = /^[A-Za-z0-9._-]+(\/[A-Za-z0-9._-]+)*$/
+
+function assertSafeWorkingDirectory(wd: string): void {
+  if (!SAFE_REL_PATH.test(wd) || wd.split('/').includes('..')) {
+    throw new Error(
+      `Refusing to build a deploy workflow: workingDirectory "${wd}" is not a plain relative path.`,
+    )
+  }
+}
+
 export function buildLeenarDeployWorkflowYaml(opts?: {
   workingDirectory?: string
   onPush?: boolean
@@ -245,8 +257,51 @@ export function buildLeenarDeployWorkflowYaml(opts?: {
     `          command: ${deployCommand}`,
   ]
   if (opts?.workingDirectory) {
+    assertSafeWorkingDirectory(opts.workingDirectory)
     withLines.push(`          workingDirectory: ${opts.workingDirectory}`)
   }
+
+  // wrangler-action installs WRANGLER, not the project's own dependencies —
+  // its `packageManager` input is documented as "the package manager you'd
+  // like to use to install and run wrangler", and `preCommands` exists
+  // precisely for this. Without an install, `wrangler deploy` fails to bundle
+  // any Worker that imports an npm package.
+  //
+  // Prefer the repo root: in a monorepo the workspace install lives there even
+  // when the Worker is in a subdirectory (which is how Leenar's own deploy
+  // works). Fall back to the workingDirectory for a standalone Worker that
+  // carries its own manifest, and no-op entirely when there is no package.json
+  // at all, so a zero-dependency single-file Worker still deploys.
+  const installLines = [
+    '      - name: Install dependencies',
+    '        shell: bash',
+    '        run: |',
+    '          set -euo pipefail',
+    '          dir="."',
+  ]
+  if (opts?.workingDirectory) {
+    installLines.push(
+      `          if [ ! -f package.json ] && [ -f "${opts.workingDirectory}/package.json" ]; then dir="${opts.workingDirectory}"; fi`,
+    )
+  }
+  installLines.push(
+    '          if [ ! -f "$dir/package.json" ]; then',
+    // ASCII only: this YAML is base64'd with btoa(), which is latin1-only and
+    // throws InvalidCharacterError on so much as an em-dash.
+    '            echo "No package.json found - skipping dependency install."',
+    '            exit 0',
+    '          fi',
+    '          cd "$dir"',
+    '          if [ -f package-lock.json ]; then',
+    '            npm ci',
+    '          elif [ -f pnpm-lock.yaml ]; then',
+    '            corepack enable && pnpm install --frozen-lockfile',
+    '          elif [ -f yarn.lock ]; then',
+    '            corepack enable && yarn install --frozen-lockfile',
+    '          else',
+    '            npm install',
+    '          fi',
+  )
 
   const lines = [
     'name: Leenar Deploy',
@@ -256,6 +311,7 @@ export function buildLeenarDeployWorkflowYaml(opts?: {
     '    runs-on: ubuntu-latest',
     '    steps:',
     '      - uses: actions/checkout@v4',
+    ...installLines,
     `      - uses: ${WRANGLER_ACTION_REF} # ${WRANGLER_ACTION_VERSION_COMMENT}`,
     '        with:',
     ...withLines,

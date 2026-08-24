@@ -771,7 +771,16 @@ export async function relinkVercelWithGitHub(
   });
 
   assertNotRateLimited(createRes);
-  if (!createRes.ok) {
+  type RecreatedProject = {
+    id: string;
+    name: string;
+    link?: { repoId?: number; defaultBranch?: string };
+  };
+  let newProject: RecreatedProject | null = createRes.ok
+    ? await createRes.json<RecreatedProject>()
+    : null;
+
+  if (!newProject) {
     const errBody = redactSecretsFromText(
       await createRes.text(),
       [token, ...Object.values(existingEnvValues)],
@@ -782,21 +791,43 @@ export async function relinkVercelWithGitHub(
     } catch {
       /* not JSON */
     }
-    // Log snapshot so env vars can be manually recovered if project recreation fails
-    if (Object.keys(existingEnvValues).length > 0) {
-      log.error("relink.create_failed_snapshot", {
-        projectId,
-        snapshotKeys: Object.keys(existingEnvValues),
-      });
-    }
-    throw new Error(`Failed to recreate Vercel project with git: ${msg}`);
-  }
 
-  const newProject = await createRes.json<{
-    id: string;
-    name: string;
-    link?: { repoId?: number; defaultBranch?: string };
-  }>();
+    // A name conflict is recoverable, and by this point recovering is the only
+    // option left: the old project has already been deleted, so throwing leaves
+    // the node with a dead id and NOTHING to redeploy — every later attempt
+    // 404s, relinks, and dies on the same conflict. It happens whenever a live
+    // project already owns the name (the canvas id went stale while the real
+    // project lived on under a different id — seen in prod 2026-08-24 04:43).
+    // provisionVercel already adopts on conflict; relink never learned to.
+    const isConflict =
+      createRes.status === 409 ||
+      /already exists|already in use/i.test(msg);
+    if (isConflict) {
+      const byName = await fetch(
+        `${VERCEL_API}/v9/projects/${encodeURIComponent(name)}`,
+        { headers: vHeaders(token), signal: AbortSignal.timeout(30_000) },
+      );
+      assertNotRateLimited(byName);
+      if (byName.ok) {
+        newProject = await byName.json<RecreatedProject>();
+        log.info("relink.adopted_on_conflict", {
+          adoptedProjectId: newProject.id,
+          name,
+        });
+      }
+    }
+
+    if (!newProject) {
+      // Log snapshot so env vars can be manually recovered if project recreation fails
+      if (Object.keys(existingEnvValues).length > 0) {
+        log.error("relink.create_failed_snapshot", {
+          projectId,
+          snapshotKeys: Object.keys(existingEnvValues),
+        });
+      }
+      throw new Error(`Failed to recreate Vercel project with git: ${msg}`);
+    }
+  }
   log.info("relink.recreated", {
     newProjectId: newProject.id,
     name: newProject.name,

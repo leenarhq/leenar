@@ -557,6 +557,50 @@ describe('relinkVercelWithGitHub — deployment id', () => {
     expect(createBody.name).toBe('tanstack-start-ts')
   })
 
+  it('adopts the existing project when the name is already taken', async () => {
+    // By this point the old project is already deleted, so throwing on a name
+    // conflict leaves the node with a dead id and nothing to redeploy — every
+    // later attempt 404s, relinks, and dies on the same conflict. Hit in prod
+    // 2026-08-24 04:43: the canvas id had gone stale while a live project still
+    // owned the name.
+    makeFetchSpy([
+      { status: 404, body: {} },                                             // GET existing project — gone
+      { status: 404, body: {} },                                             // GET env snapshot
+      { status: 404, body: {} },                                             // DELETE — already gone
+      { status: 409, body: { error: { message: 'Project "web" already exists.' } } }, // POST recreate
+      { status: 200, body: { id: 'prj_live', name: 'web', link: { repoId: 9, defaultBranch: 'main' } } }, // GET by name
+      { status: 200, body: { uid: 'dpl_adopted', url: 'web-live.vercel.app' } },       // POST deployment
+    ])
+    const out = await relinkVercelWithGitHub('tok', 'prj_gone', 'org/web', {}, undefined, 'web')
+    expect(out.vercel_project_id).toBe('prj_live')
+    expect(out.vercel_deployment_id).toBe('dpl_adopted')
+  })
+
+  it('still throws on a conflict when no project owns the name after all', async () => {
+    makeFetchSpy([
+      { status: 404, body: {} },
+      { status: 404, body: {} },
+      { status: 404, body: {} },
+      { status: 409, body: { error: { message: 'Project "web" already exists.' } } },
+      { status: 404, body: {} }, // GET by name finds nothing — nothing to adopt
+    ])
+    await expect(
+      relinkVercelWithGitHub('tok', 'prj_gone', 'org/web', {}, undefined, 'web'),
+    ).rejects.toThrow(/already exists/)
+  })
+
+  it('still throws on a non-conflict create failure', async () => {
+    makeFetchSpy([
+      { status: 404, body: {} },
+      { status: 404, body: {} },
+      { status: 404, body: {} },
+      { status: 400, body: { error: { message: 'bad request' } } },
+    ])
+    await expect(
+      relinkVercelWithGitHub('tok', 'prj_gone', 'org/web', {}, undefined, 'web'),
+    ).rejects.toThrow(/bad request/)
+  })
+
   it('leaves the id undefined when no deployment could be triggered', async () => {
     makeFetchSpy([
       { status: 200, body: { name: 'my-project' } },

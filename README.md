@@ -29,6 +29,19 @@ cloud accounts. Not a diagram tool: the deploy button creates real resources.
 
 ---
 
+## Demo
+
+<!-- Bare URL on its own line, deliberately. GitHub turns a user-attachments
+     link into a video player only in that form: a hand-written <video> tag is
+     stripped by the README sanitiser, and a raw.githubusercontent link is
+     blocked by the page CSP. The asset must also have been uploaded from a
+     public repo — an attachment created in a private one 404s for everyone
+     else. -->
+
+https://github.com/user-attachments/assets/040aa13e-ef80-47e2-a45a-b3dec7f2db2c
+
+---
+
 ## How it works
 
 ```mermaid

@@ -31,14 +31,44 @@ import {
   importFromBuilder,
 } from "./mcpCanvasTools";
 import { getWorkflowEnvVars } from "../insights/collectors";
+import { createMcpRouter } from "./mcpTransport";
 
 export const TOOLS = CANVAS_TOOL_SCHEMAS;
 export { CANVAS_ALLOWED_TOOLS };
 
-// Core has no dashboard agent and no API-key-driven agent. Empty sets keep
-// agentRuntime.ts's imports resolving without giving either surface a tool.
+// Core has no dashboard agent — routes/agent.ts is cloud-only and the closure
+// prune drops it. An empty set keeps agentRuntime.ts's import resolving without
+// giving that surface a tool.
 export const DASHBOARD_ALLOWED_TOOLS = new Set<string>();
-export const API_KEY_ALLOWED_TOOLS = new Set<string>();
+
+// The read half of the canvas tools. This set is NOT the allow/deny line — the
+// deny line is TOOLS above, which is the whole registry a core client can even
+// see. This is the read/write line the transport applies to API keys: a tool
+// left out of it needs a write-scoped key, exactly as in cloud.
+//
+// Split by effect, not by name: the five authoring tools plus import_from_builder
+// are what a read-only token must not reach.
+export const API_KEY_ALLOWED_TOOLS = new Set<string>([
+  "list_workflows",
+  "get_canvas",
+  "list_environments",
+  "list_connections",
+  "get_workflow_env_vars",
+  "list_vercel_projects",
+  "list_github_repos",
+  "list_supabase_projects",
+  "import_from_builder",
+]);
+
+// Same JSON-RPC transport the cloud registry uses (routes/mcpTransport.ts), so
+// a client cannot tell the two servers apart at the protocol level — only by
+// what tools/list returns. registerCoreRoutes mounts this at /api/mcp; the
+// export stages this file over routes/mcp.ts, so that import resolves here.
+export const mcpRouter = createMcpRouter({
+  tools: TOOLS,
+  apiKeyAllowedTools: API_KEY_ALLOWED_TOOLS,
+  callTool,
+});
 
 /**
  * Signature-compatible with the cloud callTool — agentRuntime.ts passes all six

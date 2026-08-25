@@ -20,6 +20,10 @@ import { driftsRouter } from "./drifts";
 import { logsRouter } from "./logs";
 import { apiKeysRouter } from "./apiKeys";
 import { environmentsRouter } from "./environments";
+// Resolves to routes/mcp.ts here and to routes/mcp.core.ts in the exported core
+// repo (manifest.json transforms stages one over the other). Both export an
+// mcpRouter built from the same transport, differing only in the tool registry.
+import { mcpRouter } from "./mcp";
 
 const log = createLogger({ module: "registerCoreRoutes" });
 
@@ -41,6 +45,7 @@ export function registerCoreRoutes(app: Hono<AppEnv>): void {
   app.route("/api/logs", logsRouter);
   app.route("/api/keys", apiKeysRouter);
   app.route("/api/environments", environmentsRouter);
+  app.route("/api/mcp", mcpRouter); // selfGated in appSetup — scope is enforced per tool
 
   // POST /api/provision/:stackId  →  start provisioner DO
   app.post("/api/provision/:stackId", async (c) => {

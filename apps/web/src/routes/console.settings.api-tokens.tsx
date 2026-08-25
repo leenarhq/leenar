@@ -28,17 +28,28 @@ const COPY_BUTTON =
 /**
  * The `claude mcp add` line for this key, ready to paste.
  *
+ * Not cloud-gated: registerCoreRoutes mounts /api/mcp in both editions. A core
+ * server answers on the same path and advertises the canvas tool subset.
+ *
  * `lib/api.ts` reads the same env var but falls back to `""` — a same-origin
  * base, which is right for `fetch` and useless in a shell command. A CLI needs
- * an absolute URL, so the fallback here is the production host instead.
- *
- * Cloud-only: /api/mcp is mounted by registerCloudRoutes, so in a core build
- * this command would point at a 404. Every render site below is isCloud-gated.
+ * an absolute URL, so this needs a fallback of its own, and it must differ by
+ * edition: `api.leenar.net` is right for the hosted console and actively wrong
+ * for a self-hoster, who would paste a command aimed at OUR API and see it
+ * authenticate against nothing. Falling back to the console's own origin is
+ * correct when the API is reverse-proxied same-origin and, when it is not, at
+ * least names a host they own instead of one they don't.
  */
+const apiOrigin = () =>
+  (import.meta.env.VITE_API_URL as string) ||
+  (isCloud
+    ? "https://api.leenar.net"
+    : typeof window !== "undefined"
+      ? window.location.origin
+      : "");
+
 const mcpAddCommand = (key: string) =>
-  `claude mcp add --transport http leenar ${
-    (import.meta.env.VITE_API_URL as string) || "https://api.leenar.net"
-  }/api/mcp --header "Authorization: Bearer ${key}"`;
+  `claude mcp add --transport http leenar ${apiOrigin()}/api/mcp --header "Authorization: Bearer ${key}"`;
 import {
   listApiKeys,
   createApiKey,
@@ -154,39 +165,39 @@ function ApiTokensPage() {
 
             {/* The key is on screen exactly once, so this is the only moment a
                 ready-to-run command can carry the real value. Without it the
-                next step is: copy the key, find the docs, hand-write the flags.
-
-                Cloud only — the MCP server it connects to is a cloud-only
-                mount, so a core build must not offer the command at all. */}
-            {isCloud && (
-              <>
-                <p className="mt-4 text-[12px] text-muted-foreground">
-                  Or connect Claude Code in one command:
-                </p>
-                <div className="mt-2 flex items-start gap-2">
-                  <code className="flex-1 overflow-x-auto whitespace-pre rounded bg-background px-2 py-1.5 font-mono text-xs">
-                    {mcpAddCommand(created.key)}
-                  </code>
-                  <button
-                    onClick={() => copy("command", mcpAddCommand(created.key))}
-                    className={COPY_BUTTON}
-                  >
-                    {copied === "command" ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}{" "}
-                    {copied === "command" ? "Copied" : "Copy"}
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Adds Leenar to the current project. Append{" "}
-                  <code className="font-mono">--scope user</code> for every
-                  project, then check it with{" "}
-                  <code className="font-mono">claude mcp list</code>.
-                </p>
-              </>
-            )}
+                next step is: copy the key, find the docs, hand-write the flags. */}
+            <p className="mt-4 text-[12px] text-muted-foreground">
+              Or connect Claude Code in one command:
+            </p>
+            <div className="mt-2 flex items-start gap-2">
+              <code className="flex-1 overflow-x-auto whitespace-pre rounded bg-background px-2 py-1.5 font-mono text-xs">
+                {mcpAddCommand(created.key)}
+              </code>
+              <button
+                onClick={() => copy("command", mcpAddCommand(created.key))}
+                className={COPY_BUTTON}
+              >
+                {copied === "command" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}{" "}
+                {copied === "command" ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Adds Leenar to the current project. Append{" "}
+              <code className="font-mono">--scope user</code> for every project,
+              then check it with{" "}
+              <code className="font-mono">claude mcp list</code>.
+              {!isCloud && (
+                <>
+                  {" "}
+                  This server exposes the canvas tools — read a workspace, add a
+                  service, wire an edge.
+                </>
+              )}
+            </p>
           </div>
         )}
 

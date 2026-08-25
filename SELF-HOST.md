@@ -95,7 +95,38 @@ deploy.
 > Vercel project and GitHub repository are still provisioned for real via your
 > PAT — only those two cosmetic GitHub markers no-op.
 
-## f. Production warning
+## f. Drive it from an AI client (MCP)
+
+Your stack serves an MCP endpoint at `/api/mcp` on the API worker, so Claude
+Code, Cursor or any other MCP client can read and edit a canvas directly.
+
+Create a token under **Settings → API Tokens** — the reveal screen prints a
+ready-to-paste `claude mcp add` line with the key already in it. It looks like:
+
+```bash
+claude mcp add --transport http leenar http://localhost:8787/api/mcp \
+  --header "Authorization: Bearer lnr_..."
+```
+
+Then `claude mcp list` should show `leenar: connected`.
+
+**What it exposes.** The self-hosted server advertises the canvas tools and
+nothing else: read a workspace (`get_canvas`, `list_workflows`,
+`list_environments`, `list_connections`, `get_workflow_env_vars`) and edit one
+(`add_service`, `connect_services`, `update_node`, `remove_node`,
+`remove_edge`), plus the provider listings and the builder importer. The
+autonomy tools — deploys, drift reconciliation, incident actions, cost — are
+Leenar Cloud's and are not part of this build; `tools/list` never mentions them.
+
+**Scopes matter here.** A read-only token can call the read tools only; every
+canvas edit needs a **read & write** token. Deploying is still a REST call
+(`POST /api/projects/:id/provision`) or the Deploy button, not an MCP tool.
+
+If the console is on a different host than `localhost:8787`, use the same URL
+you put in `VITE_API_URL` / `API_URL` — the MCP endpoint lives on the API
+worker, not on the web worker.
+
+## g. Production warning
 
 **This is a local demo, not a production-hardened deployment.** Before
 relying on it for anything beyond trying Leenar out:
@@ -144,6 +175,10 @@ in the order a fresh user would hit it:
       printed — lands in the console with no email-confirmation step.
 - [ ] **(requires a real `OPENAI_API_KEY`)** In chat, ask for a simple service
       — a node should appear on the canvas.
+- [ ] `curl -s -X POST http://localhost:8787/api/mcp -H "Authorization: Bearer
+      lnr_..." -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,
+      "method":"tools/list"}'` → a `result.tools` array of the canvas tools
+      (make a token under Settings → API Tokens first).
 - [ ] **(requires a real Vercel + GitHub PAT, and creates real cloud
       resources)** Connect GitHub and Vercel under Settings → Integrations,
       then Deploy a canvas that uses them — watch `docker compose logs -f api`

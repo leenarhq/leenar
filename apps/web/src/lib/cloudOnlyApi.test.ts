@@ -28,8 +28,11 @@ export const CLOUD_ONLY_MOUNTS = [
   "usage",
   "incidents",
   "audit-log",
-  "mcp",
-  "agent",
+  // mcp is deliberately absent: registerCoreRoutes mounts /api/mcp in both
+  // editions and the export swaps the tool registry, not the route. Keep
+  // comments in this block free of double quotes — cloud-route-list.test.mjs
+  // scrapes every quoted string between the brackets.
+  "agent", // the dashboard agent, still cloud-only
   "slack",
   "whatsapp",
   "channels",

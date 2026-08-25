@@ -65,7 +65,10 @@ Cloudflare Workers use in production), and a self-hosted Supabase subset —
 Postgres, Auth, PostgREST and Realtime behind Kong.
 
 To deploy something for real, paste a Personal Access Token for each provider
-under **Settings → Integrations**. [SELF-HOST.md](./SELF-HOST.md) has the full
+under **Settings → Integrations**. To drive the canvas from Claude Code or
+Cursor instead, create a token under **Settings → API Tokens** — the reveal
+screen prints the `claude mcp add` line for your own server, already filled in.
+[SELF-HOST.md](./SELF-HOST.md) has the full
 walkthrough, a smoke-test checklist, and the production-hardening notes you
 must read before exposing this beyond `localhost`.
 
@@ -79,6 +82,7 @@ must read before exposing this beyond `localhost`.
 | **Database workspace** | Introspect a live Supabase schema, edit tables and RLS policies, toggle extensions, run SQL — against the real database, not a cached copy. |
 | **Environments** | Branch a stack off its trunk and promote it back, instead of hand-copying variables between staging and production. |
 | **Canvas agent** | Ask for a change in plain language and the AI edits the graph in place — adds a service, wires an edge, renames a node — with every tool call scoped to the canvas in front of you. |
+| **MCP server** | The same canvas tools over MCP, so Claude Code, Cursor or any MCP client can read and edit a workspace. One `claude mcp add` line, printed with your API token. |
 | **Own your keys** | Bring your own OpenAI key and your own provider tokens. Nothing is proxied through us, and there are no usage caps. |
 
 ## Core vs Leenar Cloud
@@ -95,10 +99,10 @@ is *autonomy* — the AI DevOps engineer that keeps working while you sleep.
 | Database workspace (introspect, SQL, schema, RLS) | ✅ | ✅ |
 | Environments, API keys, webhooks | ✅ | ✅ |
 | Canvas agent (AI edits the graph in place) | ✅ | ✅ |
+| MCP server (Claude Code, Cursor, …) | canvas tools | canvas + DevOps tools |
 | Self-host with `docker compose up` | ✅ | — |
 | Bring your own OpenAI key, no usage caps | ✅ | managed |
 | Connecting providers | pasted tokens | OAuth |
-| MCP server (drive a workspace from Claude Code, Cursor, …) | — | ✅ |
 | 24/7 incident monitoring and AI diagnosis | — | ✅ |
 | Drift detection and auto-reconcile | — | ✅ |
 | Autopilot: approved changes applied unattended | — | ✅ |
@@ -113,7 +117,7 @@ flowchart LR
     W["Console<br/>React 19 · TanStack Router · React Flow"]
   end
   subgraph edge["Cloudflare Workers"]
-    A["API worker<br/>Hono routes · canvas agent"]
+    A["API worker<br/>Hono routes · canvas agent · MCP"]
     D["Provisioner<br/>Durable Object"]
   end
   subgraph data["Postgres"]

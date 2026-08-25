@@ -163,7 +163,12 @@ relying on it for anything beyond trying Leenar out:
 Use this after `docker compose up` to confirm the stack is actually working,
 in the order a fresh user would hit it:
 
-- [ ] `docker compose ps` — every service shows `healthy`.
+- [ ] `docker compose ps` — `db`, `kong`, `api` and `web` show `healthy`, and
+      `auth`, `rest` and `realtime` show `running` with a blank health column.
+      Those three ship no healthcheck of their own, so a blank there is normal
+      — `api` reaching `healthy` is what proves they are actually serving.
+      `bootstrap` shows `exited`: it is a one-shot that creates the first
+      account and stops.
 - [ ] `curl -L http://localhost:8080/` → `200` (the web console loads). Note:
       `/` itself 307-redirects to `/console` — the marketing landing page is a
       Leenar Cloud–only route, not part of this self-host build — so use

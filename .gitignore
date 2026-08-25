@@ -33,3 +33,6 @@ supabase/core-migrations/.validate/*.sql
 
 # Demo video — hosted on GitHub user-attachments, linked from README. Never commit the file.
 leenar-demo.mp4
+
+# Marketing drafts — working notes, never shipped and never public.
+content/

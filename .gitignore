@@ -35,4 +35,8 @@ supabase/core-migrations/.validate/*.sql
 leenar-demo.mp4
 
 # Marketing drafts — working notes, never shipped and never public.
-content/
+# The leading slash is load-bearing: it pins this to the repo root. A bare
+# `content/` matches at every depth, so it would also swallow the nested
+# content/ directories elsewhere in the tree — already-tracked files survive,
+# but every NEW file added under one becomes invisible to `git add`.
+/content/

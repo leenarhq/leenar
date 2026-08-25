@@ -25,8 +25,12 @@ docker compose up            # add -d to run in the background
 ```
 
 First boot builds the `api` and `web` images (a couple of minutes) and pulls
-the Supabase images. Wait for `docker compose ps` to show every service as
-`healthy`, or watch the logs settle (`docker compose logs -f`).
+the Supabase images. Wait for `docker compose ps` to show `api` and `web` as
+`healthy` — that is the signal the stack is up. `auth`, `rest` and `realtime`
+define no healthcheck, so their health column stays blank however long you
+wait; `api` cannot go healthy without them, so it speaks for all three. The
+smoke-test checklist at the end of this file spells out the full expected
+state.
 
 ## c. Sign in
 
